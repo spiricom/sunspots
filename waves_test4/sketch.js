@@ -68,7 +68,7 @@ var worldWidth = 128, worldDepth = 128,
 worldHalfWidth = worldWidth / 2, worldHalfDepth = worldDepth / 2;
 
 var bgColor = 0x0;
-  
+
 var myColor, myColorCombined, myColorCombine2, myColorCombinedTop, myColorCombinedBottom;
 var start = Date.now();
 
@@ -94,14 +94,14 @@ function init() {
 
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
-	
+
 	renderer.shadowMapEnabled = true;
   renderer.shadowMapSoft = true;
-  
+
   renderer.shadowCameraNear = 3;
   renderer.shadowCameraFar = camera.far;
   renderer.shadowCameraFov = 50;
-  
+
   renderer.shadowMapBias = 0.0039;
   renderer.shadowMapDarkness = 0.5;
   renderer.shadowMapWidth = 1024;
@@ -132,12 +132,12 @@ function init() {
 
 	dirLight.shadowCameraFar = 3500;
 	dirLight.shadowBias = -0.0001;
-	
+
 	hemiLight[0] = new THREE.HemisphereLight( getPaletteColor(), getPaletteColor(), .3 );
 	hemiLight[0].position.set( 10, 500, 0);
 	scene.add( hemiLight[0] );
-	
-	
+
+
 	hemiLight[1] = new THREE.HemisphereLight( getPaletteColor(), getPaletteColor(), .3);
 	hemiLight[1].position.set( 10, -500, 0);
 	scene.add( hemiLight[1] );
@@ -173,19 +173,19 @@ function init() {
   	/*
   var texture = new THREE.TextureLoader().load( "textures/new/Black.png" );
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set( 1, 1 ); 
+  texture.repeat.set( 1, 1 );
   */
   for (j = 0; j < numWaves; j++)
   {
   	geometry[j] = new THREE.PlaneGeometry( 100000, 100000, worldWidth - 1, worldDepth - 1 );
   	geometry[j].rotateX( - Math.PI / 2 );
   	geometry[j].rotateY(Math.random() * 3.14 );
-  	
+
     /*
   	for ( var i = 0, l = geometry[j].vertices.length; i < l; i ++ ) {
-  
+
   		geometry[j].vertices[ i ].y = waveMagnitude[j] * Math.random();
-  
+
   	}
   	//geometry[j].dynamic = true;
   	*/
@@ -206,14 +206,14 @@ function init() {
 
   	scene.add( mesh[j] );
   }
-  
-  
+
+
         // create the particle variables
-  
+
   particles = new THREE.Geometry();
-      
+
   var textureLoader = new THREE.TextureLoader();
-  
+
   // create the particle variables
   var particleColor = getPaletteColor();
   pMaterial = new THREE.PointsMaterial({
@@ -225,16 +225,16 @@ function init() {
   });
   //pMaterial.depthWrite: false,
   pMaterial.alphaTest = 0.5;
-  
+
   // now create the individual particles
   for (var p = 0; p < particleCount; p++) {
-  
+
     // create a particle with random
     // position values, -250 -> 250
     var pX = Math.random() * 50000 - 25000,
         pY = Math.random() * 25000 - 25000,
         pZ = Math.random() * 50000 - 25000;
-    
+
     var particle = new THREE.Vector3(pX, pY, pZ);
     // create a velocity vector
     particle.velocity = new THREE.Vector3(
@@ -245,18 +245,17 @@ function init() {
     // add it to the geometry
     particles.vertices.push(particle);
   }
-  
+
   // create the particle system
   particleSystem = new THREE.Points(
       particles,
       pMaterial);
     // add it to the scene
   scene.add(particleSystem);
-  
-  
-  
-  
-  // audio stuff
+
+
+
+
   var sphere = new THREE.SphereGeometry( 100, 3, 2 );
   for (i = 0; i < numSounds; i++)
   {
@@ -265,22 +264,24 @@ function init() {
     material_sphere[i].castShadow = false;
 		material_sphere[i].receiveShadow = false;
 		material_sphere[i].visible = false;
-    
+
   }
+
+  // audio stuff
   listener = new THREE.AudioListener();
   audioContext = THREE.AudioContext;
   camera.add(listener);
-  
+
   convolver = audioContext.createConvolver();
   var reverbGain = audioContext.createGain();
 // grab audio track via XHR for convolver node
   reverbGain.gain.value = myReverbGain;
   var soundSource, SpringReverbBuffer;
-  
+
   ajaxRequest = new XMLHttpRequest();
   ajaxRequest.open('GET', reverbSoundFile, true);
   ajaxRequest.responseType = 'arraybuffer';
-  
+
   ajaxRequest.onload = function() {
     var audioData = ajaxRequest.response;
     audioContext.decodeAudioData(audioData, function(buffer) {
@@ -292,29 +293,29 @@ function init() {
         whenLoaded();
       }, function(e){"Error with decoding audio data" + e.err;});
   }
-  
+
   ajaxRequest.send();
-  
-  
+
+
   //noise in center
   noiseMesh = new THREE.Mesh( sphere, material_sphere[0] );
   noiseMesh.position.set( 0, 0, 0 );
   scene.add(noiseMesh);
-  noiseSound =new THREE.PositionalAudio( listener );
+  noiseSound = new THREE.PositionalAudio( listener );
   noiseSound.setPanningModel(panModel);
   noiseSound.setFilter(soundGain[i]);
   noiseSound.setRolloffFactor(2);
   noiseMesh.add(noiseSound);
-  
-  
+
+
   for (i = 0; i < numSounds; i++)
   {
     mesh[i] = new THREE.Mesh( sphere, material_sphere[i] );
     mesh[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
     scene.add( mesh[i] );
-    
+
     soundGain[i] = audioContext.createGain();
-    
+
     sound[i] = new THREE.PositionalAudio( listener );
     sound[i].setPanningModel(panModel);
     sound[i].setFilter(soundGain[i]);
@@ -323,24 +324,25 @@ function init() {
     mesh[i].add( sound[i] );
     //pointLight[i] = new THREE.PointLight( 0xffffff, .1 );
 		//mesh[i].add( pointLight[i] );
-    
+
     analyser[i] = new THREE.AudioAnalyser( sound[i], 32 );
   }
   var audioLoader = new THREE.AudioLoader();
   for (i = 0; i < numBuffers; i++)
   {
+    console.log('loading: ' + soundFiles[whichFile[i]])
     audioLoader.load(soundFiles[whichFile[i]], bufferLoader);
   }
   audioLoader.load(noiseSoundFile, noiseLoader);
-  
+
   //controls stuff
-  
+
 	controls = new THREE.FirstPersonControls( camera, renderer.domElement );
   controls.movementSpeed = 1000;
   controls.lookSpeed = 0.05;
   controls.noFly = true;
   controls.lookVertical = false;
-  
+
 	window.addEventListener( 'resize', onWindowResize, false );
 
 }
@@ -365,7 +367,7 @@ function animate()
 }
 
 function render() {
-  
+
   var now = audioContext.currentTime;
   if (soundsPlaying == 1)
   {
@@ -374,7 +376,7 @@ function render() {
       for (i = 0; i < numSounds; i++)
       {
 
-      
+
         //console.log("check");
         if (waitTimes[i] < (now - prevTime[i]))
         {
@@ -405,16 +407,16 @@ function render() {
             console.log(i);
           }
           prevTime[i] = now;
-          
+
         }
       }
     }
-    
+
     for (i = 0; i < numSounds; i++)
     {
       waveMagnitude[i] = analyser[i].getAverageFrequency() / analyzerDivisor;
     }
-    
+
     loopCount++;
   }
 
@@ -424,13 +426,13 @@ function render() {
     //material[j].uniforms[ 'bscalar' ].value = waveMagnitude[j] * 1 + 50;
     material[j].uniforms[ 'amp' ].value = waveMagnitude[j] * 1 + 50;
   }
-  
+
   for (j = 0; j < numDomes; j++)
   {
     skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
   }
-  
-  
+
+
 
 
   var pCount = particleCount;
@@ -459,7 +461,7 @@ function render() {
     else if (particle.z > 50000) {
       particle.velocity.z = -1 * particleSpeedScale;
     }
-    
+
     // update the velocity with
     // a splat of randomniz
     particle.velocity.x += (Math.random() * particleSpeedScale) - particleSpeedScaleHalf;
@@ -474,7 +476,7 @@ function render() {
   // flag to the particle system
   // that we've changed its vertices.
   particleSystem.geometry.verticesNeedUpdate = true;
-  
+
   controls.update(clock.getDelta());
 	renderer.render( scene, camera );
 }
@@ -484,10 +486,10 @@ function getPaletteColor()
   	var myIndex = (Math.round(Math.random() * (myPalette.length - 1)));
   	myColor = myPalette[myIndex];
   	console.log(myIndex);
-  	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);	
+  	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
 }
 
-function bufferLoader(buffer) 
+function bufferLoader(buffer)
 {
   for (j = 0; j < (numSounds/numBuffers); j++)
   {
@@ -504,7 +506,7 @@ function bufferLoader(buffer)
   whenLoaded();
 }
 
-function noiseLoader(buffer) 
+function noiseLoader(buffer)
 {
 
   console.log("noise");
@@ -524,27 +526,27 @@ function whenLoaded()
   soundsLoaded++;
   var now = audioContext.currentTime;
   console.log(now);
-  console.log(soundsLoaded);
-  
+  console.log('Number of sounds loaded: ' + soundsLoaded);
+
   //(numBuffers + 2) because the convolution buffer and noiseSound should also call this function
   if (soundsLoaded == (numBuffers + 2))
   {
     soundsLoaded = 0;
-    
+
     for (i = 0; i < numSounds; i++)
     {
       soundGain[i].gain.setValueAtTime(0,now);
-      
-      //sound1.connect(masterGain); 
+
+      //sound1.connect(masterGain);
       sound[i].play();
       //sound2.play();
       //sound3.play();
       //sound4.play();
-      
+
       prevTime[i] = now;
       waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
       console.log(i);
-      //console.log(waitTimes[i]);
+      console.log('Wait times: ' + waitTimes);
       onOff[i] = Math.round(Math.random());
       console.log(onOff[i]);
       if (volRandom)
@@ -561,4 +563,3 @@ function whenLoaded()
     noiseSound.play();
   }
 }
-
