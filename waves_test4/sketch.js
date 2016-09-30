@@ -2,6 +2,7 @@
 var container;
 var clock = new THREE.Clock();
 var camera, controls, scene, renderer;
+var sphere;
 
 var skyGeo = [], skyMat = [], dome = [];
 var numDomes = 5;
@@ -68,7 +69,7 @@ var worldWidth = 128, worldDepth = 128,
 worldHalfWidth = worldWidth / 2, worldHalfDepth = worldDepth / 2;
 
 var bgColor = 0x0;
-  
+
 var myColor, myColorCombined, myColorCombine2, myColorCombinedTop, myColorCombinedBottom;
 var start = Date.now();
 
@@ -76,145 +77,114 @@ var start = Date.now();
 init();
 animate();
 
+// Initialize the visual elements of the piece - scene, camera, lighting
+function initVisualElements()
+{
+  // SCENE
+  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 2000000 );
+  camera.position.set( 0, -1500, 10000 );
+  //camera.setLens(20);
+  scene = new THREE.Scene();
 
-function init() {
+  //var helper = new THREE.GridHelper( 5000, 5000, 0xffffff, 0xffffff );
+  //scene.add( helper );
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setClearColor( getPaletteColor() );
 
-	camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 2000000 );
-	camera.position.set( 0, -1500, 10000 );
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.setSize( window.innerWidth, window.innerHeight );
 
-	//camera.setLens(20);
-
-	scene = new THREE.Scene();
-
-	//var helper = new THREE.GridHelper( 5000, 5000, 0xffffff, 0xffffff );
-	//scene.add( helper );
-
-	renderer = new THREE.WebGLRenderer({ antialias: true });
-	renderer.setClearColor( getPaletteColor() );
-
-	renderer.setPixelRatio( window.devicePixelRatio );
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	
-	renderer.shadowMapEnabled = true;
+  renderer.shadowMapEnabled = true;
   renderer.shadowMapSoft = true;
-  
+
   renderer.shadowCameraNear = 3;
   renderer.shadowCameraFar = camera.far;
   renderer.shadowCameraFov = 50;
-  
+
   renderer.shadowMapBias = 0.0039;
   renderer.shadowMapDarkness = 0.5;
   renderer.shadowMapWidth = 1024;
   renderer.shadowMapHeight = 1024;
 
+  document.body.appendChild( renderer.domElement );
 
-	document.body.appendChild( renderer.domElement );
+  dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+  dirLight.color.setHSL( 0.1, 1, 0.95 );
+  dirLight.position.set( -10, 5.75, 1 );
+  dirLight.position.multiplyScalar( 50 );
+  scene.add( dirLight );
 
+  dirLight.castShadow = true;
+  dirLight.shadowMapWidth = 2048;
+  dirLight.shadowMapHeight = 2048;
 
+  var d = 50;
+  dirLight.shadowCameraLeft = -d;
+  dirLight.shadowCameraRight = d;
+  dirLight.shadowCameraTop = d;
+  dirLight.shadowCameraBottom = -d;
+  dirLight.shadowCameraFar = 3500;
+  dirLight.shadowBias = -0.0001;
 
-	dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
-	dirLight.color.setHSL( 0.1, 1, 0.95 );
-	dirLight.position.set( -10, 5.75, 1 );
-	dirLight.position.multiplyScalar( 50 );
-	scene.add( dirLight );
+  hemiLight[0] = new THREE.HemisphereLight( getPaletteColor(), getPaletteColor(), .3 );
+  hemiLight[0].position.set( 10, 500, 0);
+  scene.add( hemiLight[0] );
 
-	dirLight.castShadow = true;
+  hemiLight[1] = new THREE.HemisphereLight( getPaletteColor(), getPaletteColor(), .3);
+  hemiLight[1].position.set( 10, -500, 0);
+  scene.add( hemiLight[1] );
+  scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0001 );
 
-	dirLight.shadowMapWidth = 2048;
-	dirLight.shadowMapHeight = 2048;
-
-	var d = 50;
-
-	dirLight.shadowCameraLeft = -d;
-	dirLight.shadowCameraRight = d;
-	dirLight.shadowCameraTop = d;
-	dirLight.shadowCameraBottom = -d;
-
-	dirLight.shadowCameraFar = 3500;
-	dirLight.shadowBias = -0.0001;
-	
-	hemiLight[0] = new THREE.HemisphereLight( getPaletteColor(), getPaletteColor(), .3 );
-	hemiLight[0].position.set( 10, 500, 0);
-	scene.add( hemiLight[0] );
-	
-	
-	hemiLight[1] = new THREE.HemisphereLight( getPaletteColor(), getPaletteColor(), .3);
-	hemiLight[1].position.set( 10, -500, 0);
-	scene.add( hemiLight[1] );
-
-	scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0001 );
-
-
-	var vertexShader = document.getElementById( 'vertexShader' ).textContent;
-	var fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
+  var vertexShader = document.getElementById( 'vertexShader' ).textContent;
+  var fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
 
   for (j = 0; j < numDomes; j++)
   {
-  	uniforms = {
-  		topColor:    { value: new THREE.Color(  getPaletteColor() ) },
-  		bottomColor: { value: new THREE.Color(  getPaletteColor() ) },
-  		offset:      { value: -33 },
-  		exponent:    { value: 0.6 },
+    uniforms = {
+      topColor:    { value: new THREE.Color(  getPaletteColor() ) },
+      bottomColor: { value: new THREE.Color(  getPaletteColor() ) },
+      offset:      { value: -33 },
+      exponent:    { value: 0.6 },
       time: {type: "f", value: 0.0 },
       amp: {type: "f", value: 500.0 },
       bscalar: {type: "f", value: -5.0 },
       positionscalar: {type: "f", value: .05 },
       turbulencescalar: {type: "f", value: .5 }
-  	};
-  	//uniforms.topColor.value.copy( hemiLight.color );
-  	//scene.fog.color.copy( uniforms.bottomColor.value );
-  	skyGeo[j] = new THREE.SphereGeometry( (4000*(j+1)), 32, 32 );
-  	//skyGeo[j] = new THREE.IcosahedronGeometry( 20,4 );
-  	skyMat[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.BackSide } );
-  	dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
-  	scene.add( dome[j] );
+    };
+    // uniforms.topColor.value.copy( hemiLight.color );
+    // scene.fog.color.copy( uniforms.bottomColor.value );
+    skyGeo[j] = new THREE.SphereGeometry( (4000*(j+1)), 32, 32 );
+    // skyGeo[j] = new THREE.IcosahedronGeometry( 20,4 );
+    skyMat[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.BackSide } );
+    dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
+    scene.add( dome[j] );
   }
-  	// make some waves!!
-  	/*
-  var texture = new THREE.TextureLoader().load( "textures/new/Black.png" );
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set( 1, 1 ); 
-  */
+
+  // WAVES
   for (j = 0; j < numWaves; j++)
   {
-  	geometry[j] = new THREE.PlaneGeometry( 100000, 100000, worldWidth - 1, worldDepth - 1 );
-  	geometry[j].rotateX( - Math.PI / 2 );
-  	geometry[j].rotateY(Math.random() * 3.14 );
-  	
-    /*
-  	for ( var i = 0, l = geometry[j].vertices.length; i < l; i ++ ) {
-  
-  		geometry[j].vertices[ i ].y = waveMagnitude[j] * Math.random();
-  
-  	}
-  	//geometry[j].dynamic = true;
-  	*/
-  	uniforms = {
-  		topColor:    { value: new THREE.Color(  getPaletteColor() ) },
-  		bottomColor: { value: new THREE.Color(  getPaletteColor() ) },
-  		offset:      { value: 0 },
-  		exponent:    { value: 0.6 },
+    geometry[j] = new THREE.PlaneGeometry( 100000, 100000, worldWidth - 1, worldDepth - 1 );
+    geometry[j].rotateX( - Math.PI / 2 );
+    geometry[j].rotateY(Math.random() * 3.14 );
+    uniforms = {
+      topColor:    { value: new THREE.Color(  getPaletteColor() ) },
+      bottomColor: { value: new THREE.Color(  getPaletteColor() ) },
+      offset:      { value: 0 },
+      exponent:    { value: 0.6 },
       time: {type: "f", value: 0.0 },
       amp: {type: "f", value: 500.0 },
       bscalar: {type: "f", value: -5.0 },
       positionscalar: {type: "f", value: 0.05 },
       turbulencescalar: {type: "f", value: 0.5 }
-  	};
-  	material[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.DoubleSide } );
-  	mesh[j] = new THREE.Mesh( geometry[j], material[j] );
-  	mesh[j].receiveShadow = true;
-
-  	scene.add( mesh[j] );
+    };
+    material[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.DoubleSide } );
+    mesh[j] = new THREE.Mesh( geometry[j], material[j] );
+    mesh[j].receiveShadow = true;
+    scene.add( mesh[j] );
   }
-  
-  
-        // create the particle variables
-  
+
   particles = new THREE.Geometry();
-      
   var textureLoader = new THREE.TextureLoader();
-  
-  // create the particle variables
   var particleColor = getPaletteColor();
   pMaterial = new THREE.PointsMaterial({
     color: particleColor,
@@ -223,18 +193,17 @@ function init() {
     blending: THREE.AdditiveBlending,
     transparent: true
   });
-  //pMaterial.depthWrite: false,
+  // pMaterial.depthWrite: false,
   pMaterial.alphaTest = 0.5;
-  
+
   // now create the individual particles
   for (var p = 0; p < particleCount; p++) {
-  
     // create a particle with random
     // position values, -250 -> 250
     var pX = Math.random() * 50000 - 25000,
         pY = Math.random() * 25000 - 25000,
         pZ = Math.random() * 50000 - 25000;
-    
+
     var particle = new THREE.Vector3(pX, pY, pZ);
     // create a velocity vector
     particle.velocity = new THREE.Vector3(
@@ -245,42 +214,45 @@ function init() {
     // add it to the geometry
     particles.vertices.push(particle);
   }
-  
+
   // create the particle system
-  particleSystem = new THREE.Points(
-      particles,
-      pMaterial);
-    // add it to the scene
+  particleSystem = new THREE.Points(particles, pMaterial);
+  // add it to the scene
   scene.add(particleSystem);
-  
-  
-  
-  
-  // audio stuff
-  var sphere = new THREE.SphereGeometry( 100, 3, 2 );
+}
+
+// Initialize the (all important) audio elements of the piece
+function initAudioElements()
+{
+  // Create invisible spheres to attach the audio to (convenience)
+  sphere = new THREE.SphereGeometry( 100, 3, 2 );
   for (i = 0; i < numSounds; i++)
   {
     //bumpMap: mapHeight, bumpScale: 10
-    material_sphere[i] = new THREE.MeshPhongMaterial( { color: 0xffffff, shininess: 10,side: THREE.DoubleSide,opacity:.8} );
+    material_sphere[i] = new THREE.MeshPhongMaterial( { color: 0xffffff,
+                                                        shininess: 10,
+                                                        side: THREE.DoubleSide,
+                                                        opacity:.8} );
     material_sphere[i].castShadow = false;
 		material_sphere[i].receiveShadow = false;
 		material_sphere[i].visible = false;
-    
   }
+  // Init audio context
   listener = new THREE.AudioListener();
   audioContext = THREE.AudioContext;
+  // Attach audio listener to our moving camera
   camera.add(listener);
-  
+
   convolver = audioContext.createConvolver();
   var reverbGain = audioContext.createGain();
-// grab audio track via XHR for convolver node
+  // grab audio track via XHR for convolver node
   reverbGain.gain.value = myReverbGain;
   var soundSource, SpringReverbBuffer;
-  
+
   ajaxRequest = new XMLHttpRequest();
   ajaxRequest.open('GET', reverbSoundFile, true);
   ajaxRequest.responseType = 'arraybuffer';
-  
+
   ajaxRequest.onload = function() {
     var audioData = ajaxRequest.response;
     audioContext.decodeAudioData(audioData, function(buffer) {
@@ -288,33 +260,66 @@ function init() {
         convolver.buffer = SpringReverbBuffer;
         convolver.connect(reverbGain);
         reverbGain.connect(audioContext.destination);
-        //console.log("reverb Loaded");
         whenLoaded();
-      }, function(e){"Error with decoding audio data" + e.err;});
+      }, function(e) {"Error with decoding audio data" + e.err;});
   }
-  
   ajaxRequest.send();
-  
-  
-  //noise in center
-  noiseMesh = new THREE.Mesh( sphere, material_sphere[0] );
-  noiseMesh.position.set( 0, 0, 0 );
+
+  // Create central noise sound and add it to the scene via noiseMesh
+  noiseMesh = new THREE.Mesh(sphere, material_sphere[0]);
+  noiseMesh.position.set(0, 0, 0);
   scene.add(noiseMesh);
-  noiseSound =new THREE.PositionalAudio( listener );
+  noiseSound = new THREE.PositionalAudio(listener);
   noiseSound.setPanningModel(panModel);
   noiseSound.setFilter(soundGain[i]);
   noiseSound.setRolloffFactor(2);
   noiseMesh.add(noiseSound);
-  
-  
+
+  // Create an audio loader for the piece and load the noise sound into it
+  audioLoader = new THREE.AudioLoader();
+  audioLoader.load(noiseSoundFile, noiseLoader);
+}
+
+// Initialize the control elements for the piece
+function initControlElements()
+{
+  controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+  controls.movementSpeed = 1000;
+  controls.lookSpeed = 0.05;
+  controls.noFly = true;
+  controls.lookVertical = false;
+}
+
+function init()
+{
+  initVisualElements();
+  initAudioElements();
+  initControlElements();
+  // Listen for window resizing
+	window.addEventListener('resize', onWindowResize, false);
+}
+
+function playRandomSound()
+{
+  var randomFile = '';
+  var maxIndex;
+  // Decide if picking from 'L-' or 'R-' sampleset
+  if (Math.random() < 0.5) {
+    randomFile = 'L-';
+  } else {
+    randomFile = 'R-';
+  }
+
+  // THIS IS WHAT I'LL BE CHANGING BELOW TO LOAD SMALL AUDIO BITS
+  /*
   for (i = 0; i < numSounds; i++)
   {
-    mesh[i] = new THREE.Mesh( sphere, material_sphere[i] );
+    mesh[i] = new THREE.Mesh(sphere, material_sphere[i] );
     mesh[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
     scene.add( mesh[i] );
-    
+
     soundGain[i] = audioContext.createGain();
-    
+
     sound[i] = new THREE.PositionalAudio( listener );
     sound[i].setPanningModel(panModel);
     sound[i].setFilter(soundGain[i]);
@@ -322,50 +327,41 @@ function init() {
     sound[i].setRefDistance(5000);
     mesh[i].add( sound[i] );
     //pointLight[i] = new THREE.PointLight( 0xffffff, .1 );
-		//mesh[i].add( pointLight[i] );
-    
-    analyser[i] = new THREE.AudioAnalyser( sound[i], 32 );
+    //mesh[i].add( pointLight[i] );
+    analyser[i] = new THREE.AudioAnalyser(sound[i], 32);
   }
-  var audioLoader = new THREE.AudioLoader();
+  */
+
+  /*
   for (i = 0; i < numBuffers; i++)
   {
     audioLoader.load(soundFiles[whichFile[i]], bufferLoader);
   }
-  audioLoader.load(noiseSoundFile, noiseLoader);
-  
-  //controls stuff
-  
-	controls = new THREE.FirstPersonControls( camera, renderer.domElement );
-  controls.movementSpeed = 1000;
-  controls.lookSpeed = 0.05;
-  controls.noFly = true;
-  controls.lookVertical = false;
-  
-	window.addEventListener( 'resize', onWindowResize, false );
-
+  */
 }
 
-function onWindowResize() {
-
+// Properly handle window resizing
+function onWindowResize()
+{
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
 	renderer.setClearColor( bgColor);
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
-
 	render();
-
 }
 
+// Requests and renders each frame
 function animate()
 {
-  			requestAnimationFrame( animate );
-				//controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
-				render();
+	requestAnimationFrame(animate);
+	// controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
+	render();
 }
 
-function render() {
-  
+// Renders a frame
+function render()
+{
   var now = audioContext.currentTime;
   if (soundsPlaying == 1)
   {
@@ -373,9 +369,6 @@ function render() {
     {
       for (i = 0; i < numSounds; i++)
       {
-
-      
-        //console.log("check");
         if (waitTimes[i] < (now - prevTime[i]))
         {
           waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
@@ -386,35 +379,30 @@ function render() {
             if (volRandom)
             {
               var randomVolume =  Math.random();
-              //console.log(randomVolume);
               soundGain[i].gain.setTargetAtTime(((onOff[i] * randomVolume) + .0000001), now+0.001, .3);
             }
             else
             {
               soundGain[i].gain.setTargetAtTime((onOff[i] + .0000001), now+0.001, .3);
             }
-            console.log("on");
-            console.log(i);
           }
           else
           {
             onOff[i] = 0;
             soundGain[i].gain.cancelScheduledValues(now);
             soundGain[i].gain.setTargetAtTime(0.00000001, now, .2);
-            console.log("off");
-            console.log(i);
           }
           prevTime[i] = now;
-          
+
         }
       }
     }
-    
+
     for (i = 0; i < numSounds; i++)
     {
       waveMagnitude[i] = analyser[i].getAverageFrequency() / analyzerDivisor;
     }
-    
+
     loopCount++;
   }
 
@@ -424,14 +412,11 @@ function render() {
     //material[j].uniforms[ 'bscalar' ].value = waveMagnitude[j] * 1 + 50;
     material[j].uniforms[ 'amp' ].value = waveMagnitude[j] * 1 + 50;
   }
-  
+
   for (j = 0; j < numDomes; j++)
   {
     skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
   }
-  
-  
-
 
   var pCount = particleCount;
   while (pCount--) {
@@ -459,13 +444,12 @@ function render() {
     else if (particle.z > 50000) {
       particle.velocity.z = -1 * particleSpeedScale;
     }
-    
+
     // update the velocity with
     // a splat of randomniz
     particle.velocity.x += (Math.random() * particleSpeedScale) - particleSpeedScaleHalf;
     particle.velocity.y += (Math.random() * particleSpeedScale) - particleSpeedScaleHalf;
     particle.velocity.z += (Math.random() * particleSpeedScale) - particleSpeedScaleHalf;
-    //console.log(particle.velocity);
     // and the position
     particle.add(
     particle.velocity);
@@ -474,25 +458,25 @@ function render() {
   // flag to the particle system
   // that we've changed its vertices.
   particleSystem.geometry.verticesNeedUpdate = true;
-  
+
   controls.update(clock.getDelta());
-	renderer.render( scene, camera );
+	renderer.render(scene, camera);
 }
 
+// Randomly select from a variety of color palettes for the scene
 function getPaletteColor()
 {
   	var myIndex = (Math.round(Math.random() * (myPalette.length - 1)));
   	myColor = myPalette[myIndex];
-  	console.log(myIndex);
-  	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);	
+  	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
 }
 
-function bufferLoader(buffer) 
+
+function bufferLoader(buffer)
 {
   for (j = 0; j < (numSounds/numBuffers); j++)
   {
     var thisSound = bufferCounter;
-    //console.log(thisSound);
     sound[thisSound].setBuffer( buffer );
     sound[thisSound].setRefDistance( refDist );
     sound[thisSound].setLoop(true);
@@ -504,12 +488,10 @@ function bufferLoader(buffer)
   whenLoaded();
 }
 
-function noiseLoader(buffer) 
+function noiseLoader(buffer)
 {
-
-  console.log("noise");
-  noiseSound.setBuffer( buffer );
-  noiseSound.setRefDistance( 100);
+  noiseSound.setBuffer(buffer);
+  noiseSound.setRefDistance(100);
   noiseSound.setLoop(true);
   noiseSound.setStartTime(Math.random()*((buffer.length / 44100) - 6));
   noiseSound.setPlaybackRate(.7);
@@ -518,35 +500,27 @@ function noiseLoader(buffer)
   whenLoaded();
 }
 
-
+// Called whenever a new sound is loaded
 function whenLoaded()
 {
   soundsLoaded++;
   var now = audioContext.currentTime;
-  console.log(now);
   console.log(soundsLoaded);
-  
-  //(numBuffers + 2) because the convolution buffer and noiseSound should also call this function
+
+  // (numBuffers + 2) because the convolution buffer and noiseSound should also call this function
   if (soundsLoaded == (numBuffers + 2))
   {
     soundsLoaded = 0;
-    
+
     for (i = 0; i < numSounds; i++)
     {
       soundGain[i].gain.setValueAtTime(0,now);
-      
-      //sound1.connect(masterGain); 
       sound[i].play();
-      //sound2.play();
-      //sound3.play();
-      //sound4.play();
-      
+
       prevTime[i] = now;
       waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
-      console.log(i);
-      //console.log(waitTimes[i]);
       onOff[i] = Math.round(Math.random());
-      console.log(onOff[i]);
+
       if (volRandom)
       {
         soundGain[i].gain.setTargetAtTime(((onOff[i] * (Math.random())*2) + .0000001), now+0.001, 5);
@@ -561,4 +535,3 @@ function whenLoaded()
     noiseSound.play();
   }
 }
-
