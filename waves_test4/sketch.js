@@ -137,7 +137,6 @@ function initVisualElements()
 
   var vertexShader = document.getElementById( 'vertexShader' ).textContent;
   var fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
-
   for (j = 0; j < numDomes; j++)
   {
     uniforms = {
@@ -270,6 +269,7 @@ function initAudioElements()
   noiseMesh.position.set(0, 0, 0);
   scene.add(noiseMesh);
   noiseSound = new THREE.PositionalAudio(listener);
+
   noiseSound.setPanningModel(panModel);
   noiseSound.setFilter(soundGain[i]);
   noiseSound.setRolloffFactor(2);
@@ -335,6 +335,7 @@ function playRandomSound()
   /*
   for (i = 0; i < numBuffers; i++)
   {
+    console.log('loading: ' + soundFiles[whichFile[i]])
     audioLoader.load(soundFiles[whichFile[i]], bufferLoader);
   }
   */
@@ -470,7 +471,6 @@ function getPaletteColor()
   	myColor = myPalette[myIndex];
   	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
 }
-
 
 function bufferLoader(buffer)
 {
