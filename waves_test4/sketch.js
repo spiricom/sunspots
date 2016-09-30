@@ -19,28 +19,29 @@ var panModel = 'equalpower';
 
 var myReverbGain = 1.0;
 var convolver;
-var audioContext,listener;
+var audioContext, listener;
 var soundsLoaded = 0;
-var numSounds = 4;
+var numSoundSources = 4;
+var curSoundSource;
 var numBuffers = 2;
 var bufferCounter = 0;
 var soundPositions = [[-10000,30,0], [10000,80,0], [0,0,-10000],[0,-50,10000], [-5000,30,5000], [5000,80,5000],[-5000, 0, -5000], [5000, -50, -5000]];
 //var ratios = [.5,.875,1.0, 1.14285714, 1.125, 1.11111111111,1.25,1.5, 1.375,2.6,1.6,2.0];
 var ratios = [1];
-var soundGain = [];
-var sound = [];
-var analyser = [];
-var material_sphere = [];
+var soundGains = [];
+var sounds = [];
+var analysers = [];
+var material_spheres = [];
 var audioLoader;
 var soundFiles = ['./sounds/sunspots_whale.mp3', './sounds/buchlaems41L.mp3','./sounds/buchlaems41R.mp3','./sounds/buchlaems42L.mp3','./sounds/buchlaems42R.mp3','./sounds/buchlaems43L.mp3','./sounds/buchlaems43R.mp3'];
 var noiseSoundFile = ['./sounds/synthnoise.ogg'];
 var whichFile = [4,3];
 var refDist = 10000;
 var waitTimes = [], prevTime = [], onOff = [];
-var waitMax = 13;
+var waitMax = 15;
 var waitOffset = 4;
 var volRandom = 1;
-var analyzerDivisor = 16;
+var analyserDivisor = 16;
 var soundsPlaying = 0;
 var loopCount = 0;
 var valScalar = .1;
@@ -51,7 +52,7 @@ var noiseSound;
 var uniforms;
 var controls;
 
-var mesh = [];
+var meshes = [];
 
 var geometry = [];
 
@@ -177,9 +178,9 @@ function initVisualElements()
       turbulencescalar: {type: "f", value: 0.5 }
     };
     material[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.DoubleSide } );
-    mesh[j] = new THREE.Mesh( geometry[j], material[j] );
-    mesh[j].receiveShadow = true;
-    scene.add( mesh[j] );
+    meshes[j] = new THREE.Mesh( geometry[j], material[j] );
+    meshes[j].receiveShadow = true;
+    scene.add( meshes[j] );
   }
 
   particles = new THREE.Geometry();
@@ -224,17 +225,17 @@ function initVisualElements()
 function initAudioElements()
 {
   // Create invisible spheres to attach the audio to (convenience)
-  sphere = new THREE.SphereGeometry( 100, 3, 2 );
-  for (i = 0; i < numSounds; i++)
+  sphere = new THREE.SphereGeometry(100, 3, 2);
+  for (i = 0; i < numSoundSources; i++)
   {
     //bumpMap: mapHeight, bumpScale: 10
-    material_sphere[i] = new THREE.MeshPhongMaterial( { color: 0xffffff,
+    material_spheres[i] = new THREE.MeshPhongMaterial( { color: 0xffffff,
                                                         shininess: 10,
                                                         side: THREE.DoubleSide,
                                                         opacity:.8} );
-    material_sphere[i].castShadow = false;
-		material_sphere[i].receiveShadow = false;
-		material_sphere[i].visible = false;
+    material_spheres[i].castShadow = false;
+		material_spheres[i].receiveShadow = false;
+		material_spheres[i].visible = false;
   }
   // Init audio context
   listener = new THREE.AudioListener();
@@ -248,7 +249,7 @@ function initAudioElements()
   reverbGain.gain.value = myReverbGain;
   var soundSource, SpringReverbBuffer;
 
-  ajaxRequest = new XMLHttpRequest();
+  var ajaxRequest = new XMLHttpRequest();
   ajaxRequest.open('GET', reverbSoundFile, true);
   ajaxRequest.responseType = 'arraybuffer';
 
@@ -265,15 +266,31 @@ function initAudioElements()
   ajaxRequest.send();
 
   // Create central noise sound and add it to the scene via noiseMesh
-  noiseMesh = new THREE.Mesh(sphere, material_sphere[0]);
+  noiseMesh = new THREE.Mesh(sphere, material_spheres[0]);
   noiseMesh.position.set(0, 0, 0);
   scene.add(noiseMesh);
   noiseSound = new THREE.PositionalAudio(listener);
 
   noiseSound.setPanningModel(panModel);
-  noiseSound.setFilter(soundGain[i]);
+  noiseSound.setFilter(soundGains[i]);
   noiseSound.setRolloffFactor(2);
   noiseMesh.add(noiseSound);
+
+  // Setup each of the sound sources
+  for (i = 0; i < numSoundSources; i++)
+  {
+    meshes[i] = new THREE.Mesh(sphere, material_spheres[i] );
+    meshes[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
+    scene.add( meshes[i] );
+    soundGains[i] = audioContext.createGain();
+    sounds[i] = new THREE.PositionalAudio( listener );
+    sounds[i].setPanningModel(panModel);
+    sounds[i].setFilter(soundGains[i]);
+    sounds[i].setRolloffFactor(2);
+    sounds[i].setRefDistance(5000);
+    meshes[i].add(sounds[i]);
+    analysers[i] = new THREE.AudioAnalyser(sounds[i], 32);
+  }
 
   // Create an audio loader for the piece and load the noise sound into it
   audioLoader = new THREE.AudioLoader();
@@ -299,46 +316,38 @@ function init()
 	window.addEventListener('resize', onWindowResize, false);
 }
 
-function playRandomSound()
-{
-  var randomFile = '';
+// Choose, load, and play a random sound file in the given source index
+function playRandomSound(soundSourceIndex) {
+  if (soundSourceIndex > 3) {
+    throw new Error('Invalid soundSourceIndex passed to playRandomSound');
+  }
+  // Set this as a global so it is accessible by the bufferloader
+  // Probably can just add a param to bufferLoader but I'll test that later
+  // I'm not 100% on how THREE.js loaders work
+  curSoundSource = soundSourceIndex;
+
   var maxIndex;
-  // Decide if picking from 'L-' or 'R-' sampleset
-  if (Math.random() < 0.5) {
-    randomFile = 'L-';
+  var minIndex = 1; // The soundfile indices start at 1
+  var fileType = '.mp3';
+  var randomFile = './sounds/'; // Our sound bits are in the /sounds directory
+
+  // Decide if picking from 'L' or 'R' sampleset
+  if (soundSourceIndex  % 2 === 0) {
+    randomFile += 'L/S-';
+    maxIndex = 118; // There are 118 L sound bits from our split up soundfile
   } else {
-    randomFile = 'R-';
+    randomFile += 'R/S-';
+    maxIndex = 198; // There are 198 R sound bits from our split up soundfile`
   }
+  // Get the soundfile number, append it and the filetype
+  randomFile += Math.floor(Math.random() * (maxIndex - minIndex + 1)) + minIndex;
+  randomFile += fileType;
 
-  // THIS IS WHAT I'LL BE CHANGING BELOW TO LOAD SMALL AUDIO BITS
-  /*
-  for (i = 0; i < numSounds; i++)
-  {
-    mesh[i] = new THREE.Mesh(sphere, material_sphere[i] );
-    mesh[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
-    scene.add( mesh[i] );
+  // TODO: Add logic to only load sounds we don't previously have loaded
 
-    soundGain[i] = audioContext.createGain();
-
-    sound[i] = new THREE.PositionalAudio( listener );
-    sound[i].setPanningModel(panModel);
-    sound[i].setFilter(soundGain[i]);
-    sound[i].setRolloffFactor(2);
-    sound[i].setRefDistance(5000);
-    mesh[i].add( sound[i] );
-    //pointLight[i] = new THREE.PointLight( 0xffffff, .1 );
-    //mesh[i].add( pointLight[i] );
-    analyser[i] = new THREE.AudioAnalyser(sound[i], 32);
-  }
-  */
-
-  /*
-  for (i = 0; i < numBuffers; i++)
-  {
-    console.log('loading: ' + soundFiles[whichFile[i]])
-    audioLoader.load(soundFiles[whichFile[i]], bufferLoader);
-  }
-  */
+  // Now request that file bit
+  console.log('loading: ' + randomFile);
+  audioLoader.load(randomFile, bufferLoader);
 }
 
 // Properly handle window resizing
@@ -360,38 +369,40 @@ function animate()
 	render();
 }
 
-// Renders a frame
-function render()
-{
+// Not actually 'rendering' audio, but all the audio stuff that is done in the render step
+function renderAudio() {
   var now = audioContext.currentTime;
+
   if (soundsPlaying == 1)
   {
     if ((loopCount % 100) === 0)
     {
-      for (i = 0; i < numSounds; i++)
+      for (i = 0; i < numSoundSources; i++)
       {
         if (waitTimes[i] < (now - prevTime[i]))
         {
+          // Play a random sound from this soundsource 
+          playRandomSound(i);
           waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
           if (onOff[i] === 0)
           {
-            soundGain[i].gain.cancelScheduledValues(now);
+            soundGains[i].gain.cancelScheduledValues(now);
             onOff[i] = 1;
             if (volRandom)
             {
-              var randomVolume =  Math.random();
-              soundGain[i].gain.setTargetAtTime(((onOff[i] * randomVolume) + .0000001), now+0.001, .3);
+              var randomVolume = Math.random();
+              soundGains[i].gain.setTargetAtTime(((onOff[i] * randomVolume) + .0000001), now+0.001, .3);
             }
             else
             {
-              soundGain[i].gain.setTargetAtTime((onOff[i] + .0000001), now+0.001, .3);
+              soundGains[i].gain.setTargetAtTime((onOff[i] + .0000001), now+0.001, .3);
             }
           }
           else
           {
             onOff[i] = 0;
-            soundGain[i].gain.cancelScheduledValues(now);
-            soundGain[i].gain.setTargetAtTime(0.00000001, now, .2);
+            soundGains[i].gain.cancelScheduledValues(now);
+            soundGains[i].gain.setTargetAtTime(0.00000001, now, .2);
           }
           prevTime[i] = now;
 
@@ -399,15 +410,18 @@ function render()
       }
     }
 
-    for (i = 0; i < numSounds; i++)
+    for (i = 0; i < numSoundSources; i++)
     {
-      waveMagnitude[i] = analyser[i].getAverageFrequency() / analyzerDivisor;
+      waveMagnitude[i] = analysers[i].getAverageFrequency() / analyserDivisor;
     }
 
     loopCount++;
   }
+}
 
-  for (var j = 0; j < numWaves; j++)
+// Renders visual elements. Must be rendered AFTER audio is render
+function renderVisuals() {
+  for (j = 0; j < numWaves; j++)
   {
     material[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( waveMagnitude[j] * 10 );
     //material[j].uniforms[ 'bscalar' ].value = waveMagnitude[j] * 1 + 50;
@@ -464,6 +478,13 @@ function render()
 	renderer.render(scene, camera);
 }
 
+// Renders a frame
+function render()
+{
+  renderAudio();
+  renderVisuals();
+}
+
 // Randomly select from a variety of color palettes for the scene
 function getPaletteColor()
 {
@@ -472,22 +493,20 @@ function getPaletteColor()
   	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
 }
 
+// Loader function for THREE.js to load audio
 function bufferLoader(buffer)
 {
-  for (j = 0; j < (numSounds/numBuffers); j++)
-  {
-    var thisSound = bufferCounter;
-    sound[thisSound].setBuffer( buffer );
-    sound[thisSound].setRefDistance( refDist );
-    sound[thisSound].setLoop(true);
-    sound[thisSound].setStartTime(Math.random()*((buffer.length / 44100) - 6));
-    sound[thisSound].setPlaybackRate(ratios[Math.round(Math.random() * (ratios.length - 1))]);
-    sound[thisSound].panner.connect(convolver);
-    bufferCounter++
-  }
-  whenLoaded();
+  var index = curSoundSource;
+  sounds[index].setBuffer(buffer);
+  sounds[index].setRefDistance(refDist);
+  sounds[index].setLoop(false);
+  sounds[index].setStartTime(0);
+  sounds[index].setPlaybackRate(1);
+  sounds[index].panner.connect(convolver);
+  sounds[index].play();
 }
 
+// Loader function for THREE.js to load audio, specifically for the noise source
 function noiseLoader(buffer)
 {
   noiseSound.setBuffer(buffer);
@@ -500,22 +519,21 @@ function noiseLoader(buffer)
   whenLoaded();
 }
 
-// Called whenever a new sound is loaded
+// Called when noise and the convolver are loaded
 function whenLoaded()
 {
   soundsLoaded++;
   var now = audioContext.currentTime;
-  console.log(soundsLoaded);
 
-  // (numBuffers + 2) because the convolution buffer and noiseSound should also call this function
-  if (soundsLoaded == (numBuffers + 2))
+  // Once both the convolver and noise are loaded
+  if (soundsLoaded == 2)
   {
     soundsLoaded = 0;
 
-    for (i = 0; i < numSounds; i++)
+    for (i = 0; i < numSoundSources; i++)
     {
-      soundGain[i].gain.setValueAtTime(0,now);
-      sound[i].play();
+      soundGains[i].gain.setValueAtTime(0,now);
+      // sounds[i].play();
 
       prevTime[i] = now;
       waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
@@ -523,11 +541,11 @@ function whenLoaded()
 
       if (volRandom)
       {
-        soundGain[i].gain.setTargetAtTime(((onOff[i] * (Math.random())*2) + .0000001), now+0.001, 5);
+        soundGains[i].gain.setTargetAtTime(((onOff[i] * (Math.random())*2) + .0000001), now+0.001, 5);
       }
       else
       {
-        soundGain[i].gain.setTargetAtTime((onOff[i] + .0000001), now+0.001, 5);
+        soundGains[i].gain.setTargetAtTime((onOff[i] + .0000001), now+0.001, 5);
       }
       soundsPlaying = 1;
       //masterGain.gain.setTargetAtTime(1, now+1,1);
