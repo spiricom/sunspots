@@ -381,31 +381,11 @@ function renderAudio() {
       {
         if (waitTimes[i] < (now - prevTime[i]))
         {
-          // Play a random sound from this soundsource 
+          // Play a random sound from this soundsource
           playRandomSound(i);
           waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
-          if (onOff[i] === 0)
-          {
-            soundGains[i].gain.cancelScheduledValues(now);
-            onOff[i] = 1;
-            if (volRandom)
-            {
-              var randomVolume = Math.random();
-              soundGains[i].gain.setTargetAtTime(((onOff[i] * randomVolume) + .0000001), now+0.001, .3);
-            }
-            else
-            {
-              soundGains[i].gain.setTargetAtTime((onOff[i] + .0000001), now+0.001, .3);
-            }
-          }
-          else
-          {
-            onOff[i] = 0;
-            soundGains[i].gain.cancelScheduledValues(now);
-            soundGains[i].gain.setTargetAtTime(0.00000001, now, .2);
-          }
-          prevTime[i] = now;
 
+          prevTime[i] = now;
         }
       }
     }
