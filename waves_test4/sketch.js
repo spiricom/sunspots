@@ -40,9 +40,10 @@ var refDist = 10000;
 var waitTimes = [], prevTime = [], onOff = [];
 var waitMax = 15;
 var waitOffset = 4;
-var volRandom = 1;
+var volRandom = true;
+var MAX_VOLUME = 1.0;
 var analyserDivisor = 16;
-var soundsPlaying = 0;
+var soundsPlaying = false;
 var loopCount = 0;
 var valScalar = .1;
 var noiseMesh;
@@ -327,6 +328,7 @@ function playRandomSound(soundSourceIndex) {
   // Probably can just add a param to bufferLoader but I'll test that later
   // I'm not 100% on how THREE.js loaders work
   curSoundSource = soundSourceIndex;
+  var now = audioContext.currentTime;
 
   var maxIndex;
   var minIndex = 1; // The soundfile indices start at 1
@@ -344,6 +346,12 @@ function playRandomSound(soundSourceIndex) {
   // Get the soundfile number, append it and the filetype
   randomFile += Math.floor(Math.random() * (maxIndex - minIndex + 1)) + minIndex;
   randomFile += fileType;
+
+  // Randomize volume
+  if (volRandom)
+  {
+    soundGains[curSoundSource].gain.setTargetAtTime((Math.random() * MAX_VOLUME + 0.0000001), now, 0);
+  }
 
   // TODO: Add logic to only load sounds we don't previously have loaded
 
@@ -375,7 +383,7 @@ function animate()
 function renderAudio() {
   var now = audioContext.currentTime;
 
-  if (soundsPlaying == 1)
+  if (soundsPlaying)
   {
     if ((loopCount % 100) === 0)
     {
@@ -390,9 +398,6 @@ function renderAudio() {
         }
       }
     }
-
-
-
     loopCount++;
   }
 }
@@ -425,8 +430,7 @@ function renderVisuals() {
   while (pCount--) {
 
     // get the particle
-    var particle =
-      particles.vertices[pCount];
+    var particle = particles.vertices[pCount];
 
     // check if we need to reset
     if (particle.y < -50000) {
@@ -484,7 +488,7 @@ function getPaletteColor()
 function bufferLoader(buffer)
 {
   var index = curSoundSource;
-
+  // Create a new sound so we can have a new sound buffer
   sounds[index] = new THREE.PositionalAudio( listener );
   sounds[index].setPanningModel(panModel);
   sounds[index].setFilter(soundGains[index]);
@@ -537,13 +541,13 @@ function whenLoaded()
 
       if (volRandom)
       {
-        soundGains[i].gain.setTargetAtTime(((onOff[i] * (Math.random())*2) + .0000001), now+0.001, 5);
+        soundGains[i].gain.setTargetAtTime((Math.random() * MAX_VOLUME + 0.0000001), now, 0);
       }
       else
       {
-        soundGains[i].gain.setTargetAtTime((onOff[i] + .0000001), now+0.001, 5);
+        soundGains[i].gain.setTargetAtTime((MAX_VOLUME + 0.0000001), now, 0);
       }
-      soundsPlaying = 1;
+      soundsPlaying = true;
       //masterGain.gain.setTargetAtTime(1, now+1,1);
     }
     noiseSound.play();
