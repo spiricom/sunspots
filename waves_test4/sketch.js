@@ -33,15 +33,14 @@ var sounds = [];
 var analysers = [];
 var material_spheres = [];
 var audioLoader;
-var soundFiles = ['./sounds/sunspots_whale.mp3', './sounds/buchlaems41L.mp3','./sounds/buchlaems41R.mp3','./sounds/buchlaems42L.mp3','./sounds/buchlaems42R.mp3','./sounds/buchlaems43L.mp3','./sounds/buchlaems43R.mp3'];
 var noiseSoundFile = ['./sounds/synthnoise.ogg'];
 var whichFile = [4,3];
 var refDist = 10000;
 var waitTimes = [], prevTime = [], onOff = [];
-var waitMax = 15;
+var waitMax = 20;
 var waitOffset = 4;
 var volRandom = true;
-var MAX_VOLUME = 1.0;
+var MAX_VOLUME = 0.6;
 var analyserDivisor = 16;
 var soundsPlaying = false;
 var loopCount = 0;
@@ -281,7 +280,7 @@ function initAudioElements()
   for (var i = 0; i < numSoundSources; i++)
   {
     meshes[i] = new THREE.Mesh(sphere, material_spheres[i] );
-    meshes[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
+    meshes[i].position.set( soundPositions[i][0], soundPositions[i][1], soundPositions[i][2] );
     scene.add( meshes[i] );
     soundGains[i] = audioContext.createGain();
   }
@@ -418,7 +417,6 @@ function renderVisuals() {
 
   var pCount = particleCount;
   while (pCount--) {
-
     // get the particle
     var particle = particles.vertices[pCount];
 
@@ -448,8 +446,7 @@ function renderVisuals() {
     particle.velocity.y += (Math.random() * particleSpeedScale) - particleSpeedScaleHalf;
     particle.velocity.z += (Math.random() * particleSpeedScale) - particleSpeedScaleHalf;
     // and the position
-    particle.add(
-    particle.velocity);
+    particle.add(particle.velocity);
   }
 
   // flag to the particle system that we've changed its vertices.
@@ -484,7 +481,7 @@ function bufferLoader(buffer)
   sounds[index].setFilter(soundGains[index]);
   sounds[index].setRolloffFactor(2);
   sounds[index].setRefDistance(5000);
-  meshes[index].add(sounds[index]);
+
   analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
 
   sounds[index].setBuffer(buffer);
@@ -493,6 +490,7 @@ function bufferLoader(buffer)
   sounds[index].setStartTime(0);
   sounds[index].setPlaybackRate(1);
   sounds[index].panner.connect(convolver);
+  meshes[index].add(sounds[index]);
   sounds[index].play();
 }
 
