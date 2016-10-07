@@ -226,7 +226,7 @@ function initAudioElements()
 {
   // Create invisible spheres to attach the audio to (convenience)
   sphere = new THREE.SphereGeometry(100, 3, 2);
-  for (i = 0; i < numSoundSources; i++)
+  for (var i = 0; i < numSoundSources; i++)
   {
     //bumpMap: mapHeight, bumpScale: 10
     material_spheres[i] = new THREE.MeshPhongMaterial( { color: 0xffffff,
@@ -277,12 +277,13 @@ function initAudioElements()
   noiseMesh.add(noiseSound);
 
   // Setup each of the sound sources
-  for (i = 0; i < numSoundSources; i++)
+  for (var i = 0; i < numSoundSources; i++)
   {
     meshes[i] = new THREE.Mesh(sphere, material_spheres[i] );
     meshes[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
     scene.add( meshes[i] );
     soundGains[i] = audioContext.createGain();
+    /*
     sounds[i] = new THREE.PositionalAudio( listener );
     sounds[i].setPanningModel(panModel);
     sounds[i].setFilter(soundGains[i]);
@@ -290,6 +291,7 @@ function initAudioElements()
     sounds[i].setRefDistance(5000);
     meshes[i].add(sounds[i]);
     analysers[i] = new THREE.AudioAnalyser(sounds[i], 32);
+    */
   }
 
   // Create an audio loader for the piece and load the noise sound into it
@@ -377,23 +379,19 @@ function renderAudio() {
   {
     if ((loopCount % 100) === 0)
     {
-      for (i = 0; i < numSoundSources; i++)
+      for (var i = 0; i < numSoundSources; i++)
       {
         if (waitTimes[i] < (now - prevTime[i]))
         {
           // Play a random sound from this soundsource
           playRandomSound(i);
           waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
-
           prevTime[i] = now;
         }
       }
     }
 
-    for (i = 0; i < numSoundSources; i++)
-    {
-      waveMagnitude[i] = analysers[i].getAverageFrequency() / analyserDivisor;
-    }
+
 
     loopCount++;
   }
@@ -403,6 +401,16 @@ function renderAudio() {
 function renderVisuals() {
   for (j = 0; j < numWaves; j++)
   {
+    // Update the ceiling visualizers
+    for (var i = 0; i < numSoundSources; i++)
+    {
+      // Ensure we don't try use an analyser for a sound not yet loaded
+      if (analysers[i] != undefined)
+      {
+        waveMagnitude[i] = analysers[i].getAverageFrequency() / analyserDivisor;
+      }
+    }
+
     material[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( waveMagnitude[j] * 10 );
     //material[j].uniforms[ 'bscalar' ].value = waveMagnitude[j] * 1 + 50;
     material[j].uniforms[ 'amp' ].value = waveMagnitude[j] * 1 + 50;
@@ -450,8 +458,7 @@ function renderVisuals() {
     particle.velocity);
   }
 
-  // flag to the particle system
-  // that we've changed its vertices.
+  // flag to the particle system that we've changed its vertices.
   particleSystem.geometry.verticesNeedUpdate = true;
 
   controls.update(clock.getDelta());
@@ -468,15 +475,24 @@ function render()
 // Randomly select from a variety of color palettes for the scene
 function getPaletteColor()
 {
-  	var myIndex = (Math.round(Math.random() * (myPalette.length - 1)));
-  	myColor = myPalette[myIndex];
-  	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
+	var myIndex = (Math.round(Math.random() * (myPalette.length - 1)));
+	myColor = myPalette[myIndex];
+	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
 }
 
 // Loader function for THREE.js to load audio
 function bufferLoader(buffer)
 {
   var index = curSoundSource;
+
+  sounds[index] = new THREE.PositionalAudio( listener );
+  sounds[index].setPanningModel(panModel);
+  sounds[index].setFilter(soundGains[index]);
+  sounds[index].setRolloffFactor(2);
+  sounds[index].setRefDistance(5000);
+  meshes[index].add(sounds[index]);
+  analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
+
   sounds[index].setBuffer(buffer);
   sounds[index].setRefDistance(refDist);
   sounds[index].setLoop(false);
@@ -510,7 +526,7 @@ function whenLoaded()
   {
     soundsLoaded = 0;
 
-    for (i = 0; i < numSoundSources; i++)
+    for (var i = 0; i < numSoundSources; i++)
     {
       soundGains[i].gain.setValueAtTime(0,now);
       // sounds[i].play();
