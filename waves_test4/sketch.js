@@ -341,13 +341,12 @@ function playRandomSound(soundSourceIndex) {
   // Randomize volume
   if (volRandom)
   {
-    soundGains[curSoundSource].gain.setTargetAtTime((Math.random() * MAX_VOLUME + 0.0000001), now, 0);
+    soundGains[curSoundSource].gain.setValueAtTime((Math.random() * MAX_VOLUME + 0.0000001), now);
   }
 
   // TODO: Add logic to only load sounds we don't previously have loaded
 
-  // Now request that file bit
-  console.log('loading: ' + randomFile);
+  // Now request that file portion
   audioLoader.load(randomFile, bufferLoader);
 }
 
@@ -524,7 +523,6 @@ function whenLoaded()
     for (var i = 0; i < numSoundSources; i++)
     {
       soundGains[i].gain.setValueAtTime(0,now);
-      // sounds[i].play();
 
       prevTime[i] = now;
       waitTimes[i] = ((Math.random() * waitMax) + waitOffset);
@@ -532,14 +530,13 @@ function whenLoaded()
 
       if (volRandom)
       {
-        soundGains[i].gain.setTargetAtTime((Math.random() * MAX_VOLUME + 0.0000001), now, 0);
+        soundGains[i].gain.setValueAtTime((Math.random() * MAX_VOLUME + 0.0000001), now);
       }
       else
       {
-        soundGains[i].gain.setTargetAtTime((MAX_VOLUME + 0.0000001), now, 0);
+        soundGains[i].gain.setValueAtTime((MAX_VOLUME + 0.0000001), now);
       }
       soundsPlaying = true;
-      //masterGain.gain.setTargetAtTime(1, now+1,1);
     }
     noiseSound.play();
   }
