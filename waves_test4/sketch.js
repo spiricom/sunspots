@@ -284,15 +284,6 @@ function initAudioElements()
     meshes[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
     scene.add( meshes[i] );
     soundGains[i] = audioContext.createGain();
-    /*
-    sounds[i] = new THREE.PositionalAudio( listener );
-    sounds[i].setPanningModel(panModel);
-    sounds[i].setFilter(soundGains[i]);
-    sounds[i].setRolloffFactor(2);
-    sounds[i].setRefDistance(5000);
-    meshes[i].add(sounds[i]);
-    analysers[i] = new THREE.AudioAnalyser(sounds[i], 32);
-    */
   }
 
   // Create an audio loader for the piece and load the noise sound into it
