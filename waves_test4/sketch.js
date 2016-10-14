@@ -23,6 +23,7 @@ var audioContext, listener;
 var soundsLoaded = 0;
 var numSoundSources = 4;
 var curSoundSource;
+var curSoundFile;
 var numBuffers = 2;
 var bufferCounter = 0;
 var soundPositions = [[-10000,30,0], [10000,80,0], [0,0,-10000],[0,-50,10000], [-5000,30,5000], [5000,80,5000],[-5000, 0, -5000], [5000, -50, -5000]];
@@ -30,6 +31,7 @@ var soundPositions = [[-10000,30,0], [10000,80,0], [0,0,-10000],[0,-50,10000], [
 var ratios = [1];
 var soundGains = [];
 var sounds = [];
+var loadedSounds = {};
 var analysers = [];
 var material_spheres = [];
 var audioLoader;
@@ -336,6 +338,7 @@ function playRandomSound(soundSourceIndex) {
   // Get the soundfile number, append it and the filetype
   randomFile += Math.floor(Math.random() * (maxIndex - minIndex + 1)) + minIndex;
   randomFile += fileType;
+  curSoundFile = randomFile;
 
   // Randomize volume
   if (volRandom)
@@ -343,10 +346,16 @@ function playRandomSound(soundSourceIndex) {
     soundGains[curSoundSource].gain.setValueAtTime((Math.random() * MAX_VOLUME + 0.0000001), now);
   }
 
-  // TODO: Add logic to only load sounds we don't previously have loaded
-
-  // Now request that file portion
-  audioLoader.load(randomFile, bufferLoader);
+  if (loadedSounds[curSoundFile] === undefined)
+  {
+    audioLoader.load(curSoundFile, bufferLoader);
+  }
+  else
+  {
+    sounds[curSoundSource] = loadedSounds[curSoundFile];
+    sounds[curSoundSource].setStartTime(0);
+    sounds[curSoundSource].play();
+  }
 }
 
 // Properly handle window resizing
@@ -482,8 +491,6 @@ function bufferLoader(buffer)
   sounds[index].setRolloffFactor(2);
   sounds[index].setRefDistance(5000);
 
-  analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
-
   sounds[index].setBuffer(buffer);
   sounds[index].setRefDistance(refDist);
   sounds[index].setLoop(false);
@@ -491,6 +498,10 @@ function bufferLoader(buffer)
   sounds[index].setPlaybackRate(1);
   sounds[index].panner.connect(convolver);
   meshes[index].add(sounds[index]);
+
+  analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
+  // Add the sound to the object map
+  loadedSounds[curSoundFile] = sounds[index];
   sounds[index].play();
 }
 
