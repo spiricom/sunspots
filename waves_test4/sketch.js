@@ -42,7 +42,7 @@ var waitTimes = [], prevTime = [], onOff = [];
 var waitMax = 20;
 var waitOffset = 4;
 var volRandom = true;
-var MAX_VOLUME = 0.01;
+var MAX_VOLUME = 0.02;
 var analyserDivisor = 16;
 var soundsPlaying = false;
 var loopCount = 0;
