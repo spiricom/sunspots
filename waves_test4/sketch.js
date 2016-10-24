@@ -236,6 +236,7 @@ function initAudioElements()
   convolver = audioContext.createConvolver();
   var reverbGain = audioContext.createGain();
   // grab audio track via XHR for convolver node
+  // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
   reverbGain.gain.value = REVERB_GAIN;
   var soundSource, SpringReverbBuffer;
 
@@ -328,10 +329,10 @@ function playRandomSound(soundSourceIndex) {
   randomFile += fileType;
   curSoundFile = randomFile;
 
-  // Randomize volume
   if (RANDOM_VOLUME)
   {
-    soundGains[curSoundSource].gain.setValueAtTime((Math.random() * MAX_VOLUME + 0.0000001), now);
+    // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
+    soundGains[curSoundSource].gain.value = Math.random() * MAX_VOLUME + 0.0000001;
   }
 
   if (loadedSounds[curSoundFile] === undefined)
@@ -518,7 +519,8 @@ function whenLoaded()
 
     for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
     {
-      soundGains[i].gain.setValueAtTime(0,now);
+      // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
+      soundGains[i].gain.value = 0;
 
       prevTime[i] = now;
       waitTimes[i] = ((Math.random() * WAIT_MAX) + WAIT_OFFSET);
@@ -526,11 +528,13 @@ function whenLoaded()
 
       if (RANDOM_VOLUME)
       {
-        soundGains[i].gain.setValueAtTime((Math.random() * MAX_VOLUME + 0.0000001), now);
+        // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
+        soundGains[i].gain.value = Math.random() * MAX_VOLUME + 0.0000001;
       }
       else
       {
-        soundGains[i].gain.setValueAtTime((MAX_VOLUME + 0.0000001), now);
+        // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
+        soundGains[i].gain.value = MAX_VOLUME + 0.0000001;
       }
       soundsPlaying = true;
     }
