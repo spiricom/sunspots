@@ -529,7 +529,7 @@ function whenLoaded()
       if (RANDOM_VOLUME)
       {
         // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
-        soundGains[i].gain.value = Math.random() * MAX_VOLUME + 0.0000001;
+        soundGains[i].gain.setValueAtTime((Math.random() * MAX_VOLUME + 0.0000001), now);
       }
       else
       {
