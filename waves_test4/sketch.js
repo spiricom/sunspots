@@ -29,7 +29,7 @@ var start = Date.now();
 const REVERB_SOUND_FILE = './reverbs/BX20E103.wav';
 const NOISE_SOUND_FILE = './sounds/synthnoise.ogg';
 
-const PAN_MODEL = 'equalpower';
+const PAN_MODEL = 'HRTF';
 
 const NUMBER_OF_WAVES = 3;
 const NUMBER_OF_DOMES = 5;
