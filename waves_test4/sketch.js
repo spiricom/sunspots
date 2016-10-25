@@ -47,7 +47,7 @@ const BACKGROUND_COLOR = 0x0;
 const WAIT_MAX = 20;
 const WAIT_OFFSET = 4;
 const RANDOM_VOLUME = true;
-const MAX_VOLUME = 0.5;
+const MAX_VOLUME = 0.0;
 const ANALYSER_DIVISOR = 16;
 
 // Things that were commented out for one reason or another
@@ -529,7 +529,7 @@ function whenLoaded()
       if (RANDOM_VOLUME)
       {
         // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
-        soundGains[i].gain.setValueAtTime((Math.random() * MAX_VOLUME + 0.0000001), now);
+        soundGains[i].gain.value = Math.random() * MAX_VOLUME + 0.0000001;
       }
       else
       {
