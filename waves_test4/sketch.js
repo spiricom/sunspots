@@ -47,7 +47,7 @@ const BACKGROUND_COLOR = 0x0;
 const WAIT_MAX = 20;
 const WAIT_OFFSET = 4;
 const RANDOM_VOLUME = true;
-const MAX_VOLUME = 0.0;
+const MAX_VOLUME = 0.25;
 const ANALYSER_DIVISOR = 16;
 
 // Things that were commented out for one reason or another
