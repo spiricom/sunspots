@@ -15,9 +15,22 @@ wind speed tracking amplitude
 
 some extruded straight lines flying around?
 
+[x] bloom and blur
+
+---------------------
+
 camera
   lock closer in?
   jump between close and far?
+  rotate a bit?
+  should viewer have control?
+  connect pos+rot?
 
-[x] bloom and blur
+modulate hex cloth brightness
 
+fix hex cloths floating off forever
+
+make all main cloths fit in moving window of color space
+  less distinguishable as individuals
+
+  

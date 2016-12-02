@@ -47,9 +47,9 @@ var params = {
   projection: 'normal',
   background: false,
   exposure: 1.0,
-  bloomThreshold: 0.3,
-  bloomStrength: 0.4,
-  bloomRadius: 0.0,
+  bloomThreshold: 0.25,
+  bloomStrength: 0.2,
+  bloomRadius: 0.1,
 };
 
 var EasingFunctions = {
