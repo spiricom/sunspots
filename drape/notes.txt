@@ -1,0 +1,23 @@
+wind speed tracking amplitude
+
+[x] background hard edge cloth
+  [x] clipping through invisible cloth?
+
+[x] other creatures in near bg
+  [x] use ortho cam?
+  [x] also linked to audio but inverted (so alternate w/ front)
+  [x] get drifting cloths passing through view more often
+  [x] keep each creature within a given hue range (different range per creature)
+
+[x] play with mapping shading vars to audio
+
+[x] try tying 1 sound to all the colors (with offset+step)
+
+some extruded straight lines flying around?
+
+camera
+  lock closer in?
+  jump between close and far?
+
+[x] bloom and blur
+
