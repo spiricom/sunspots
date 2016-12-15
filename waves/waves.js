@@ -80,7 +80,7 @@ function initVisualElements()
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
 
-  renderer.shadowMapEnabled = true;
+  renderer.shadowMap.enabled = true;
   renderer.shadowMapSoft = true;
 
   renderer.shadowCameraNear = 3;
@@ -89,8 +89,8 @@ function initVisualElements()
 
   renderer.shadowMapBias = 0.0039;
   renderer.shadowMapDarkness = 0.5;
-  renderer.shadowMapWidth = 1024;
-  renderer.shadowMapHeight = 1024;
+  // renderer.shadow.mapSize.width = 1024;
+  // renderer.shadow.mapSize.height = 1024;
 
   document.body.appendChild( renderer.domElement );
 
@@ -101,16 +101,16 @@ function initVisualElements()
   scene.add( dirLight );
 
   dirLight.castShadow = true;
-  dirLight.shadowMapWidth = 2048;
-  dirLight.shadowMapHeight = 2048;
+  // dirLight.shadowMapWidth = 2048;
+  // dirLight.shadowMapHeight = 2048;
 
   var d = 50;
-  dirLight.shadowCameraLeft = -d;
-  dirLight.shadowCameraRight = d;
-  dirLight.shadowCameraTop = d;
-  dirLight.shadowCameraBottom = -d;
-  dirLight.shadowCameraFar = 3500;
-  dirLight.shadowBias = -0.0001;
+  dirLight.shadow.camera.left = -d;
+  dirLight.shadow.camera.right = d;
+  dirLight.shadow.camera.top = d;
+  dirLight.shadow.camera.bottom = -d;
+  dirLight.shadow.camera.far = 3500;
+  dirLight.shadow.bias = -0.0001;
 
   var hemiLight = [];
   hemiLight[0] = new THREE.HemisphereLight( getPaletteColor(), getPaletteColor(), .3 );
@@ -229,6 +229,8 @@ function initAudioElements()
   }
   // Init audio context
   listener = new THREE.AudioListener();
+  // audioContext =  new (window.AudioContext || window.webkitAudioContext)();
+  // audioContext = window.AudioContext;
   audioContext = THREE.AudioContext;
   // Attach audio listener to our moving camera
   camera.add(listener);
@@ -262,7 +264,7 @@ function initAudioElements()
   scene.add(noiseMesh);
   noiseSound = new THREE.PositionalAudio(listener);
 
-  noiseSound.setPanningModel(PAN_MODEL);
+  // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
   noiseSound.setRolloffFactor(2);
   noiseMesh.add(noiseSound);
@@ -342,7 +344,7 @@ function playRandomSound(soundSourceIndex) {
   else
   {
     sounds[curSoundSource] = loadedSounds[curSoundFile];
-    sounds[curSoundSource].setStartTime(0);
+    sounds[curSoundSource].startTime = 0;
     sounds[curSoundSource].play();
   }
 }
@@ -475,7 +477,7 @@ function bufferLoader(buffer)
   var index = curSoundSource;
   // Create a new sound so we can have a new sound buffer
   sounds[index] = new THREE.PositionalAudio( listener );
-  sounds[index].setPanningModel(PAN_MODEL);
+  // sounds[index].setPanningModel(PAN_MODEL);
   sounds[index].setFilter(soundGains[index]);
   sounds[index].setRolloffFactor(2);
   sounds[index].setRefDistance(5000);
@@ -483,7 +485,7 @@ function bufferLoader(buffer)
   sounds[index].setBuffer(buffer);
   sounds[index].setRefDistance(REF_DIST);
   sounds[index].setLoop(false);
-  sounds[index].setStartTime(0);
+  sounds[index].startTime = 0;
   sounds[index].setPlaybackRate(1);
   sounds[index].panner.connect(convolver);
   meshes[index].add(sounds[index]);
@@ -500,7 +502,7 @@ function noiseLoader(buffer)
   noiseSound.setBuffer(buffer);
   noiseSound.setRefDistance(100);
   noiseSound.setLoop(true);
-  noiseSound.setStartTime(Math.random()*((buffer.length / 44100) - 6));
+  noiseSound.startTime = (Math.random()*((buffer.length / 44100) - 6));
   noiseSound.setPlaybackRate(.7);
   noiseSound.panner.connect(convolver);
   whenLoaded();
