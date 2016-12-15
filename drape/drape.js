@@ -10,6 +10,9 @@ var clothsPerGroup = 4;
 var audioEnabled = true;
 var keepClothsCentered = true;
 
+var guiEnabled = false;
+var controlsEnabled = false;
+
 // MISC GLOBALS
 var gl;
 var scene;
@@ -204,24 +207,28 @@ function init() {
   //renderer.toneMapping = THREE.ReinhardToneMapping;
   renderer.gammaInput = true;
 
-  var gui = new dat.GUI();
+  if (guiEnabled) {
+    var gui = new dat.GUI();
 
-  gui.add( params, 'exposure', 0.1, 2 );
-  gui.add( params, 'bloomThreshold', 0.0, 1.0 ).onChange( function(value) {
-      bloomPass.threshold = Number(value);
-  });
-  gui.add( params, 'bloomStrength', 0.0, 3.0 ).onChange( function(value) {
-      bloomPass.strength = Number(value);
-  });
-  gui.add( params, 'bloomRadius', 0.0, 1.0 ).onChange( function(value) {
-      bloomPass.radius = Number(value);
-  });
-  gui.open();
+    gui.add( params, 'exposure', 0.1, 2 );
+    gui.add( params, 'bloomThreshold', 0.0, 1.0 ).onChange( function(value) {
+        bloomPass.threshold = Number(value);
+    });
+    gui.add( params, 'bloomStrength', 0.0, 3.0 ).onChange( function(value) {
+        bloomPass.strength = Number(value);
+    });
+    gui.add( params, 'bloomRadius', 0.0, 1.0 ).onChange( function(value) {
+        bloomPass.radius = Number(value);
+    });
+    gui.open();
+  }
 
   // camera controls
-  controls = new THREE.TrackballControls( camera, renderer.domElement );
-  controls.noZoom = false;
-  controls.noPan = true;
+  if (controlsEnabled) {
+    controls = new THREE.TrackballControls( camera, renderer.domElement );
+    controls.noZoom = false;
+    controls.noPan = true;
+  }
 
   // CLOTHS /////////////////////
 
@@ -248,37 +255,37 @@ function init() {
   // orbiters
   var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
   group.colorScheme = "fixed";
-  group.pos = new THREE.Vector3(1000, 0, 0);
+  group.pos = new THREE.Vector3(5000, 0, 0);
   group.vel = new THREE.Vector3(-drifterSpeed, 0, 0);
   allClothGroups.push(group);
 
   var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
   group.colorScheme = "fixed";
-  group.pos = new THREE.Vector3(0, 1000, 0);
+  group.pos = new THREE.Vector3(0, 5000, 0);
   group.vel = new THREE.Vector3(0, (-drifterSpeed), 0);
   allClothGroups.push(group);
 
   var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
   group.colorScheme = "fixed";
-  group.pos = new THREE.Vector3(0, 0, 1000);
+  group.pos = new THREE.Vector3(0, 0, 5000);
   group.vel = new THREE.Vector3(0, 0, (-drifterSpeed));
   allClothGroups.push(group);
 
   var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
   group.colorScheme = "fixed";
-  group.pos = new THREE.Vector3(-1000, 0, 0);
+  group.pos = new THREE.Vector3(-5000, 0, 0);
   group.vel = new THREE.Vector3(-(-drifterSpeed), 0, 0);
   allClothGroups.push(group);
 
   var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
   group.colorScheme = "fixed";
-  group.pos = new THREE.Vector3(0, -1000, 0);
+  group.pos = new THREE.Vector3(0, -5000, 0);
   group.vel = new THREE.Vector3(0, -(-drifterSpeed), 0);
   allClothGroups.push(group);
 
   var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
   group.colorScheme = "fixed";
-  group.pos = new THREE.Vector3(0, 0, -1000);
+  group.pos = new THREE.Vector3(0, 0, -5000);
   group.vel = new THREE.Vector3(0, 0, -(-drifterSpeed));
   allClothGroups.push(group);
 
@@ -449,7 +456,9 @@ function update() {
   }
 
   // update controls and camera
-  controls.update();
+  if (controlsEnabled) {
+    controls.update();
+  }
   camera.lookAt( scene.position );
   listener.setOrientation(camera.position.x, camera.position.y, camera.position.z, 0,1,0);
 
