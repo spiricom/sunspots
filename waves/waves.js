@@ -39,7 +39,8 @@ const NUMBER_OF_DOMES = 5;
 const PALETTES = [[75,0,0],[72,26,19],[113,0,1],[112,16,17],[81,48,38],[103,38,25],[82,65,62],[147,0,2],[126,54,59],[107,70,58],[165,22,23],[171,5,10],[173,36,35],[147,71,65],[187,57,42],[128,95,84],[138,112,106],[161,104,93],[202,93,55],[208,150,132],[109,51,20],[81,72,14],[102,84,27],[185,100,0],[187,107,61],[214,96,7],[193,113,9],[183,121,40],[155,135,101],[152,144,138],[177,139,75],[196,131,92],[227,119,54],[198,141,51],[212,134,25],[172,152,142],[234,139,72],[204,154,84],[174,164,158],[223,157,62],[232,150,93],[211,164,111],[208,183,143],[233,203,160],[123,124,101],[185,191,188],[73,99,105],[76,122,137],[138,157,154],[14,19,40],[1,31,50],[26,31,52],[25,42,79],[2,63,91],[18,79,127],[53,84,111],[110,116,125],[173,175,181],[6,2,20],[57,53,61],[88,84,92],[103,99,105],[48,25,34],[170,135,146]];
 const BACKGROUND_COLOR = 0x0;
 
-const PARTICLE_COUNT = 500;
+const PARTICLE_COUNT = 0;
+// const PARTICLE_COUNT = 500;
 const PARTICLE_SPEED_SCALE = 1;
 
 const WORLD_WIDTH = 128, WORLD_DEPTH = 128;
@@ -170,6 +171,8 @@ function initVisualElements()
   // SHADERS
   var vertexShader = document.getElementById( 'vertexShader' ).textContent;
   var fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
+
+  // DOMES
   var skyGeo = [];
   var dome = [];
   for (var j = 0; j < NUMBER_OF_DOMES; j++)
@@ -211,7 +214,6 @@ function initVisualElements()
     };
     material[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.DoubleSide } );
     meshes[j] = new THREE.Mesh( geometry[j], material[j] );
-    meshes[j].receiveShadow = true;
     scene.add( meshes[j] );
   }
 
@@ -483,7 +485,8 @@ function bufferLoader(buffer)
   sounds[index].startTime = 0;
   sounds[index].setPlaybackRate(1);
   sounds[index].panner.connect(convolver);
-  meshes[index].add(sounds[index]);
+  
+  // meshes[index].add(sounds[index]);
 
   analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
   // Add the sound to the object map
