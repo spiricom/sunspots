@@ -1,6 +1,7 @@
 
 var fps = 60;
 var centerX, centerY;
+var renderer;
 var vpR; // radius of biggest circle that fits in viewport
 var t = 0;
 
@@ -11,17 +12,36 @@ function setup() {
   centerY = viewportHeight/2;
   vpR = min(centerX, centerY);
 
-  createCanvas(viewportWidth, viewportHeight);
+  renderer = createCanvas(viewportWidth, viewportHeight);
   frameRate(fps);
   ellipseMode(RADIUS);
   angleMode(DEGREES);
+
+  print = console.log;
 }
 
-function drawPlanet(planet, drawRings, drawPlanets) {
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  var viewportWidth = window.innerWidth;
+  var viewportHeight = window.innerHeight;
+  centerX = viewportWidth/2;
+  centerY = viewportHeight/2;
+  vpR = min(centerX, centerY);
+}
+
+var trailDatas = [];
+
+function drawPlanet(planet, drawRings, drawPlanets, update) {
   // rings
   stroke(226, 226, 224);
   strokeWeight(3/vpR);
   var p = planet;
+
+  // identify planets by tree structure rather than by object reference
+  if (p.idx === undefined) {
+    p.idx = numPlanets;
+    numPlanets++;
+  }
 
   var orbitTheta = 360 * t / p.period;
 
@@ -52,6 +72,17 @@ function drawPlanet(planet, drawRings, drawPlanets) {
       ellipse(p.orbitR, 0, p.r);
     }
 
+
+    var curMat = renderer.drawingContext.currentTransform;
+    var invMat = curMat;
+    // var invMat = curMat.inverse();
+    var x = p.orbitR;
+    var y = 0;
+    var pt = {
+      x: x * invMat.a + y * invMat.c + invMat.e,
+      y: x * invMat.b + y * invMat.d + invMat.f
+    };
+    trailDatas.push(pt);
   }
   pop();
 
@@ -67,6 +98,8 @@ function drawPlanet(planet, drawRings, drawPlanets) {
     pop();
   }
 }
+
+var numPlanets = 0;
 
 function draw() {
   var systemRoot = {
@@ -121,12 +154,17 @@ function draw() {
     ],
   };
 
+
   background(245, 245, 243);
   t = frameCount / fps;
 
   push();
   translate(centerX, centerY);
   translate(centerX * 0.2, centerX * 0.3);
+
+
+  drawPlanet(systemRoot, false, false, true);
+
   scale(vpR);
   {
     drawPlanet(systemRoot, true, false);
@@ -145,6 +183,10 @@ function draw() {
   }
   pop();
 
+
+  for (var i = 0; i < trailDatas.length; i++) {
+    ellipse(trailDatas[i].x, trailDatas[i].y, 10);
+  }
 }
 
 

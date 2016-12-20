@@ -13260,6 +13260,12 @@ p5.Renderer2D.prototype.translate = function(x, y) {
   return this;
 };
 
+
+p5.Renderer2D.prototype.getTransform = function() {
+  // return "test";
+  return this.drawingContext.currentTransform;
+};
+
 //////////////////////////////////////////////
 // TYPOGRAPHY
 //
@@ -14715,6 +14721,12 @@ p5.prototype.translate = function(x, y, z) {
   }
   return this;
 };
+
+p5.prototype.getTransform = function() {
+  // return "test";
+  return this._renderer.drawingContext.currentTransform;
+};
+
 
 module.exports = p5;
 
