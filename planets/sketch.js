@@ -17,72 +17,119 @@ function setup() {
   angleMode(DEGREES);
 }
 
+function drawPlanet(planet, drawRings, drawPlanets) {
+  // rings
+  stroke(226, 226, 224);
+  strokeWeight(3/vpR);
+  var p = planet;
+
+  var orbitTheta = 360 * t / p.period;
+
+  push();
+  rotate(orbitTheta);
+  {
+    if (drawRings) {
+      // ring
+      noFill();
+      ellipse(0, 0, p.orbitR);
+
+      // ring ticks
+      var numTicks = p.numTicks;
+      for (var j = 0; j < numTicks; j++) {
+        var theta = map(j, 0, numTicks, 0, 360);
+        var v = createVector(cos(theta), sin(theta));
+        var v0 = p5.Vector.mult(v, p.orbitR - p.tickInner);
+        var v1 = p5.Vector.mult(v, p.orbitR + p.tickOuter);
+        line(v0.x, v0.y, v1.x, v1.y);
+      }
+    }
+
+    // planet
+    if (drawPlanets) {
+      noStroke();
+      if (planet.color) fill(planet.color);
+      else              fill(131, 66, 60);
+      ellipse(p.orbitR, 0, p.r);
+    }
+
+  }
+  pop();
+
+  // children
+  if (p.orbiters) {
+    push();
+    translate(cos(orbitTheta) * p.orbitR, sin(orbitTheta) * p.orbitR);
+    {
+      for (var i = 0; i < p.orbiters.length; i++) {
+        drawPlanet(p.orbiters[i], drawRings, drawPlanets);
+      }
+    }
+    pop();
+  }
+}
 
 function draw() {
-  var planets = [
-    {
-      orbitR: 0.85,
-      r: 0.02,
-      period: 16,
-      tickOuter: 0.025,
-      tickInner: 0.05,
-      numTicks: 30,
-    },
-    {
-      orbitR: 0.3,
-      r: 0.03,
-      period: 8,
-      tickOuter: 0.1,
-      tickInner: 0.05,
-      numTicks: 12,
-    },
-    {
-      orbitR: 2,
-      r: 0.03,
-      period: 32,
-      tickOuter: 0.1,
-      tickInner: 2,
-      numTicks: 6,
-    },
-  ];
-
+  var systemRoot = {
+    color: color(255, 88, 0),
+    orbitR: 0,
+    r: 0.1,
+    period: 1,
+    numTicks: 0,
+    orbiters: [
+      {
+        orbitR: 0.85,
+        r: 0.02,
+        period: 16,
+        tickOuter: 0.025,
+        tickInner: 0.05,
+        numTicks: 30,
+      },
+      {
+        orbitR: 0.35,
+        r: 0.03,
+        period: 8,
+        tickOuter: 0.03,
+        tickInner: 0.02,
+        numTicks: 12,
+        orbiters: [
+          {
+            orbitR: 0.1,
+            r: 0.02,
+            period: -4,
+            tickOuter: 0.025,
+            tickInner: 0.01,
+            numTicks: 6,
+          },
+          {
+            orbitR: 0.15,
+            r: 0.02,
+            period: 2,
+            tickOuter: 0.025,
+            tickInner: 0.01,
+            numTicks: 6,
+          },
+        ],
+      },
+      {
+        orbitR: 2,
+        r: 0.03,
+        period: 32,
+        tickOuter: 0.1,
+        tickInner: 2,
+        numTicks: 6,
+      },
+    ],
+  };
 
   background(245, 245, 243);
-  // stroke(226, 226, 224);
   t = frameCount / fps;
-
 
   push();
   translate(centerX, centerY);
   translate(centerX * 0.2, centerX * 0.3);
   scale(vpR);
   {
-
-    // rings
-    stroke(226, 226, 224);
-    strokeWeight(3/vpR);
-    for (var i = 0; i < planets.length; i++) {
-      var p = planets[i];
-
-      push();
-      rotate(360 * t / p.period);
-      {
-        // ring
-        noFill();
-        ellipse(0, 0, p.orbitR);
-
-        // ring ticks
-        var numTicks = p.numTicks;
-        for (var j = 0; j < numTicks; j++) {
-          var theta = map(j, 0, numTicks, 0, 360);
-          var v = createVector(cos(theta), sin(theta));
-          var v0 = p5.Vector.mult(v, p.orbitR - p.tickInner);
-          var v1 = p5.Vector.mult(v, p.orbitR + p.tickOuter);
-          line(v0.x, v0.y, v1.x, v1.y);
-        }
-      }
-      pop();
-    }
+    drawPlanet(systemRoot, true, false);
 
     // vertical
     strokeWeight(4/vpR);
@@ -94,28 +141,7 @@ function draw() {
     line(0, 0, 0, -vpR);
     line(0, 0, -0.1, -vpR);
 
-    stroke(226, 226, 224);
-    // planets
-    for (var i = 0; i < planets.length; i++) {
-      var p = planets[i];
-
-      push();
-      rotate(360 * t / p.period);
-      {
-        // planet
-        noStroke();
-        fill(131, 66, 60);
-        ellipse(p.orbitR, 0, p.r);
-      }
-      pop();
-    }
-
-    // sun
-    noStroke();
-    // strokeWeight(8/vpR);
-    // stroke(245, 245, 243);
-    fill(255, 88, 0);
-    ellipse(0, 0, 0.1);
+    drawPlanet(systemRoot, false, true);
   }
   pop();
 
@@ -125,7 +151,6 @@ function draw() {
 /*
  *
  * grouping adjacent
- * note line
  * do circles have notes
  * stretch orbits of nearby to get closer
  *
