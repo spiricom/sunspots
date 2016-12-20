@@ -32,11 +32,6 @@ function windowResized() {
 var trailDatas = [];
 
 function drawPlanet(planet, drawRings, drawPlanets, update) {
-  // ring settings
-  // stroke(226, 226, 224);
-  stroke(226 * 0.6, 226 * 0.6, 224 * 0.6);
-  strokeWeight(1/vpR);
-
   var p = planet;
 
   // identify planets by tree structure rather than by object reference
@@ -165,6 +160,28 @@ function draw() {
   background(245, 245, 243);
   t = frameCount / fps;
 
+
+
+  // trails
+  var numTrailSegments = 1000;
+  trailDatas.splice(0, max(0, trailDatas.length-numTrailSegments));
+
+  // fill(226, 226, 224);
+  // noFill();
+  // noStroke();
+  stroke(0);
+  for (var i = 0; i < trailDatas.length; i++) {
+    var a = i/numTrailSegments;
+    // fill(226 * ((1-a) * 0.7 + 0.3), 226 * ((1-a) * 0.7 + 0.3), 224 * ((1-a) * 0.7 + 0.3));
+    fill(255);
+    strokeWeight(1 * a);
+    ellipse(trailDatas[i].x, trailDatas[i].y, 8 * (a * 0.9 + 0.1) );
+  }
+
+
+  // stroke(226 * 0.6, 226 * 0.6, 224 * 0.6);
+  stroke(226 * 0.2, 226 * 0.2, 224 * 0.2);
+  strokeWeight(1/vpR);
   push();
   translate(centerX, centerY);
   translate(centerX * 0.2, centerX * 0.2);
@@ -187,21 +204,6 @@ function draw() {
 
   }
   pop();
-
-
-  // trails
-  var numTrailSegments = 1000;
-  trailDatas.splice(0, max(0, trailDatas.length-numTrailSegments));
-
-  // fill(226, 226, 224);
-  // noFill();
-  noStroke();
-  for (var i = 0; i < trailDatas.length; i++) {
-    var a = i/numTrailSegments;
-    fill(226 * ((1-a) * 0.7 + 0.3), 226 * ((1-a) * 0.7 + 0.3), 224 * ((1-a) * 0.7 + 0.3));
-    // strokeWeight(2 * a);
-    ellipse(trailDatas[i].x, trailDatas[i].y, 5 * (a * 0.8 + 0.2) );
-  }
 
 
   push();
