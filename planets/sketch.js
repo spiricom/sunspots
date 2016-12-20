@@ -32,9 +32,11 @@ function windowResized() {
 var trailDatas = [];
 
 function drawPlanet(planet, drawRings, drawPlanets, update) {
-  // rings
-  stroke(226, 226, 224);
-  strokeWeight(3/vpR);
+  // ring settings
+  // stroke(226, 226, 224);
+  stroke(226 * 0.6, 226 * 0.6, 224 * 0.6);
+  strokeWeight(1/vpR);
+
   var p = planet;
 
   // identify planets by tree structure rather than by object reference
@@ -48,6 +50,7 @@ function drawPlanet(planet, drawRings, drawPlanets, update) {
   push();
   rotate(orbitTheta);
   {
+    // ring
     if (drawRings) {
       // ring
       noFill();
@@ -72,17 +75,19 @@ function drawPlanet(planet, drawRings, drawPlanets, update) {
       ellipse(p.orbitR, 0, p.r);
     }
 
-
-    var curMat = renderer.drawingContext.currentTransform;
-    var invMat = curMat;
-    // var invMat = curMat.inverse();
-    var x = p.orbitR;
-    var y = 0;
-    var pt = {
-      x: x * invMat.a + y * invMat.c + invMat.e,
-      y: x * invMat.b + y * invMat.d + invMat.f
-    };
-    trailDatas.push(pt);
+    // trail
+    if (drawPlanets && !p.noTrail) {
+      var curMat = renderer.drawingContext.currentTransform;
+      var invMat = curMat;
+      // var invMat = curMat.inverse();
+      var x = p.orbitR;
+      var y = 0;
+      var pt = {
+        x: x * invMat.a + y * invMat.c + invMat.e,
+        y: x * invMat.b + y * invMat.d + invMat.f
+      };
+      trailDatas.push(pt);
+    }
   }
   pop();
 
@@ -108,20 +113,21 @@ function draw() {
     r: 0.1,
     period: 1,
     numTicks: 0,
+    noTrail: true,
     orbiters: [
       {
         orbitR: 0.85,
         r: 0.02,
         period: 16,
-        tickOuter: 0.025,
-        tickInner: 0.05,
-        numTicks: 30,
+        tickOuter: 0.03,
+        tickInner: 0.03,
+        numTicks: 60,
       },
       {
         orbitR: 0.35,
         r: 0.03,
         period: 8,
-        tickOuter: 0.03,
+        tickOuter: 0.02,
         tickInner: 0.02,
         numTicks: 12,
         orbiters: [
@@ -129,27 +135,28 @@ function draw() {
             orbitR: 0.1,
             r: 0.02,
             period: -4,
-            tickOuter: 0.025,
-            tickInner: 0.01,
+            tickOuter: 0.02,
+            tickInner: 0.02,
             numTicks: 6,
           },
           {
             orbitR: 0.15,
             r: 0.02,
             period: 2,
-            tickOuter: 0.025,
-            tickInner: 0.01,
+            tickOuter: 0.02,
+            tickInner: 0.02,
             numTicks: 6,
           },
         ],
       },
       {
-        orbitR: 2,
+        orbitR: 3,
         r: 0.03,
         period: 32,
         tickOuter: 0.1,
-        tickInner: 2,
+        tickInner: 3,
         numTicks: 6,
+        noTrail: true,
       },
     ],
   };
@@ -160,16 +167,14 @@ function draw() {
 
   push();
   translate(centerX, centerY);
-  translate(centerX * 0.2, centerX * 0.3);
-
-
-  drawPlanet(systemRoot, false, false, true);
-
+  translate(centerX * 0.2, centerX * 0.2);
   scale(vpR);
   {
+
+    // rings
     drawPlanet(systemRoot, true, false);
 
-    // vertical
+    // vertical line
     strokeWeight(4/vpR);
     stroke(226, 226, 224);
     line(0, 0, 0, -vpR);
@@ -179,13 +184,33 @@ function draw() {
     line(0, 0, 0, -vpR);
     line(0, 0, -0.1, -vpR);
 
-    drawPlanet(systemRoot, false, true);
+
   }
   pop();
 
 
+  // trails
+  var numTrailSegments = 1000;
+  trailDatas.splice(0, max(0, trailDatas.length-numTrailSegments));
+
+  // fill(226, 226, 224);
+  // noFill();
+  noStroke();
   for (var i = 0; i < trailDatas.length; i++) {
-    ellipse(trailDatas[i].x, trailDatas[i].y, 10);
+    var a = i/numTrailSegments;
+    fill(226 * ((1-a) * 0.7 + 0.3), 226 * ((1-a) * 0.7 + 0.3), 224 * ((1-a) * 0.7 + 0.3));
+    // strokeWeight(2 * a);
+    ellipse(trailDatas[i].x, trailDatas[i].y, 5 * (a * 0.8 + 0.2) );
+  }
+
+
+  push();
+  translate(centerX, centerY);
+  translate(centerX * 0.2, centerX * 0.2);
+  scale(vpR);
+  {
+    // planets
+    drawPlanet(systemRoot, false, true);
   }
 }
 
