@@ -65,21 +65,32 @@ const MAX_VOLUME = 0.0;
 const ANALYSER_DIVISOR = 16;
 
 
+const AUDIO_ENABLED = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //     INIT AND RUN
 ////////////////////////////////////////////////////////////////////////////////////////////////
-init();
-animate();
 
 function init()
 {
   initVisualElements();
-  initAudioElements();
+  if (AUDIO_ENABLED) {
+    initAudioElements();
+  }
   initControlElements();
   // Listen for window resizing
   window.addEventListener('resize', onWindowResize, false);
+
+  animate();
 }
+
+window.onload = function() {
+  var sl = new ShaderLoader();
+  sl.loadShaders({
+    posNoise_vert : "",
+    posNoise_frag : ""
+  }, "./glsl/", init );
+};
 
 function animate()
 {
@@ -90,7 +101,9 @@ function animate()
 // Renders a frame
 function render()
 {
-  renderAudio();
+  if (AUDIO_ENABLED) {
+    renderAudio();
+  }
   renderVisuals();
 }
 
@@ -114,20 +127,22 @@ function onWindowResize()
 
 function initControlElements()
 {
-  controls = new THREE.FirstPersonControls(camera, renderer.domElement);
-  controls.movementSpeed = 1000;
-  controls.lookSpeed = 0.05;
-  // controls.lookSpeed = 0;
-  controls.noFly = true;
-  controls.lookVertical = false;
-  // controls.activeLook = false;
-  controls.freeze = true;
+  // controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+  // controls.movementSpeed = 1000;
+  // controls.lookSpeed = 0.05;
+  // // controls.lookSpeed = 0;
+  // controls.noFly = true;
+  // controls.lookVertical = false;
+  // // controls.activeLook = false;
+  // controls.freeze = true;
+
+  controls = new THREE.TrackballControls(camera, renderer.domElement);
 }
 
 function initVisualElements()
 {
   // SCENE
-  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 2000000 );
+  camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 10, 2000000 );
   camera.position.set( 0, -1500, 10000 );
   scene = new THREE.Scene();
 
@@ -168,10 +183,6 @@ function initVisualElements()
   scene.add( hemiLight[1] );
   scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0001 );
 
-  // SHADERS
-  var vertexShader = document.getElementById( 'vertexShader' ).textContent;
-  var fragmentShader = document.getElementById( 'fragmentShader' ).textContent;
-
   // DOMES
   var skyGeo = [];
   var dome = [];
@@ -189,7 +200,12 @@ function initVisualElements()
       turbulencescalar: {type: "f", value: .5 }
     };
     skyGeo[j] = new THREE.SphereGeometry( (4000*(j+1)), 32, 32 );
-    skyMat[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.BackSide } );
+    skyMat[j] = new THREE.ShaderMaterial({ 
+      vertexShader: ShaderLoader.get( "posNoise_vert" ), 
+      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+      uniforms: uniforms, 
+      side: THREE.BackSide 
+    });
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
     scene.add( dome[j] );
   }
@@ -210,9 +226,14 @@ function initVisualElements()
       amp: {type: "f", value: 500.0 },
       bscalar: {type: "f", value: -5.0 },
       positionscalar: {type: "f", value: 0.05 },
-      turbulencescalar: {type: "f", value: 0.5 }
+      turbulencescalar: {type: "f", value: 0.5 },
     };
-    material[j] = new THREE.ShaderMaterial( { vertexShader: vertexShader, fragmentShader: fragmentShader, uniforms: uniforms, side: THREE.DoubleSide } );
+    material[j] = new THREE.ShaderMaterial({ 
+      vertexShader: ShaderLoader.get( "posNoise_vert" ), 
+      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+      uniforms: uniforms, 
+      side: THREE.DoubleSide,
+    });
     meshes[j] = new THREE.Mesh( geometry[j], material[j] );
     scene.add( meshes[j] );
   }
