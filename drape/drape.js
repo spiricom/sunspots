@@ -41,10 +41,7 @@ var clothRootNode;
 // https://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
 var camera, scene, renderer, controls, objects = [];
 var effectFXAA, bloomPass, renderScene;
-var hdrCubeMap;
 var composer;
-var standardMaterial;
-var hdrCubeRenderTarget;
 
 var params = {
   projection: 'normal',
