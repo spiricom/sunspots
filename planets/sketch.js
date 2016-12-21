@@ -6,6 +6,7 @@ var centerX, centerY;
 var renderer;
 var vpR; // radius of biggest circle that fits in viewport
 var t = 0;
+var sunPos; // screen pixels
 
 function setup() {
   var viewportWidth = window.innerWidth;
@@ -31,16 +32,27 @@ function windowResized() {
   vpR = min(centerX, centerY);
 }
 
+// gets called whenever a planet crosses the top line
+function onPlanetCrossedLine(planetName, planet) {
+  console.log("planet crossed line: " + planetName);
+}
+
+var planetDatas = [];
+
 var trailDatas = [];
 
 function drawPlanet(planet, drawRings, drawPlanets, update) {
   var p = planet;
 
   // identify planets by tree structure rather than by object reference
-  if (p.idx === undefined) {
+  // if (typeof p.idx === 'undefined') {
+  if (typeof p.idx == 'undefined') {
     p.idx = numPlanets;
+    planetDatas[p.idx] = planetDatas[p.idx] || {};
     numPlanets++;
   }
+
+  var data = planetDatas[p.idx];
 
   var orbitTheta = 360 * t / p.period;
 
@@ -75,18 +87,32 @@ function drawPlanet(planet, drawRings, drawPlanets, update) {
       ellipse(p.orbitR, 0, p.r);
     }
 
+    // get screen pos
+    var curMat = renderer.drawingContext.currentTransform;
+    var invMat = curMat;
+    var x = p.orbitR;
+    var y = 0;
+    var screenPos = {
+      x: x * invMat.a + y * invMat.c + invMat.e,
+      y: x * invMat.b + y * invMat.d + invMat.f
+    };
+
     // trail
     if (drawPlanets && !p.noTrail && (frameCount%2 === 0)) {
-      var curMat = renderer.drawingContext.currentTransform;
-      var invMat = curMat;
-      // var invMat = curMat.inverse();
-      var x = p.orbitR;
-      var y = 0;
-      var pt = {
-        x: x * invMat.a + y * invMat.c + invMat.e,
-        y: x * invMat.b + y * invMat.d + invMat.f
-      };
-      trailDatas.push(pt);
+      trailDatas.push(screenPos);
+    }
+
+    // arc top check (happens on drawPlanets pass)
+    if (drawPlanets && p.name !== "sun") {
+      if (typeof data.prevScreenPos === "undefined") {
+        data.prevScreenPos = screenPos;
+      } 
+      
+      if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (data.prevScreenPos.x > sunPos.x)) ) {
+        // crossed the line
+        onPlanetCrossedLine(p.name || p.idx, p);
+      }
+      data.prevScreenPos = screenPos;
     }
   }
   pop();
@@ -108,10 +134,23 @@ var numPlanets = 0;
 
 function draw() {
 
+  var centerOffset = {
+    x: centerX * 0,
+    y: centerX * 0,
+  }
+
+  sunPos = {
+    x: centerX + centerOffset.x,
+    y: centerY + centerOffset.y,
+  }
+
+  // need to reset this whenever planets redefined
+  numPlanets = 0;
   // defines the solar system
   // refreshed every frame for live reloading purposes - can be made static without other changes
   var systemRoot = {
     color: color(255, 88, 0),
+    name: "sun",
     orbitR: 0,
     r: 0.1,
     period: 1,
@@ -168,7 +207,6 @@ function draw() {
   // var trailGrowRate = 0.001;
 
   background(245, 245, 243);
-  // background(245 * 0.3, 245 * 0.3, 243 * 0.3);
   t = frameCount / fps;
 
 
@@ -177,26 +215,18 @@ function draw() {
   var numTrailSegments = 1000;
   trailDatas.splice(0, max(0, trailDatas.length-numTrailSegments));
 
-  // fill(226, 226, 224);
-  // noFill();
-  // noStroke();
 
-  // stroke(100);
   stroke(0);
-  // fill(245 * 0.2, 245 * 0.2, 243 * 0.2);
   fill(245, 245, 243);
   strokeWeight(1);
   for (var i = 0; i < trailDatas.length; i++) {
     var a = i/numTrailSegments;
-    // fill(226 * ((1-a) * 0.7 + 0.3), 226 * ((1-a) * 0.7 + 0.3), 224 * ((1-a) * 0.7 + 0.3));
-    // strokeWeight(1 * a);
-    // ellipse(trailDatas[i].x, trailDatas[i].y, 8 * (a * 0.9 + 0.1) );
     ellipse(trailDatas[i].x, trailDatas[i].y, 8 * (a * 0.1 + 0.9) );
   }
 
   if (trailGrowRate !== 0) {
-    var cx = centerX + centerX * 0.2;
-    var cy = centerY + centerY * 0.2;
+    var cx = centerX + centerOffset.x;
+    var cy = centerY + centerOffset.y;
     for (var i = 0; i < trailDatas.length; i++) {
       trailDatas[i].x = (trailDatas[i].x - cx) * (1 + trailGrowRate) + cx;
       trailDatas[i].y = (trailDatas[i].y - cy) * (1 + trailGrowRate) + cy;
@@ -204,26 +234,22 @@ function draw() {
   }
 
 
+  // planets
   push();
   translate(centerX, centerY);
-  translate(centerX * 0.2, centerX * 0.2);
+  translate(centerOffset.x, centerOffset.y);
   scale(vpR);
   {
-    // planets
     drawPlanet(systemRoot, false, true);
   }
   pop();
 
 
-
-
   stroke(226 * 0.6, 226 * 0.6, 224 * 0.6, 255 * 0.5);
-  // stroke(226 * 0.2, 226 * 0.2, 224 * 0.2);
-  // stroke(255);
   strokeWeight(2/vpR);
   push();
   translate(centerX, centerY);
-  translate(centerX * 0.2, centerX * 0.2);
+  translate(centerOffset.x, centerOffset.y);
   scale(vpR);
   {
 
@@ -234,13 +260,6 @@ function draw() {
     strokeWeight(4/vpR);
     stroke(226, 226, 224);
     line(0, 0, 0, -vpR);
-
-    // strokeWeight(2/vpR);
-    // stroke(226 * 0.7, 226 * 0.7, 224 * 0.7);
-    // line(0, 0, 0, -vpR);
-    // line(0, 0, -0.1, -vpR);
-
-
   }
   pop();
 }
