@@ -16,7 +16,8 @@ var randFreqs = [];
 var numOsc = 5;
 var gains = [];
 var oscs = [];
-var howManyPlanets = 10;
+var howManyPlanets = getNumPlanets();
+
 //var myScale = [60, 61.77, 62.04, 62.4, 64.71, 64.44, 66.75, 67.02, 67.38, 69.69, 69.42, 71.73]; // just tuned piano (La Monte Young)
 var myScale = [60, 61.05, 62.04, 62.97, 63.86, 64.71, 65.51, 67.02, 68.4, 69.05, 69.69, 70.88];
 
@@ -104,6 +105,7 @@ function midiToFreq(midi_code) {
     return Number(440 / Math.pow(2, -offset_code / 12));
   }
 }
+
 function ring(whichPlanet)
 {
   for (var i = 0; i < numOsc; i++) 
@@ -119,7 +121,7 @@ function ring(whichPlanet)
 // gets called whenever a planet crosses the top line
 function onPlanetCrossedLine(planetName, planet) {
   ring(planetName-1);
-  //console.log("planet crossed line: " + planetName);
+  console.log("planet crossed line: " + planetName);
 }
 
 // gets called _once_ each frame for each pair of overlapping planets
@@ -255,6 +257,8 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         x: x * invMat.a + y * invMat.c + invMat.e,
         y: x * invMat.b + y * invMat.d + invMat.f
       };
+      screenPos.x = screenPos.x * vpR + centerX;
+      screenPos.y = screenPos.y * vpR + centerY;
 
       // initialize prevScreenPos
       if (typeof planetState.prevScreenPos === "undefined") {
@@ -342,7 +346,7 @@ function updatePlanetOverlaps() {
       var dx = p1.state.screenPos.x - p2.state.screenPos.x;
       var dy = p1.state.screenPos.y - p2.state.screenPos.y;
       var dist = sqrt(dx*dx + dy*dy);
-      if (dist <= p1.r + p2.r) {
+      if (dist <= (p1.r + p2.r) * vpR) {
         onPlanetTouchingPlanetPerFrame(p1.name || p1.idx, p1, p2.name || p2.idx, p2, dist);
         
         if (!touchingPairs.has(p1.state)) {
@@ -382,27 +386,30 @@ function updatePlanetOverlaps() {
   prevTouchingPairs = touchingPairs;
 }
 
+function getNumPlanets() {
+  var count = 0;
+
+  var recurse = function(p) {
+    count++;
+    if (p.orbiters) {
+      for (var i = 0; i < p.orbiters.length; i++) {
+        recurse(p.orbiters[i]);
+      }
+    }
+  };
+
+  recurse(getPlanetSystem());
+
+  return count;
+}
+
 var numPlanets = 0;
 
-function draw() {
-  
-  
-  var centerOffset = {
-    x: centerX * 0,
-    y: centerY * 0,
-  }
+function getPlanetSystem() {
 
-  sunPos = {
-    x: centerX + centerOffset.x,
-    y: centerY + centerOffset.y,
-  }
-
-  numPlanets = 0;
-  
   // defines the solar system
   // refreshed every frame for live reloading purposes - can be made static without other changes
-  var systemRoot = {
-    color: color(0, 0, 0),
+  return {
     name: "sun",
     orbitR: 0,
     r: 0.025,
@@ -422,12 +429,11 @@ function draw() {
         period: 35,
 
       },
-      { // ADDED FOR COLLISION DEBUG
-        orbitR: 0.4,
-        r: 0.1,
-        period: 3,
-
-      },
+      // { // ADDED FOR COLLISION DEBUG
+      //   orbitR: 0.4,
+      //   r: 0.2,
+      //   period: 4,
+      // },
       {
         orbitR: 0.5,
         r: 0.03,
@@ -438,7 +444,14 @@ function draw() {
         orbitR: 0.7,
         r: 0.03,
         period: 10,
+        orbiters: [
 
+          // { // ADDED FOR COLLISION DEBUG
+          //   orbitR: 0.5,
+          //   r: 0.2,
+          //   period: 2.4,
+          // },
+        ],
       },
       {
         orbitR: .8,
@@ -453,7 +466,7 @@ function draw() {
       {
         orbitR: .95,
         r: 0.02,
-        period: 13,
+        period: 6,
         orbiters: [
           {
             orbitR: 0.1,
@@ -465,11 +478,36 @@ function draw() {
             orbitR: 0.15,
             r: 0.01,
             period: 8,
+          },
 
-          }]
+          // { // ADDED FOR COLLISION DEBUG
+          //   orbitR: 0.5,
+          //   r: 0.2,
+          //   period: 2.4,
+
+          // },
+        ],
       },
     ],
   };
+}
+
+function draw() {
+  
+  
+  var centerOffset = {
+    x: centerX * 0,
+    y: centerY * 0,
+  }
+
+  sunPos = {
+    x: centerX + centerOffset.x,
+    y: centerY + centerOffset.y,
+  }
+
+  numPlanets = 0;
+  
+  var systemRoot = getPlanetSystem();
 
   var trailGrowRate = 0;
   // var trailGrowRate = 0.001;
@@ -563,6 +601,14 @@ function draw() {
 
   }
   pop();
+
+  // // screenpos debug
+  // fill(0, 255, 0);
+  // for (var i = 0; i < planetsList.length; i++) {
+  //   var p = planetsList[i].state.screenPos;
+  //   // print(p);
+  //   ellipse(p.x, p.y, 3);
+  // }
 }
 
 
