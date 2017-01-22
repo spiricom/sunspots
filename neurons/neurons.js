@@ -35,38 +35,63 @@ function init() {
   clock = new THREE.Clock();
 
   tuniform = {
-    time: {
+    iResolution: {
+      type: 'v3',
+      value: new THREE.Vector3(window.innerWidth, window.innerHeight, 1),
+    },
+    iGlobalTime: {
       type: 'f',
-      value: 0.1
+      value: 0.1,
     },
-    resolution: {
-      type: 'v2',
-      value: new THREE.Vector2()
+    iTimeDelta: {
+      type: 'f',
+      value: 1/60,
     },
-    mouse: {
+    iFrame: {
+      type: 'i',
+      value: 0,
+    },
+    iFrameRate: {
+      type: 'f',
+      value: 60,
+    },
+    iChannelTime: {
+      type: 'fv1',
+      value: [0, 0, 0, 0],
+    },
+    iChannelResolution: {
+      type: 'fv',
+      value: [0,0,1,  0,0,1,  0,0,1,  0,0,1,],
+    },
+    iMouse: {
       type: 'v4',
-      value: new THREE.Vector2()
-    }
+      value: new THREE.Vector4(0, 0, 0, 0),
+    },
+    // TODO iChannel0, iChannel1, etc
+    iDate: {
+      type: 'v4',
+      value: new THREE.Vector4(0, 0, 0, 0),
+    },
+    iSampleRate: {
+      type: 'f',
+      value: 44100,
+    },
   };
 
   // Mouse position in - 1 to 1
+  // TODO convert to pixels, set (x, y) every frame and (z, w) every frame button is down
   renderer.domElement.addEventListener('mousedown', function(e) {
     var canvas = renderer.domElement;
     var rect = canvas.getBoundingClientRect();
-    tuniform.mouse.value.x = (e.clientX - rect.left) / window.innerWidth * 2 - 1;
-    tuniform.mouse.value.y = (e.clientY - rect.top) / window.innerHeight * -2 + 1; 
-  });
-  renderer.domElement.addEventListener('mouseup', function(e) {
-    var canvas = renderer.domElement;
-    var rect = canvas.getBoundingClientRect();
-    tuniform.mouse.value.z = (e.clientX - rect.left) / window.innerWidth * 2 - 1;
-    tuniform.mouse.value.w = (e.clientY - rect.top) / window.innerHeight * -2 + 1;
+    tuniform.iMouse.value.z = (e.clientX - rect.left) / window.innerWidth * 2 - 1;
+    tuniform.iMouse.value.w = (e.clientY - rect.top) / window.innerHeight * -2 + 1; 
   });
 
   // resize canvas function
   window.addEventListener('resize', onResize);
-  tuniform.resolution.value.x = window.innerWidth;
-  tuniform.resolution.value.y = window.innerHeight;
+  tuniform.iResolution.value.x = window.innerWidth;
+  tuniform.iResolution.value.y = window.innerHeight;
+  tuniform.iResolution.value.z = 1; // pixel aspect ratio
   
   // Create Plane
   var material = new THREE.ShaderMaterial({
@@ -87,11 +112,20 @@ function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  tuniform.iResolution.value.x = window.innerWidth;
+  tuniform.iResolution.value.y = window.innerHeight;
 }
 
-function update(time) {
-  tuniform.time.value += clock.getDelta();
+function update() {
   requestAnimationFrame(update);
+
+  var dt = clock.getDelta();
+
+  tuniform.iFrame.value++;
+  tuniform.iTimeDelta.value = dt;
+  tuniform.iFrameRate.value = 1 / dt;
+  tuniform.iGlobalTime.value += dt;
+  
   renderer.render(scene, camera);
 }
 
