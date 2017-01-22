@@ -2,6 +2,9 @@
 precision mediump float;
 #endif
 
+#define fragColor gl_FragColor
+#define fragCoord gl_FragCoord
+
 uniform vec3 iResolution;
 uniform float iGlobalTime;
 uniform float iTimeDelta;
@@ -68,240 +71,6 @@ vec2 translate(vec2 p, vec2 t) {
   return p - t;
 }
 
-//////////////////////////////
-// Distance field functions //
-//////////////////////////////
-
-
-float pie(vec2 p, float angle) {
-  angle = radians(angle) / 2.0;
-  vec2 n = vec2(cos(angle), sin(angle));
-  return abs(p).x * n.x + p.y*n.y;
-}
-
-float circleDist(vec2 p, float radius) {
-  return length(p) - radius;
-}
-
-float sdTriangle( in vec2 p0, in vec2 p1, in vec2 p2, in vec2 p ) {
-  vec2 e0 = p1 - p0;
-  vec2 e1 = p2 - p1;
-  vec2 e2 = p0 - p2;
-
-  vec2 v0 = p - p0;
-  vec2 v1 = p - p1;
-  vec2 v2 = p - p2;
-
-  vec2 pq0 = v0 - e0*clamp( dot(v0,e0)/dot(e0,e0), 0.0, 1.0 );
-  vec2 pq1 = v1 - e1*clamp( dot(v1,e1)/dot(e1,e1), 0.0, 1.0 );
-  vec2 pq2 = v2 - e2*clamp( dot(v2,e2)/dot(e2,e2), 0.0, 1.0 );
-    
-    vec2 d = min( min( vec2( dot( pq0, pq0 ), v0.x*e0.y-v0.y*e0.x ),
-                       vec2( dot( pq1, pq1 ), v1.x*e1.y-v1.y*e1.x )),
-                       vec2( dot( pq2, pq2 ), v2.x*e2.y-v2.y*e2.x ));
-
-  return -sqrt(d.x)*sign(d.y);
-}
-
-float triangleDist(vec2 p, float radius) {
-  // return max( abs(p).x * 0.866025 + p.y * 0.5, -p.y) -radius * 0.5;
-  float width = radius;
-  float height = radius * 0.866025;
-  return sdTriangle(vec2(-width/2.0, 0), vec2(0, height), vec2(width/2.0, 0), p);
-}
-
-float triangleDist(vec2 p, float width, float height) {
-  return sdTriangle(vec2(-width/2.0, 0), vec2(0, height), vec2(width/2.0, 0), p);
-  // vec2 n = normalize(vec2(height, width / 2.0));
-  // return max( abs(p).x*n.x + p.y*n.y - (height*n.y), -p.y);
-}
-
-float semiCircleDist(vec2 p, float radius, float angle, float width) {
-  width /= 2.0;
-  radius -= width;
-  return substract(pie(p, angle), abs(circleDist(p, radius)) - width);
-}
-
-float boxDist(vec2 p, vec2 size, float radius) {
-  size -= vec2(radius);
-  vec2 d = abs(p) - size;
-  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - radius;
-}
-
-float lineDist(vec2 p, vec2 start, vec2 end, float width) {
-  vec2 dir = start - end;
-  float lngth = length(dir);
-  dir /= lngth;
-  vec2 proj = max(0.0, min(lngth, dot((start - p), dir))) * dir;
-  return length( (start - p) - proj ) - (width / 2.0);
-}
-
-///////////////////////
-// Masks for drawing //
-///////////////////////
-
-float fillMask(float dist) {
-  return clamp(-dist, 0.0, 1.0);
-}
-
-float innerBorderMask(float dist, float width) {
-  //dist += 1.0;
-  float alpha1 = clamp(dist + width, 0.0, 1.0);
-  float alpha2 = clamp(dist, 0.0, 1.0);
-  return alpha1 - alpha2;
-}
-
-float outerBorderMask(float dist, float width) {
-  //dist += 1.0;
-  float alpha1 = clamp(dist, 0.0, 1.0);
-  float alpha2 = clamp(dist - width, 0.0, 1.0);
-  return alpha1 - alpha2;
-}
-
-///////////////
-// The scene //
-///////////////
-
-float sceneDist(vec2 p) {
-  float c = circleDist(   translate(p, vec2(100, 250)), 40.0);
-  float b1 =  boxDist(    translate(p, vec2(200, 250)), vec2(40, 40),   0.0);
-  float b2 =  boxDist(    translate(p, vec2(300, 250)), vec2(40, 40),   10.0);
-  float l = lineDist(     p,       vec2(370, 220),  vec2(430, 280), 10.0);
-  float t1 = triangleDist(  translate(p, vec2(500, 210)), 80.0,       80.0);
-  // float t2 = triangleDist(  rotateCW(translate(p, vec2(600, 250)), iGlobalTime), 40.0);
-  // float t2 = triangleDist(  p, 40.0);
-  
-  vec2 t3p = (2.0*gl_FragCoord.xy-iResolution.xy)/iResolution.y;
-
-  // vec2 v1 = cos( iGlobalTime + vec2(0.0, 1.57) + 0.0 );
-  // vec2 v2 = cos( iGlobalTime + vec2(0.0, 1.57) + 2.0 );
-  // vec2 v3 = cos( iGlobalTime + vec2(0.0, 1.57) + 4.0 );
-
-  float t3 = sdTriangle( vec2(1, 0), vec2(-1, -1), vec2(-1, 1), t3p );
-
-  float m;
-  m = t3;
-  // m = merge(c, b1);
-  // m = merge(m, b2);
-  // m = merge(m, l);
-  // m = merge(m, t1);
-  // m = merge(m, t2);
-  
-  // float b3 = boxDist(   translate(p, vec2(100, sin(iGlobalTime * 1.0 + 1.0) * 40.0 + 100.0)), 
-  //               vec2(40, 15),   0.0);
-  // float c2 = circleDist(  translate(p, vec2(100, 100)), 30.0);
-  // float s = substract(b3, c2);
-  
-  // float b4 = boxDist(   translate(p, vec2(200, sin(iGlobalTime * 1.0 + 2.0) * 40.0 + 100.0)), 
-  //               vec2(40, 15),   0.0);
-  // float c3 = circleDist(  translate(p, vec2(200, 100)),   30.0);
-  // float i = intersect(b4, c3);
-  
-  // float b5 = boxDist(   translate(p, vec2(300, sin(iGlobalTime * 1.0 + 3.0) * 40.0 + 100.0)), 
-  //               vec2(40, 15),   0.0);
-  // float c4 = circleDist(  translate(p, vec2(300, 100)),   30.0);
-  // float a = merge(b5, c4);
-  
-  // float b6 = boxDist(   translate(p, vec2(400, 100)), vec2(40, 15),   0.0);
-  // float c5 = circleDist(  translate(p, vec2(400, 100)),   30.0);
-  // float sm = smoothMerge(b6, c5, 10.0);
-  
-  // float sc = semiCircleDist(translate(p, vec2(500,100)), 40.0, 90.0, 10.0);
-    
-  //   float b7 = boxDist(   translate(p, vec2(600, sin(iGlobalTime * 1.0 + 3.0) * 40.0 + 100.0)), 
-  //               vec2(40, 15),   0.0);
-  // float c6 = circleDist(  translate(p, vec2(600, 100)),   30.0);
-  // float e = mergeExclude(b7, c6);
-    
-  // m = merge(m, s);
-  // m = merge(m, i);
-  // m = merge(m, a);
-  // m = merge(m, sm);
-  // m = merge(m, sc);
-  // m = merge(m, e);
-  
-  return m;
-}
-
-float sceneSmooth(vec2 p, float r) {
-  float accum = sceneDist(p);
-  accum += sceneDist(p + vec2(0.0, r));
-  accum += sceneDist(p + vec2(0.0, -r));
-  accum += sceneDist(p + vec2(r, 0.0));
-  accum += sceneDist(p + vec2(-r, 0.0));
-  return accum / 5.0;
-}
-
-//////////////////////
-// Shadow and light //
-//////////////////////
-
-
-float shadow(vec2 p, vec2 pos, float radius) {
-  vec2 dir = normalize(pos - p);
-  float dl = length(p - pos);
-  
-  // fraction of light visible, starts at one radius (second half added in the end);
-  float lf = radius * dl;
-  
-  // distance traveled
-  float dt = 0.01;
-
-  for (int i = 0; i < 64; ++i) {       
-    // distance to scene at current position
-    float sd = sceneDist(p + dir * dt);
-
-      // early out when this ray is guaranteed to be full shadow
-      if (sd < -radius) 
-        return 0.0;
-        
-    // width of cone-overlap at light
-    // 0 in center, so 50% overlap: add one radius outside of loop to get total coverage
-    // should be '(sd / dt) * dl', but '*dl' outside of loop
-    lf = min(lf, sd / dt);
-    
-    // move ahead
-    dt += max(1.0, abs(sd));
-    if (dt > dl) break;
-  }
-
-  // multiply by dl to get the real projected overlap (moved out of loop)
-  // add one radius, before between -radius and + radius
-  // normalize to 1 ( / 2*radius)
-  lf = clamp((lf*dl + radius) / (2.0 * radius), 0.0, 1.0);
-  lf = smoothstep(0.0, 1.0, lf);
-  return lf;
-}
-
-vec4 drawLight(vec2 p, vec2 pos, vec4 color, float dist, float range, float radius) {
-  // distance to light
-  float ld = length(p - pos);
-  
-  // out of range
-  if (ld > range) return vec4(0.0);
-  
-  // shadow and falloff
-  float shad = shadow(p, pos, radius);
-  float fall = (range - ld)/range;
-  fall *= fall;
-  float source = fillMask(circleDist(p - pos, radius));
-  return (shad * fall + source) * color;
-}
-
-float luminance(vec4 col) {
-  return 0.2126 * col.r + 0.7152 * col.g + 0.0722 * col.b;
-}
-
-void setLuminance(inout vec4 col, float lum) {
-  lum /= luminance(col);
-  col *= lum;
-}
-
-float AO(vec2 p, float dist, float radius, float intensity) {
-  float a = clamp(dist / radius, 0.0, 1.0) - 1.0;
-  return 1.0 - (pow(abs(a), 5.0) + 1.0) * intensity + (1.0 - intensity);
-  // return smoothstep(0.0, 1.0, dist / radius);
-}
 
 ///////////////////////
 // FRACTAL
@@ -325,72 +94,293 @@ float field(in vec3 p) {
   return max(0., 5. * accum / tw - .7);
 }
 
-/////////////////
-// The program //
-/////////////////
+
+const float pi = 3.14159;
+const float pi2 = pi * 2.;
+
+mat2 rot2D(float r)
+{
+    float c = cos(r), s = sin(r);
+    return mat2(c, s, -s, c);
+}
+
+// convert distance to alpha
+float dtoa(float d, float amount)
+{
+    float a = clamp(1.0 / (clamp(d, 1.0/amount, 1.0)*amount), 0.,1.);
+    return a;
+}
 
 
-// void mainImage( out vec4 fragColor, in vec2 fragCoord )
-void main() {
-  vec2 fragCoord = gl_FragCoord.xy;
 
-  vec2 p = fragCoord.xy + vec2(0.5);
-  vec2 c = iResolution.xy / 2.0;
-  
-  //float dist = sceneSmooth(p, 5.0);
-  float dist = sceneDist(p);
-  
-  vec2 light1Pos = iMouse.xy;
-  vec4 light1Col = vec4(0.75, 1.0, 0.5, 1.0);
-  setLuminance(light1Col, 0.4);
-  
-  vec2 light2Pos = vec2(iResolution.x * (sin(iGlobalTime + 3.1415) + 1.2) / 2.4, 175.0);
-  vec4 light2Col = vec4(1.0, 0.75, 0.5, 1.0);
-  setLuminance(light2Col, 0.5);
-  
-  vec2 light3Pos = vec2(iResolution.x * (sin(iGlobalTime) + 1.2) / 2.4, 340.0);
-  vec4 light3Col = vec4(0.5, 0.75, 1.0, 1.0);
-  setLuminance(light3Col, 0.6);
-  
-  vec4 col;
+// distance functions: ------------------------------------------------
 
-  // fractal
-  // vec2 uv = 2. * fragCoord.xy / iResolution.xy - 1.;
-  // vec2 uvs = uv * iResolution.xy / max(iResolution.x, iResolution.y);
-  // vec3 fractPos = vec3(uvs / 4., 0) + vec3(1., -1.3, 0.);
-  // fractPos += .2 * vec3(sin(iGlobalTime / 16.), sin(iGlobalTime / 12.),  sin(iGlobalTime / 128.));
-  // float t = field(fractPos);
-  // float v = (1. - exp((abs(uv.x) - 1.) * 6.)) * (1. - exp((abs(uv.y) - 1.) * 6.));
-  // col = mix(.4, 1., v) * vec4(1.8 * t * t * t, 1.4 * t * t, t, 1.0);
 
-  // gradient
-  col = vec4(0.5, 0.5, 0.5, 1.0) * (1.0 - length(c - p)/iResolution.x);
+
+// circle
+float sdCircle(vec2 uv, vec2 origin, float radius)
+{
+    float d = length(uv - origin) - radius;
+    return d;
+}
+
+// signed distance to segment of 1D space. like, for making a vertical column
+float sdSegment1D(float uv, float a, float b)
+{
+    return max(a - uv, uv - b);
+}
+float sdAxisAlignedRect(vec2 uv, vec2 tl, vec2 br)
+{
+    vec2 d = max(tl - uv, uv - br);
+    return length(max(vec2(0.0), d)) + min(0.0, max(d.x, d.y));
+}
+
+// the big question is what is the best way to INPUT a free rect? tl+br+angle? p1,p2,p3?
+float sdRect(vec2 uv, vec2 a, vec2 b, float angle)
+{
+    // flatten the line to be axis-aligned.
+    vec2 rectDimensions = b - a;
+    mat2 rotMat = rot2D(-angle);
+    a *= rotMat;
+    b *= rotMat;
+  return sdAxisAlignedRect(uv * rotMat, a, b);
+}
+
+// really a line segment with line width is just a rect expressed differently
+float sdLineSegment(vec2 uv, vec2 a, vec2 b, float lineWidth)
+{
+    // flatten the line to be axis-aligned.
+    vec2 rectDimensions = b - a;
+    float angle = atan(rectDimensions.x, rectDimensions.y);
+    mat2 rotMat = rot2D(-angle);
+    a *= rotMat;
+    b *= rotMat;
+    float halfLineWidth = lineWidth / 2.;
+    a -= halfLineWidth;
+    b += halfLineWidth;
+  return sdAxisAlignedRect(uv * rotMat, a, b);
+}
+
+// union of line segment and 2 circles
+float sdLineSegmentRounded(vec2 uv, vec2 a, vec2 b, float lineWidth)
+{
+    // flatten the line to be axis-aligned.
+    vec2 rectDimensions = b - a;
+    float angle = atan(rectDimensions.x, rectDimensions.y);
+    mat2 rotMat = rot2D(-angle);
+    a *= rotMat;
+    b *= rotMat;
+    float halfLineWidth = lineWidth / 2.;
+
+    uv *= rotMat;
+    vec2 tl = vec2(a.x - halfLineWidth, a.y);
+    vec2 br = vec2(b.x + halfLineWidth, b.y);
+
+    return min(min(sdAxisAlignedRect(uv, tl, br),
+                   sdCircle(uv, a, halfLineWidth)),
+                   sdCircle(uv, b, halfLineWidth));
+}
+
+
+// squircle
+// http://en.wikipedia.org/wiki/Squircle
+float sdSquircle(vec2 uv, vec2 origin, float radius, float power, float rot_)
+{
+    mat2 rot = rot2D(rot_);
+  vec2 v = abs((origin*rot) - (uv*rot));
+    float d = pow(v.x,power) + pow(v.y, power);
+    d -= pow(radius, power);
+    return d;
+}
+
+// distance to edge of hexagon
+float sdHexagon(vec2 p, vec2 hexPos, float hexRadius, float hexRotation)
+{
+    mat2 rot = rot2D(hexRotation);
+  vec2 v = abs((hexPos*rot) - (p*rot));
+
+  vec2 topBottomEdge = vec2(0., 1.);
+  const vec2 sideEdges = vec2(0.86602540358, 0.5);// cos(radians(30)), sin(radians(30))
+
+  float dot1 = dot(v, topBottomEdge);
+  float dot2 = dot(v, sideEdges);
+    float dotMax = max(dot1, dot2);
   
-  // grid
-  col *= clamp(min(mod(p.y, 10.0), mod(p.x, 10.0)), 0.9, 1.0);
-  
-  // ambient occlusion
-  // col *= AO(p, sceneSmooth(p, 10.0), 40.0, 0.4);
-  col *= AO(p, dist, 400.0, 0.4);
-  //col *= 1.0-AO(p, sceneDist(p), 40.0, 1.0);
+    return dotMax - hexRadius;
+}
 
-  // light
-  // col += drawLight(p, light1Pos, light1Col, dist, 150.0, 6.0);
-  // col += drawLight(p, light2Pos, light2Col, dist, 200.0, 8.0);
-  // col += drawLight(p, light3Pos, light3Col, dist, 300.0, 12.0);
-  
 
-  vec3 col3 = vec3(1.0) - sign(dist) * vec3(0.1,0.4,0.7);
-  col3 *= 1.0 - exp(-2.0*abs(dist));
-  col3 *= 0.8 + 0.2*cos(120.0*dist);
-  col3 = mix( col3, vec3(1.0), 1.0-smoothstep(0.0,0.02,abs(dist)) );
-  col = vec4(col3, 1.0);
+// signed distance to a 2D triangle
+// thank you iq: https://www.shadertoy.com/view/XsXSz4
+float sdTriangle(in vec2 p, in vec2 p0, in vec2 p1, in vec2 p2)
+{
+  vec2 e0 = p1 - p0;
+  vec2 e1 = p2 - p1;
+  vec2 e2 = p0 - p2;
 
-  // // shape fill
-  // col = mix(col, vec4(1.0, 0.4, 0.0, 1.0), fillMask(dist));
-  
-  // // shape outline
-  // col = mix(col, vec4(0.1, 0.1, 0.1, 1.0), innerBorderMask(dist, 1.5));
+  vec2 v0 = p - p0;
+  vec2 v1 = p - p1;
+  vec2 v2 = p - p2;
 
-  gl_FragColor = clamp(col, 0.0, 1.0);
+  vec2 pq0 = v0 - e0*clamp( dot(v0,e0)/dot(e0,e0), 0.0, 1.0 );
+  vec2 pq1 = v1 - e1*clamp( dot(v1,e1)/dot(e1,e1), 0.0, 1.0 );
+  vec2 pq2 = v2 - e2*clamp( dot(v2,e2)/dot(e2,e2), 0.0, 1.0 );
+    
+    vec2 d = min( min( vec2( dot( pq0, pq0 ), v0.x*e0.y-v0.y*e0.x ),
+                       vec2( dot( pq1, pq1 ), v1.x*e1.y-v1.y*e1.x )),
+                       vec2( dot( pq2, pq2 ), v2.x*e2.y-v2.y*e2.x ));
+
+  return -sqrt(d.x)*sign(d.y);
+}
+
+
+
+
+void main()
+{
+  vec2 uv = fragCoord.xy / iResolution.yy;
+    
+    // background color
+    fragColor = vec4(1.0,0.94,0.67,1.0);
+    float dist;
+    float a, b, c, d, e, f;
+    vec2 tl, rectSize;
+    
+    // green column ------------------------------------------------
+    a = (sin(iGlobalTime+4.)+1.)/2.;
+    dist = sdSegment1D(uv.x, a, a + 0.3);
+  fragColor = mix(fragColor, vec4(.1,0.5,0.2,1.0), 0.3 * dtoa(dist, 60.));
+
+    
+    
+    // axis-aligned rect ------------------------------------------------
+    vec4 circleColor = vec4(.4,0.5,0.6,1.0);
+    tl.x = (sin(iGlobalTime+5.)+1.)/3.;// top
+    tl.y = (sin(iGlobalTime+6.)+1.)/3.;// left
+    rectSize.x = (sin(iGlobalTime+7.)+2.5)/7.;// height
+  rectSize.y = (sin(iGlobalTime+8.)+2.5)/7.;// width
+    dist = sdAxisAlignedRect(uv, tl, tl + rectSize);
+    // the -0.05 here will make the object bigger, and reveal how accurate the distances are at corners.
+  fragColor = mix(fragColor, circleColor, 0.9 * dtoa(dist-0.05, 60.));
+    
+    // draw the points
+    dist = sdCircle(uv, tl,0.);
+  fragColor = mix(fragColor, circleColor * 0.5, 0.9 * dtoa(dist, 250.));
+    
+    dist = sdCircle(uv, tl + rectSize,0.);
+  fragColor = mix(fragColor, circleColor * 0.5, 0.9 * dtoa(dist, 250.));
+
+    
+    // white rectangle ------------------------------------------------
+    vec4 rectColor = vec4(1.0);
+    a = 0.2+ (sin(iGlobalTime*0.25+25.)+.5)/5.;// top
+    b = 0.5;
+    c = 0.3;
+  d = 0.8;
+    vec2 br;
+    tl = vec2(min(a,c),min(b,d));
+    br = vec2(max(tl.x+0.1,max(a,c)),max(tl.y+0.1,max(b,d)));
+    
+    tl += vec2(.8,-0.4);
+    br += vec2(1.,-0.4);
+    
+    float angle = (sin(iGlobalTime)+1.0);// 0-2
+    angle = angle * pi / 9.;// restrict; many angles produce negative shape
+
+    dist = sdRect(uv, tl,br, angle);
+  fragColor = mix(fragColor, rectColor, 0.9 * dtoa(dist - 0.05, 600.));
+    
+    // draw the points
+    dist = sdCircle(uv, tl,0.);
+  fragColor = mix(fragColor, rectColor * 0.5, 0.9 * dtoa(dist, 250.));
+    
+    dist = sdCircle(uv, br,0.);
+  fragColor = mix(fragColor, rectColor * 0.5, 0.9 * dtoa(dist, 250.));
+
+    
+    
+    // line segment ------------------------------------------------
+    vec4 lineSegmentColor = vec4(.1,0.5,0.2,1.0);
+    a = 0.4 + (sin(iGlobalTime*0.15+5.)+.5)/5.;// top
+    b = (sin(iGlobalTime*0.15+6.)+3.)/6.;// left
+    c = 0.5 + (sin(iGlobalTime*0.15+7.)+.5)/5.5;// height
+  d = (sin(iGlobalTime*0.15+8.)+3.5)/6.5;// width
+
+    float lineWidth = (sin(iGlobalTime*0.25+9.)+1.05)*0.18;
+    
+    dist = sdLineSegment(uv, vec2(a,b), vec2(c,d), lineWidth);
+  fragColor = mix(fragColor, lineSegmentColor, 0.6 * dtoa(dist, 600.));
+    
+    // draw the points
+    dist = sdCircle(uv, vec2(a,b),0.);
+  fragColor = mix(fragColor, lineSegmentColor, 0.8 * dtoa(dist, 250.));
+    
+    dist = sdCircle(uv, vec2(c,d),0.);
+  fragColor = mix(fragColor, lineSegmentColor, 0.8 * dtoa(dist, 250.));
+    
+    
+    
+    
+    // rounded line segment ------------------------------------------------
+    lineSegmentColor = vec4(.5,0.5,0.1,1.0);
+    a += 0.75;
+    c += 0.75;
+    dist = sdLineSegmentRounded(uv, vec2(a,b), vec2(c,d), lineWidth);
+  fragColor = mix(fragColor, lineSegmentColor, 0.6 * dtoa(dist, 600.));
+    
+    // draw the points
+    dist = sdCircle(uv, vec2(a,b),0.);
+  fragColor = mix(fragColor, lineSegmentColor, 0.8 * dtoa(dist, 250.));
+    
+    dist = sdCircle(uv, vec2(c,d),0.);
+  fragColor = mix(fragColor, lineSegmentColor, 0.8 * dtoa(dist, 250.));
+    
+    
+    
+    // triangle ------------------------------------------------
+    vec4 triangleColor = vec4(.3,0.1,0.3,1.0);
+    float time = iGlobalTime * 0.7;
+    a = (sin(time)+1.)/2.;
+    b = (sin(time+4.*0.4)+1.)/4.;
+    c = (sin(time+4.*0.4)+1.)/4.;;
+  d = 0.75;
+  e = 0.8;
+  f = 0.75;
+    
+    dist = sdTriangle(uv, vec2(a,b), vec2(c,d), vec2(e,f));
+    // the -0.05 here will make the object bigger, and reveal how accurate the distances are at corners.
+  fragColor = mix(fragColor, triangleColor, 0.7 * dtoa(dist - 0.05, 200.));
+    
+    // draw the points
+  fragColor = mix(fragColor, triangleColor, 0.9 * dtoa(sdCircle(uv, vec2(a,b),0.005), 2000.));
+  fragColor = mix(fragColor, triangleColor, 0.9 * dtoa(sdCircle(uv, vec2(c,d),0.005), 2000.));
+  fragColor = mix(fragColor, triangleColor, 0.9 * dtoa(sdCircle(uv, vec2(e,f),0.005), 2000.));
+    
+    
+    
+    
+    
+    // red squircle ------------------------------------------------
+    dist = sdSquircle(uv,
+                      vec2(0.5 +((sin(iGlobalTime*0.75)+1.)/3.), (cos(iGlobalTime*1.3)/6.)+0.5),
+                      0.2, (sin(iGlobalTime)/1.2)+1.5, iGlobalTime);
+    // this converts distance -> alpha + color -> fragcolor
+  fragColor = mix(fragColor, vec4(.85,0.,0.,1.0), 0.7 * dtoa(dist, 250.));
+    
+
+    // blue circle ------------------------------------------------
+    dist = sdCircle(uv,
+                    vec2(0.5 +((cos(iGlobalTime*0.85)+1.)/2.), (pow(cos(iGlobalTime*1.1),3.)/7.)+0.5),
+                    0.2);
+  fragColor = mix(fragColor, vec4(.2,0.,0.8,1.0), 0.7 * dtoa(dist, 250.));
+    
+    
+    // yellow hex ------------------------------------------------
+  dist = sdHexagon(uv,
+                     vec2(0.5 +((cos((iGlobalTime+1.4)*1.25)+1.)/4.), 0.6),
+                     0.2,
+                     iGlobalTime);
+  fragColor = mix(fragColor, vec4(0.8,0.8,0.1,1.0), 0.7 * dtoa(dist, 60.));
+    
+
 }
