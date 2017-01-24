@@ -4,17 +4,19 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 
 // init camera, scene, renderer
-var scene, camera, renderer;
+var gl, scene, camera, renderer;
 var clock;
 
-var tuniform;
+var fragUniforms;
+var mesh;
+var shaderLoader;
 
 window.onload = function() {
-  var sl = new ShaderLoader();
-  sl.loadShaders({
+  shaderLoader = new ShaderLoader();
+  shaderLoader.loadShaders({
     neurons_vert : "",
     neurons_frag : "",
-  }, "./glsl/", init );
+  }, "./glsl/", init);
 };
 
 function init() {
@@ -31,10 +33,12 @@ function init() {
   renderer.setClearColor(0xff00ff);
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
+
+  gl = renderer.getContext();
   
   clock = new THREE.Clock();
 
-  tuniform = {
+  fragUniforms = {
     iResolution: {
       type: 'v3',
       value: new THREE.Vector3(window.innerWidth, window.innerHeight, 1),
@@ -83,26 +87,24 @@ function init() {
   renderer.domElement.addEventListener('mousedown', function(e) {
     var canvas = renderer.domElement;
     var rect = canvas.getBoundingClientRect();
-    tuniform.iMouse.value.z = (e.clientX - rect.left) / window.innerWidth * 2 - 1;
-    tuniform.iMouse.value.w = (e.clientY - rect.top) / window.innerHeight * -2 + 1; 
+    fragUniforms.iMouse.value.z = (e.clientX - rect.left) / window.innerWidth * 2 - 1;
+    fragUniforms.iMouse.value.w = (e.clientY - rect.top) / window.innerHeight * -2 + 1; 
   });
 
   // resize canvas function
   window.addEventListener('resize', onResize);
-  tuniform.iResolution.value.x = window.innerWidth;
-  tuniform.iResolution.value.y = window.innerHeight;
-  tuniform.iResolution.value.z = 1; // pixel aspect ratio
+  fragUniforms.iResolution.value.x = window.innerWidth;
+  fragUniforms.iResolution.value.y = window.innerHeight;
+  fragUniforms.iResolution.value.z = 1; // pixel aspect ratio
   
+
   // Create Plane
-  var material = new THREE.ShaderMaterial({
-    uniforms: tuniform,
-    vertexShader: ShaderLoader.get("neurons_vert"),
-    fragmentShader: ShaderLoader.get("neurons_frag"),
-  });
-  var mesh = new THREE.Mesh(
-    new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 40), material
+  mesh = new THREE.Mesh(
+    new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 40)
   );
   scene.add(mesh);
+
+  refreshShaders();
 
   // start update loop
   update();
@@ -112,19 +114,47 @@ function onResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  tuniform.iResolution.value.x = window.innerWidth;
-  tuniform.iResolution.value.y = window.innerHeight;
+  fragUniforms.iResolution.value.x = window.innerWidth;
+  fragUniforms.iResolution.value.y = window.innerHeight;
+}
+
+function refreshShaders() {
+  var newMat = new THREE.ShaderMaterial({
+    uniforms: fragUniforms,
+    vertexShader: ShaderLoader.get("neurons_vert"),
+    fragmentShader: ShaderLoader.get("neurons_frag"),
+  });
+
+  var oldMat = mesh.material;
+
+  // HACK to initialize new material
+  mesh.material = newMat;
+  renderer.render(scene, camera);
+
+  // restore old material if new one failed to compile
+  var status = gl.getProgramParameter( newMat.program.program, gl.LINK_STATUS );
+  if (!status) {
+    mesh.material = oldMat;
+    renderer.render(scene, camera);
+  }
 }
 
 function update() {
   requestAnimationFrame(update);
 
+  if (!ShaderLoader.loading) {
+    shaderLoader.loadShaders({
+      neurons_vert : "",
+      neurons_frag : "",
+    }, "./glsl/", refreshShaders);
+  }
+
   var dt = clock.getDelta();
 
-  tuniform.iFrame.value++;
-  tuniform.iTimeDelta.value = dt;
-  tuniform.iFrameRate.value = 1 / dt;
-  tuniform.iGlobalTime.value += dt;
+  fragUniforms.iFrame.value++;
+  fragUniforms.iTimeDelta.value = dt;
+  fragUniforms.iFrameRate.value = 1 / dt;
+  fragUniforms.iGlobalTime.value += dt;
   
   renderer.render(scene, camera);
 }

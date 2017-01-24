@@ -19911,6 +19911,10 @@
 
 		};
 
+		// this.initMaterial = function( material, fog, object ) {
+		// 	initMaterial( material, fog, object );
+		// }
+
 		this.setViewport = function ( x, y, width, height ) {
 
 			state.viewport( _viewport.set( x, y, width, height ) );

@@ -1,14 +1,20 @@
 "use strict";
 
 var ShaderLoader = function() {
+  ShaderLoader.shaders = {};
+
   ShaderLoader.get = function(id) {
     return ShaderLoader.shaders[id];
   };
 };
 ShaderLoader.prototype = {
   loadShaders: function(shaders, baseUrl, callback) {
-    ShaderLoader.shaders = shaders;
+    if (shaders) {
+      Object.assign(ShaderLoader.shaders, shaders);
+    }
 
+    ShaderLoader.loading = true;
+    
     this.baseUrl = baseUrl || "./";
     this.callback = callback;
     this.batchLoad(this, "onShadersReady");
@@ -35,6 +41,7 @@ ShaderLoader.prototype = {
     }
   },
   onShadersReady: function() {
+    ShaderLoader.loading = false;
     if (this.callback) {
       this.callback();
     }
