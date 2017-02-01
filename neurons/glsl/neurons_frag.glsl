@@ -54,13 +54,11 @@ float intersect(float d1, float d2) {
 }
 
 
-///////////////////////
-// FRACTAL
-///////////////////////
+// FRACTAL ////////////////////////////////////
 
 // http://www.fractalforums.com/new-theories-and-research/very-simple-formula-for-fractal-patterns/
 // https://www.shadertoy.com/view/lslGWr
-float field(in vec3 p) {
+float fractalField(in vec3 p) {
   float strength = 7. + .03 * log(1.e-6 + fract(sin(iGlobalTime) * 4373.11));
   float accum = 0.;
   float prev = 0.;
@@ -76,26 +74,46 @@ float field(in vec3 p) {
   return max(0., 5. * accum / tw - .7);
 }
 
-
-////////////////////////////////////////////
-// misc
-////////////////////////////////////////////
-
+// rotation /////////////////////////////////////////////////////////
 mat2 rot2D(float r) {
   float c = cos(r), s = sin(r);
   return mat2(c, s, -s, c);
 }
 
+// distanceToAlpha /////////////////////////////////////////////////////////
+// https://www.shadertoy.com/view/ltBGzt
+
+// #define SMOOTHSTEP
+#define DIV
+// #define SIGN
+
 // convert distance to alpha
 float dtoa(float d, float amount) {
+  // float a = clamp(1.0 / (clamp(d, 1.0/amount, 1.0)*amount), 0.,1.);
+
+  // using smoothstep() is idiomatic, fast, and clean (no bleeding).
+  #ifdef SMOOTHSTEP
+  float a = 1.0 -smoothstep(0., 0.006, d);
+  #endif
+
+  // using a divide gives a very long falloff, so it bleeds which I think is pretty.
+  #ifdef DIV
+  // const float amount = 300.0;// bigger number = more accurate / crisper falloff.
   float a = clamp(1.0 / (clamp(d, 1.0/amount, 1.0)*amount), 0.,1.);
+  #endif
+
+  // using sign() which gives 1 50% AA value. it's cheap, but kind of ugly.
+  #ifdef SIGN
+  const float epsilon = 0.0007;
+  if(abs(d) <= epsilon) d = 0.;// is there a way to optimize this out?
+  float a = (sign(-d) + 1.0) / 2.0;
+  #endif
+
   return a;
 }
 
-
-////////////////////////////////////////////
-// distance functions
-////////////////////////////////////////////
+// distance functions //////////////////////////////////////////
+// https://www.shadertoy.com/view/XtjGzt
 
 // circle
 float sdCircle(vec2 uv, vec2 origin, float radius) {
@@ -203,21 +221,25 @@ float sdTriangle(in vec2 p, in vec2 p0, in vec2 p1, in vec2 p2) {
   return -sqrt(d.x)*sign(d.y);
 }
 
-
-
-//////////////////////////////
-// MAIN
-//////////////////////////////
-
+// MAIN //////////////////////////////////////////
 void main() {
   float t = iGlobalTime;
   vec2 uv = fragCoord.xy / iResolution.yy;
     
-  // background color
+  // background color -------------------------
   fragColor = vec4(1.0, 1.0, 1.0, 1.0);
   float dist;
   float a, b, c, d, e, f;
   vec2 tl, rectSize;
+
+  // fractal ---------------------------
+  // uv = 2. * fragCoord.xy / iResolution.xy - 1.;
+  vec2 uvs = uv * iResolution.xy / max(iResolution.x, iResolution.y) * 4.;
+  vec3 p = vec3(uvs / 4., 0) + vec3(1., -1.3, 0.);
+  p += .2 * vec3(sin(iGlobalTime / 16.), sin(iGlobalTime / 12.),  sin(iGlobalTime / 128.)) * vec3(0., 0., 0.5);
+  float fieldT = fractalField(p);
+  float v = (1. - exp((abs(uv.x) - 1.) * 6.)) * (1. - exp((abs(uv.y) - 1.) * 6.));
+  fragColor = mix(.4, 1., v) * vec4(1.8 * fieldT * fieldT * fieldT, 1.4 * fieldT * fieldT, fieldT, 1.0);
 
   // triangle ------------------------------------------------
   vec4 triangleColor = vec4(.3, 0.1, 0.3, 1.0);
@@ -229,14 +251,45 @@ void main() {
   e = 0.8;
   f = 0.75;
 
-  dist = sdTriangle(uv, vec2(a,b), vec2(c,d), vec2(e,f));
-  // the -0.05 here will make the object bigger, and reveal how accurate the distances are at corners.
-  // fragColor = mix(fragColor, triangleColor, 0.7 * dtoa(dist - 0.05, 200.));
-  fragColor = mix(fragColor, triangleColor, 0.7 * dtoa(dist, 200.));
+  dist = sdTriangle(uv, vec2(a, b), vec2(c, d), vec2(e, f));
+  fragColor = mix(fragColor, triangleColor, dtoa(dist, 600.));
 
   // draw the points
   // fragColor = mix(fragColor, triangleColor, 0.9 * dtoa(sdCircle(uv, vec2(a,b), 0.005), 2000.));
   // fragColor = mix(fragColor, triangleColor, 0.9 * dtoa(sdCircle(uv, vec2(c,d), 0.005), 2000.));
   // fragColor = mix(fragColor, triangleColor, 0.9 * dtoa(sdCircle(uv, vec2(e,f), 0.005), 2000.));
 
+  // bubbles --------------
+
+  vec3 color = fragColor.xyz;
+
+  for (int i = 0; i < 40; i++) {
+    // bubble seeds
+    float pha =      sin(float(i)*546.13+1.0)*0.5 + 0.5;
+    float siz = pow( sin(float(i)*651.74+5.0)*0.5 + 0.5, 4.0 );
+    float pox =      sin(float(i)*321.55+4.1) * iResolution.x / iResolution.y;
+
+    // buble size, position and color
+    float rad = 0.05 + 0.03 * siz;
+    vec2  pos = vec2( pox, -1.0-rad + (2.0+2.0*rad)*mod(pha+0.1*iGlobalTime*(0.2+0.8*siz),1.0));
+    float dis = length( uv - pos );
+    vec3  col = mix( vec3(0.94,0.3,0.0), vec3(0.1,0.4,0.8), 0.5+0.5*sin(float(i)*1.2+1.9));
+       // col+= 8.0*smoothstep( rad*0.95, rad, dis ); // outline
+    
+    // render
+    float f = length(uv-pos)/rad;
+    f = sqrt(clamp(1.0-f*f,0.0,1.0));
+    color -= col.zyx *(1.0-smoothstep( rad*0.95, rad, dis )) * f;
+  }
+
+  // vigneting  
+  color *= sqrt(1.5-0.5*length(uv));
+  fragColor = vec4(color, 1.);
 }
+
+// brush: https://www.shadertoy.com/view/ltj3Wc
+// alt sdf functions (pixel units): https://www.shadertoy.com/view/4dfXDn
+// another sdf playground: https://www.shadertoy.com/view/XsyGRW
+// flame: https://www.shadertoy.com/view/MdX3zr
+// bubbles: https://www.shadertoy.com/view/4dl3zn
+// "cellular": https://www.shadertoy.com/view/Xs2GDd
