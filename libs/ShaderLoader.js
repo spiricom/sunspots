@@ -9,8 +9,12 @@ var ShaderLoader = function() {
 };
 ShaderLoader.prototype = {
   loadShaders: function(shaders, baseUrl, callback) {
+    // copy input into existing shaders list
     if (shaders) {
-      Object.assign(ShaderLoader.shaders, shaders);
+
+      for (var name in shaders) {
+        ShaderLoader.shaders[name] = ShaderLoader.shaders[name] || "";
+      }
     }
 
     ShaderLoader.loading = true;
@@ -21,13 +25,18 @@ ShaderLoader.prototype = {
   },
   batchLoad: function(scope, callback) {
     var queue = 0;
+    var shaderChanged = false;
 
     function loadHandler(name, req) {
       return function() {
+        var changed = ShaderLoader.shaders[name] !== req.responseText;
+        // console.log(ShaderLoader.shaders[name]);
+        // console.log(req.responseText);
+        shaderChanged = shaderChanged || changed;
         ShaderLoader.shaders[name] = req.responseText;
         queue--;
         if (queue <= 0) {
-          scope[callback]();
+          scope[callback](shaderChanged);
         }
       };
     }
@@ -40,10 +49,10 @@ ShaderLoader.prototype = {
       req.send();
     }
   },
-  onShadersReady: function() {
+  onShadersReady: function(shaderChanged) {
     ShaderLoader.loading = false;
     if (this.callback) {
-      this.callback();
+      this.callback(shaderChanged);
     }
   }
 };

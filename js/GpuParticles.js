@@ -14,12 +14,12 @@ function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterial
 
   // need float textures for positions/velocities
   if (!gl.getExtension("OES_texture_float")){
-      throw new Error("float textures not supported");
+    throw new Error("float textures not supported");
   }
 
   // need to access textures from vertex shader
   if( gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS) == 0 ) {
-      throw new Error("vertex shader texture read not supported");
+    throw new Error("vertex shader texture read not supported");
   }
 
   console.assert(posUpdateMaterials.constructor === Array);
