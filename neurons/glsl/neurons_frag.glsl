@@ -93,7 +93,7 @@ float dtoa(float d, float amount) {
 
   // using smoothstep() is idiomatic, fast, and clean (no bleeding).
   #ifdef SMOOTHSTEP
-  float a = 1.0 -smoothstep(0., 0.006, d);
+  float a = 1.0 - smoothstep(0., 0.006, d);
   #endif
 
   // using a divide gives a very long falloff, so it bleeds which I think is pretty.
@@ -221,6 +221,42 @@ float sdTriangle(in vec2 p, in vec2 p0, in vec2 p1, in vec2 p2) {
   return -sqrt(d.x)*sign(d.y);
 }
 
+float fillMask(float dist) {
+  return -clamp(-dist, 0.0, 1.0);
+}
+
+float borderFillMask(float dist, float width) {
+  float a = dist;
+  if (a < width) { // fill
+  // if (abs(a) < width) { // border
+    a = 1.;
+  }
+  else {
+    a = 0.;
+  }
+  float alpha2 = a;
+  alpha2 = clamp(alpha2, 0., 1.);
+  return alpha2;
+}
+
+float innerBorderMask(float dist, float width)
+{
+  //dist += 1.0;
+  float alpha1 = clamp(dist + width, 0.0, 1.0);
+  float alpha2 = clamp(dist, 0.0, 1.0);
+  return alpha1 + alpha2;
+}
+
+
+float outerBorderMask(float dist, float width)
+{
+  //dist += 1.0;
+  float alpha1 = clamp(dist, 0.0, 1.0);
+  float alpha2 = clamp(dist - width, 0.0, 1.0);
+  return alpha1 - alpha2;
+}
+
+
 // MAIN //////////////////////////////////////////
 void main() {
   float t = iGlobalTime;
@@ -239,12 +275,15 @@ void main() {
     p += .2 * vec3(sin(iGlobalTime / 16.), sin(iGlobalTime / 12.),  sin(iGlobalTime / 128.)) * vec3(0., 0., 0.5);
     float fieldT = fractalField(p);
     float v = (1. - exp((abs(uv.x) - 1.) * 6.)) * (1. - exp((abs(uv.y) - 1.) * 6.));
-    fragColor = (mix(6.4, 0.1, v) * vec4(1.5 * fieldT * fieldT * fieldT, 3.8 * fieldT * fieldT, 0.8 * fieldT, 1.));
+    fragColor = vec4(94., 89., 75., 255.) / 255. * 0.2 + 0.1 * (mix(2.4, -0.3, v) * vec4(3.4 * fieldT * fieldT * fieldT, 3.8 * fieldT * fieldT, 0.4 * fieldT, 1.));
   }
+
+  // desaturate
+  // fragColor = mix(fragColor, vec4(0.3, 0.59, 0.11, 1.), 0.2);
 
   // triangle ------------------------------------------------
   {
-    vec4 triangleColor = vec4(.0, 0., 0., 1.0);
+    vec4 triangleColor = vec4(0.04, 0.04, 0.04, 1.0);
     float time = t * 0.7;
     a = (sin(time)+1.)/2.;
     b = (sin(time+4.*0.4)+1.)/4.;
@@ -254,10 +293,15 @@ void main() {
     f = 0.75;
 
     dist = sdTriangle(uv, vec2(a, b), vec2(c, d), vec2(e, f));
-    fragColor = mix(fragColor, triangleColor, dtoa(dist, 600.));
+    fragColor += triangleColor * 1. * dtoa(dist, 600.);
+
+    // outline
+    // fragColor += 8.0 * smoothstep( 0.9, 1.1, dist ); 
+    fragColor = mix(fragColor, vec4(0., 0., 0., 1.), 1. * dtoa(dist + 1.2 / iResolution.y, 600.));
   }
 
   // bubbles --------------
+  // https://www.shadertoy.com/view/4dl3zn
   {
     vec3 color = fragColor.xyz;
 
@@ -271,7 +315,7 @@ void main() {
       float rad = 0.05 + 0.03 * siz;
       vec2  pos = vec2( pox, -1.0-rad + (2.0+2.0*rad)*mod(pha+0.1*iGlobalTime*(0.2+0.8*siz),1.0));
       float dis = length( uv - pos );
-      vec3  col = mix( vec3(0.94,0.3,0.0), vec3(0.1,0.4,0.8), 0.5+0.5*sin(float(i)*1.2+1.9));
+      vec3  col = mix( vec3(0.94,0.3,0.0), vec3(0.1,0.4,0.8), 0.5+0.5*sin(float(i)*1.2+1.9)) * 0.1;
          // col+= 8.0*smoothstep( rad*0.95, rad, dis ); // outline
       
       // render
