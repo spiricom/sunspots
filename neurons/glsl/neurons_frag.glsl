@@ -225,36 +225,36 @@ float fillMask(float dist) {
   return -clamp(-dist, 0.0, 1.0);
 }
 
-float borderFillMask(float dist, float width) {
-  float a = dist;
-  if (a < width) { // fill
-  // if (abs(a) < width) { // border
-    a = 1.;
-  }
-  else {
-    a = 0.;
-  }
-  float alpha2 = a;
-  alpha2 = clamp(alpha2, 0., 1.);
-  return alpha2;
-}
+// float borderFillMask(float dist, float width) {
+//   float a = dist;
+//   if (a < width) { // fill
+//   // if (abs(a) < width) { // border
+//     a = 1.;
+//   }
+//   else {
+//     a = 0.;
+//   }
+//   float alpha2 = a;
+//   alpha2 = clamp(alpha2, 0., 1.);
+//   return alpha2;
+// }
 
-float innerBorderMask(float dist, float width)
-{
-  //dist += 1.0;
-  float alpha1 = clamp(dist + width, 0.0, 1.0);
-  float alpha2 = clamp(dist, 0.0, 1.0);
-  return alpha1 + alpha2;
-}
+// float innerBorderMask(float dist, float width)
+// {
+//   //dist += 1.0;
+//   float alpha1 = clamp(dist + width, 0.0, 1.0);
+//   float alpha2 = clamp(dist, 0.0, 1.0);
+//   return alpha1 + alpha2;
+// }
 
 
-float outerBorderMask(float dist, float width)
-{
-  //dist += 1.0;
-  float alpha1 = clamp(dist, 0.0, 1.0);
-  float alpha2 = clamp(dist - width, 0.0, 1.0);
-  return alpha1 - alpha2;
-}
+// float outerBorderMask(float dist, float width)
+// {
+//   //dist += 1.0;
+//   float alpha1 = clamp(dist, 0.0, 1.0);
+//   float alpha2 = clamp(dist - width, 0.0, 1.0);
+//   return alpha1 - alpha2;
+// }
 
 
 // MAIN //////////////////////////////////////////
@@ -263,10 +263,7 @@ void main() {
   vec2 uv = fragCoord.xy / iResolution.yy;
     
   // background color -------------------------
-  fragColor = vec4(1.0, 1.0, 1.0, 1.0);
-  float dist;
-  float a, b, c, d, e, f;
-  vec2 tl, rectSize;
+  vec3 col = vec3(0.5, 0.5, 0.5);
 
   // fractal ---------------------------
   {
@@ -275,36 +272,12 @@ void main() {
     p += .2 * vec3(sin(iGlobalTime / 16.), sin(iGlobalTime / 12.),  sin(iGlobalTime / 128.)) * vec3(0., 0., 0.5);
     float fieldT = fractalField(p);
     float v = (1. - exp((abs(uv.x) - 1.) * 6.)) * (1. - exp((abs(uv.y) - 1.) * 6.));
-    fragColor = vec4(94., 89., 75., 255.) / 255. * 0.2 + 0.1 * (mix(2.4, -0.3, v) * vec4(3.4 * fieldT * fieldT * fieldT, 3.8 * fieldT * fieldT, 0.4 * fieldT, 1.));
-  }
-
-  // desaturate
-  // fragColor = mix(fragColor, vec4(0.3, 0.59, 0.11, 1.), 0.2);
-
-  // triangle ------------------------------------------------
-  {
-    vec4 triangleColor = vec4(0.04, 0.04, 0.04, 1.0);
-    float time = t * 0.7;
-    a = (sin(time)+1.)/2.;
-    b = (sin(time+4.*0.4)+1.)/4.;
-    c = (sin(time+4.*0.4)+1.)/4.;;
-    d = 0.75;
-    e = 0.8;
-    f = 0.75;
-
-    dist = sdTriangle(uv, vec2(a, b), vec2(c, d), vec2(e, f));
-    fragColor += triangleColor * 1. * dtoa(dist, 600.);
-
-    // outline
-    // fragColor += 8.0 * smoothstep( 0.9, 1.1, dist ); 
-    fragColor = mix(fragColor, vec4(0., 0., 0., 1.), 1. * dtoa(dist + 1.2 / iResolution.y, 600.));
+    col = vec3(94., 89., 75.)/255. * 0.2 + 0.1 * (mix(2.4, -0.3, v) * vec3(3.4 * fieldT * fieldT * fieldT, 3.8 * fieldT * fieldT, 0.4 * fieldT));
   }
 
   // bubbles --------------
   // https://www.shadertoy.com/view/4dl3zn
   {
-    vec3 color = fragColor.xyz;
-
     for (int i = 0; i < 40; i++) {
       // bubble seeds
       float pha =      sin(float(i) * 546.13 + 1.0) * 0.5 + 0.5;
@@ -315,19 +288,81 @@ void main() {
       float rad = 0.05 + 0.03 * siz;
       vec2  pos = vec2( pox, -1.0-rad + (2.0+2.0*rad)*mod(pha+0.1*iGlobalTime*(0.2+0.8*siz),1.0));
       float dis = length( uv - pos );
-      vec3  col = mix( vec3(0.94,0.3,0.0), vec3(0.1,0.4,0.8), 0.5+0.5*sin(float(i)*1.2+1.9)) * 0.1;
+      vec3  bubbleCol = mix( vec3(0.94,0.3,0.0), vec3(0.1,0.4,0.8), 0.5+0.5*sin(float(i)*1.2+1.9)) * 0.1;
          // col+= 8.0*smoothstep( rad*0.95, rad, dis ); // outline
       
       // render
       float f = length(uv-pos)/rad;
       f = sqrt(clamp(1.0-f*f,0.0,1.0));
-      color -= col.zyx *(1.0-smoothstep( rad*0.95, rad, dis )) * f;
+      col -= bubbleCol.zyx *(1.0-smoothstep( rad*0.95, rad, dis )) * f;
     }
 
     // vigneting  
-    color *= sqrt(1.5-0.5*length(uv));
-    fragColor = vec4(color, 1.);
+    col *= sqrt(1.5-0.5*length(uv));
   }
+
+  // desaturate
+  // fragColor = mix(fragColor, vec4(0.3, 0.59, 0.11, 1.), 0.2);
+
+  // shape experiments ---------------------------------------
+  { 
+    // normalized screen coords
+    vec2 p = fragCoord.xy / iResolution.xy; 
+    // translated origin - center of fronds
+    vec2 q = p - vec2(0.33,0.7); 
+    
+    // bg
+    // col = mix( vec3(1.0,0.3,0.0), vec3(1.0,0.8,0.3), sqrt(p.y) );
+    
+    float r;
+
+    // fronds
+    r = 0.2 + 0.1*cos( atan(q.y,q.x)*10.0 + 20.0*q.x + 1.0);
+    // col *= smoothstep( r, r+0.01, length( q ) );
+
+    // trunk + ground
+    r = 0.015;
+    // trunk bumps
+    r += 0.002*sin(220.0*q.y);
+    // ground
+    // r += exp(-40.0*p.y);
+    // sdf it
+    col *= 1.0 - (1.0-smoothstep(r,r+0.002, abs(q.x-0.25*sin(4.0*q.y))));// * (1.0-smoothstep(0.0,0.1,q.y));
+
+    q -= vec2(0.5, -0.5);
+
+    // r = (sin(t * 2.1)+5.) * (sin(t * 1.1+1.)+3.)*0.05 + 0.15*cos( atan(q.y,q.x)*10.0 + 20.0*q.x + 6.0);
+    float leaves = 7.;
+    float droopiness = 30.0;
+    // r = 0.2 + 0.1*cos( atan(q.y,q.x)*leaves + droopiness*atan(q.y,q.x)*0.01 + 1.0);
+    r = 0.2 + 0.1*cos( atan(q.y,q.x)*leaves + droopiness*length(q) + 1.0);
+    // r = (sin(t * 2.1)+5.) + 1.1 * cos( atan(q.y,q.x)*10.0 + 20.0*q.x + 6.0);
+    col *= smoothstep( r, r+0.03, length( q ) / 0.7 );
+
+  }
+
+  // triangle ------------------------------------------------
+  {
+    float dist;
+    float a, b, c, d, e, f;
+
+    vec3 triangleColor = vec3(0.02, 0.02, 0.02);
+    float time = t * 0.7;
+    a = (sin(time)+1.)/2.;
+    b = (sin(time+4.*0.4)+1.)/4.;
+    c = (sin(time+4.*0.4)+1.)/4.;;
+    d = 0.75;
+    e = 0.8;
+    f = 0.75;
+
+    dist = sdTriangle(uv, vec2(d, b), vec2(c, d), vec2(e, f));
+    col += triangleColor * 1. * dtoa(dist, 600.);
+
+    // outline
+    col = mix(col, vec3(0.001, 0.001, 0.001), 1. * dtoa(dist + 2. / iResolution.y, 600.));
+  }
+
+  fragColor = vec4(col, 1.);
 }
 
 // brush: https://www.shadertoy.com/view/ltj3Wc
