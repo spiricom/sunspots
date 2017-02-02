@@ -30,8 +30,6 @@ ShaderLoader.prototype = {
     function loadHandler(name, req) {
       return function() {
         var changed = ShaderLoader.shaders[name] !== req.responseText;
-        // console.log(ShaderLoader.shaders[name]);
-        // console.log(req.responseText);
         shaderChanged = shaderChanged || changed;
         ShaderLoader.shaders[name] = req.responseText;
         queue--;

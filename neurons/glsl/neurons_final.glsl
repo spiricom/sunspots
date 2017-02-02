@@ -12,9 +12,11 @@ uniform int iFrame;
 uniform float iFrameRate;
 uniform vec4 iMouse;
 
+uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
+
 uniform float iChannelTime[4];
 uniform vec3 iChannelResolution[4];
-uniform sampler2D iChannel0;
 uniform vec4 iDate;
 uniform float iSampleRate;
 

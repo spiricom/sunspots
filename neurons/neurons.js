@@ -19,8 +19,8 @@ var shadersToLoad = { neurons_vert: "", };
 var shaderDefs = [
   {
     name: "neurons_final",
-    sourceBuffers: [0],
-    outBuffer: -1, // -1 -> screen
+    inBufferIdxs: [0],
+    outBufferIdx: -1, // -1 -> screen
   },
 ];
 
@@ -30,12 +30,12 @@ var shaderDefs = [
   for (var i = 0; i < shaderDefs.length; i++) {
     var sd = shaderDefs[i];
 
-    sd.sourceBuffers = sd.sourceBuffers || [];
-    console.assert(typeof sd.outBuffer === "number");
+    sd.inBufferIdxs = sd.inBufferIdxs || [];
+    console.assert(typeof sd.outBufferIdx === "number");
 
-    for (var j = 0; j < sd.sourceBuffers.length; j++) {
-      var sb = sd.sourceBuffers[j];
-      if (sb === sd.outBuffer) {
+    for (var j = 0; j < sd.inBufferIdxs.length; j++) {
+      var sb = sd.inBufferIdxs[j];
+      if (sb === sd.outBufferIdx) {
         pingPongNeeded[sb] = true;
       }
       maxBufferIdx = Math.max(maxBufferIdx, sb);
@@ -118,6 +118,11 @@ function init() {
       value: [w,h,1,  w,h,1,  w,h,1,  w,h,1,],
     },
     iChannel0: {
+      type: 't',
+      // value set during rendering
+      // value: ,
+    },
+    iChannel1: {
       type: 't',
       // value set during rendering
       // value: ,
@@ -279,10 +284,31 @@ function updateAndRender() {
   fragUniforms.iFrameRate.value = 1 / dt;
   fragUniforms.iGlobalTime.value += dt;
   
-  for (var i = 0; i < shaderDefs.length; i++) {
-    // TODO switch out planes, bind correct textures
+  // hide all meshes so we can toggle them on individually
+  for (var i = 0; i < meshes.length; i++) {
+    meshes[i].visible = false;
+  }
 
-    renderer.render(scene, camera);
+  for (var i = 0; i < shaderDefs.length; i++) {
+    var sd = shaderDefs[i];
+
+    meshes[i].visible = true;
+
+    for (var j = 0; j < sd.inBufferIdxs.length; j++) {
+      var bufferIdx = sd.inBufferIdxs[j];
+      fragUniforms[ "iChannel" + bufferIdx ].value = renderTargets[bufferIdx];
+    }
+
+    if (sd.outBufferIdx < 0) { 
+      // bufferIdx < 0 means render to screen
+      renderer.render(scene, camera);
+    }
+    else { 
+      // render to buffer
+      renderer.render(scene, camera, renderTargets[sd.outBufferIdx]);
+    }
+
+    meshes[i].visible = false;
   }
 }
 
