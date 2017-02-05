@@ -30,11 +30,11 @@ var shaderDefs = [
   //   inBufferIdxs: [0],
   //   outBufferIdx: -1,
   // },
-  {
-    name: "updateParticles",
-    inBufferIdxs: [0],
-    outBufferIdx: 0,
-  },
+  // {
+  //   name: "updateParticles",
+  //   inBufferIdxs: [0, "noise"],
+  //   outBufferIdx: 0,
+  // },
   {
     name: "renderParticles",
     inBufferIdxs: [0, 1],
@@ -59,10 +59,12 @@ var shaderDefs = [
 
     for (var j = 0; j < sd.inBufferIdxs.length; j++) {
       var sb = sd.inBufferIdxs[j];
-      if (sb === sd.outBufferIdx) {
-        pingPongNeeded[sb] = true;
+      if (!isNaN(sb)) {
+        if (sb === sd.outBufferIdx) {
+          pingPongNeeded[sb] = true;
+        }
+        maxBufferIdx = Math.max(maxBufferIdx, sb);
       }
-      maxBufferIdx = Math.max(maxBufferIdx, sb);
     }
 
     shadersToLoad[sd.name] = "";
