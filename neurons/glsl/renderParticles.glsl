@@ -84,7 +84,7 @@ vec3 rotz(vec3 p, float a){
 
 mat2 mm2(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}
 
-void mainImage(out vec4 fragColor, in vec2 fragCoord)
+void main()
 { 
     vec2 q = fragCoord.xy/iResolution.xy;
   vec2 p = fragCoord.xy/iResolution.xy-0.5;

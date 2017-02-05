@@ -2,6 +2,7 @@
 
 if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
+// noise texture source: http://www.geeks3d.com/20091008/download-noise-textures-pack/
 
 // init camera, scene, renderer
 var gl, scene, camera, renderer;
@@ -10,6 +11,8 @@ var clock;
 var fragUniforms;
 var meshes = [];
 var shaderLoader;
+
+var noiseTex;
 
 var renderTargetPairs = [];
 var pingPongNeeded = [];
@@ -101,6 +104,12 @@ function init() {
 
   // render targets
   refreshRenderTargets();
+
+  noiseTex = new THREE.TextureLoader().load( "noise256.png" );
+  noiseTex.wrapS = THREE.RepeatWrapping;
+  noiseTex.wrapT = THREE.RepeatWrapping;
+  noiseTex.minFilter = THREE.LinearMipMapLinearFilter;
+  noiseTex.magFilter = THREE.LinearFilter;
   
   // clock
   clock = new THREE.Clock();
@@ -322,7 +331,15 @@ function updateAndRender() {
 
     for (var j = 0; j < sd.inBufferIdxs.length; j++) {
       var bufferIdx = sd.inBufferIdxs[j];
-      fragUniforms[ "iChannel" + bufferIdx ].value = renderTargetPairs[bufferIdx][1].texture;
+      var tex;
+      if (bufferIdx === "noise") {
+        tex = noiseTex;
+      }
+      else {
+        console.assert(!isNaN(bufferIdx));
+        tex = renderTargetPairs[bufferIdx][1].texture;
+      }
+      fragUniforms[ "iChannel" + j ].value = tex;
     }
 
     if (sd.outBufferIdx < 0) { 

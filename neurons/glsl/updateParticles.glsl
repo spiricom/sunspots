@@ -71,12 +71,12 @@ void main()
     if (iFrame < 10) 
     {
         if (fragCoord.y < 30.)
-          // col = ((texture2D(iChannel1, q*1.9))-.5)*10.;
-          col = (vec4(hash3(vec3(q, 1.)), 1.) - .5) * 10.;
+          col = ((texture2D(iChannel1, q*1.9))-.5)*10.;
+          // col = (vec4(hash3(vec3(q, 1.)), 1.) - .5) * 10.;
         else
         {
-            // col = ((texture2D(iChannel1, q*1.9))-.5)*.5;
-            col = (vec4(hash3(vec3(q, 1.)), 1.) - .5) * .5;
+            col = ((texture2D(iChannel1, q*1.9))-.5)*.5;
+            // col = (vec4(hash3(vec3(q, 1.)), 1.) - .5) * .5;
         }
     }
     
