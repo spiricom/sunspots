@@ -11,18 +11,39 @@ var fragUniforms;
 var meshes = [];
 var shaderLoader;
 
-var renderTargets = [];
+var renderTargetPairs = [];
 var pingPongNeeded = [];
 var numRenderTargets = 0;
 
 var shadersToLoad = { neurons_vert: "", }; 
 var shaderDefs = [
+  // {
+  //   name: "neurons_final",
+  //   inBufferIdxs: [],
+  //   outBufferIdx: 0,
+  // },
+  // {
+  //   name: "neurons_comp",
+  //   inBufferIdxs: [0],
+  //   outBufferIdx: -1,
+  // },
   {
-    name: "neurons_final",
+    name: "updateParticles",
     inBufferIdxs: [0],
-    outBufferIdx: -1, // -1 -> screen
+    outBufferIdx: 0,
+  },
+  {
+    name: "renderParticles",
+    inBufferIdxs: [0, 1],
+    outBufferIdx: 1,
+  },
+  {
+    name: "neurons_comp",
+    inBufferIdxs: [1],
+    outBufferIdx: -1,
   },
 ];
+// outBufferIdx == -1 -> screen
 
 // HACK buffer idxs must be contiguous
 {
@@ -193,7 +214,7 @@ function refreshRenderTargets() {
   var w = window.innerWidth;
   var h = window.innerHeight;
 
-  renderTargets = [];
+  renderTargetPairs = [];
 
   for (var i = 0; i < numRenderTargets; i++) {
     var target = new THREE.WebGLRenderTarget(w, h, renderTargetOptions);
@@ -203,7 +224,7 @@ function refreshRenderTargets() {
       targets[1] = new THREE.WebGLRenderTarget(w, h, renderTargetOptions);
     }
 
-    renderTargets[i] = targets;
+    renderTargetPairs[i] = targets;
   }
 }
 
@@ -213,7 +234,7 @@ function refreshMeshes() {
   }
 
   var planeGeom = new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 40);
-  for (var i = 0; i < numRenderTargets; i++) {
+  for (var i = 0; i < shaderDefs.length; i++) {
     var mesh = new THREE.Mesh( planeGeom );
     scene.add(mesh);
     meshes[i] = mesh;
@@ -239,6 +260,9 @@ function refreshShaders() {
   }
 
   // HACK to initialize new material, need to render using it
+  for (var i = 0; i < meshes.length; i++) {
+    meshes[i].visible = true;
+  }
   renderer.render(scene, camera);
 
   var materialReset = false;
@@ -250,6 +274,7 @@ function refreshShaders() {
     var status = gl.getProgramParameter( mesh.material.program.program, gl.LINK_STATUS );
     if (!status) {
       mesh.material = mesh.oldMat;
+      delete mesh.oldMat;
       materialReset = true;
     }
     else {
@@ -259,7 +284,7 @@ function refreshShaders() {
 
   // if rendered with a bad material before, render over again so we don't see on screen
   if (materialReset) {
-    renderer.render(scene, camera);
+    updateAndRender();
   }
 }
 
@@ -292,11 +317,12 @@ function updateAndRender() {
   for (var i = 0; i < shaderDefs.length; i++) {
     var sd = shaderDefs[i];
 
+    // render just the mesh with the shader for this pass
     meshes[i].visible = true;
 
     for (var j = 0; j < sd.inBufferIdxs.length; j++) {
       var bufferIdx = sd.inBufferIdxs[j];
-      fragUniforms[ "iChannel" + bufferIdx ].value = renderTargets[bufferIdx];
+      fragUniforms[ "iChannel" + bufferIdx ].value = renderTargetPairs[bufferIdx][1].texture;
     }
 
     if (sd.outBufferIdx < 0) { 
@@ -305,8 +331,15 @@ function updateAndRender() {
     }
     else { 
       // render to buffer
-      renderer.render(scene, camera, renderTargets[sd.outBufferIdx]);
+      renderer.render(scene, camera, renderTargetPairs[sd.outBufferIdx][0]);
+
+      // TODO is this the correct time to swap?
+      // ping pong (if this buffer doesn't need ping pong, this will nop)
+      var temp = renderTargetPairs[sd.outBufferIdx][0]
+      renderTargetPairs[sd.outBufferIdx][0] = renderTargetPairs[sd.outBufferIdx][1]
+      renderTargetPairs[sd.outBufferIdx][1] = temp
     }
+
 
     meshes[i].visible = false;
   }

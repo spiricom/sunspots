@@ -48,9 +48,9 @@ ShaderLoader.prototype = {
     }
   },
   onShadersReady: function(shaderChanged) {
-    ShaderLoader.loading = false;
     if (this.callback) {
       this.callback(shaderChanged);
     }
+    ShaderLoader.loading = false;
   }
 };
