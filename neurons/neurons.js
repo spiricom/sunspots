@@ -30,11 +30,11 @@ var shaderDefs = [
   //   inBufferIdxs: [0],
   //   outBufferIdx: -1,
   // },
-  // {
-  //   name: "updateParticles",
-  //   inBufferIdxs: [0, "noise"],
-  //   outBufferIdx: 0,
-  // },
+  {
+    name: "updateParticles",
+    inBufferIdxs: [0, "noise"],
+    outBufferIdx: 0,
+  },
   {
     name: "renderParticles",
     inBufferIdxs: [0, 1],

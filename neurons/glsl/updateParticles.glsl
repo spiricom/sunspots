@@ -38,11 +38,11 @@ vec3 hash3(vec3 p) {
 
 vec3 update(in vec3 vel, vec3 pos, in float id) {   
   // damp and add some noise
-  vel.xyz = vel.xyz*.999 + (hash3(vel.xyz + time)*2.)*7.;
+  vel.xyz = vel.xyz*.999 + hash3(vel.xyz + time)*1.;
   
   // drift back in periodically
-  float d = pow(length(pos)*1.2, 0.75);
-  vel.xyz = mix(vel.xyz, -pos * d, sin(-time*.55)*0.5+0.5);
+  // float d = pow(length(pos)*1.2, 0.75);
+  // vel.xyz = mix(vel.xyz, -pos * d, sin(-time*.55)*0.5+0.5);
   
   return vel;
 }
@@ -70,7 +70,7 @@ void main() {
   // init
   if (iFrame < 10) {
     if (isVel) {
-      col = ((texture2D(iChannel1, q*1.9))-.5)*10.;
+      col = ((texture2D(iChannel1, q*1.9))-.5)*1.;
     }
     else {
       col = ((texture2D(iChannel1, q*1.9))-.5)*4.5;
