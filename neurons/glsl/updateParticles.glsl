@@ -30,7 +30,7 @@ const float pi2 = pi * 2.;
 const float initalSpeed = 10.;
 #define time iGlobalTime
 
-vec3 hash3(vec3 p) {
+vec3 hash33(vec3 p) {
   p = fract(p * vec3(443.8975, 397.2973, 491.1871));
   p += dot(p.zxy, p.yxz + 19.1);
   return fract(vec3(p.x * p.y, p.z*p.x, p.y*p.z))-0.5;
@@ -38,7 +38,7 @@ vec3 hash3(vec3 p) {
 
 vec3 update(in vec3 vel, vec3 pos, in float id) {   
   // damp and add some noise
-  vel.xyz = vel.xyz*.999 + hash3(vel.xyz + time)*1.;
+  vel.xyz = vel.xyz*.999 + hash33(vel.xyz + time)*1.;
   
   // drift back in periodically
   // float d = pow(length(pos)*1.2, 0.75);
