@@ -36,44 +36,35 @@ vec3 hash33(vec3 p) {
   return fract(vec3(p.x * p.y, p.z*p.x, p.y*p.z))-0.5;
 }
 
-vec3 update(in vec3 vel, vec3 pos, in float id) {   
-  // damp and add some noise
-  vel.xyz = vel.xyz*.999 + hash33(vel.xyz + time)*1.;
-  
-  // drift back in periodically
-  // float d = pow(length(pos)*1.2, 0.75);
-  // vel.xyz = mix(vel.xyz, -pos * d, sin(-time*.55)*0.5+0.5);
-  
-  return vel;
-}
-
 void main() {
-  vec2 q = fragCoord.xy / iResolution.xy;
+  vec2 uv = fragCoord.xy / iResolution.xy;
+  vec2 one = 1. / iResolution.xy;
   
-  vec4 col= vec4(0);
-  vec2 one = 1./iResolution.xy;
-  
-  vec3 pos = texture2D(iChannel0, vec2(q.x, 100. * one.y)).xyz;
-  vec3 velo = texture2D(iChannel0, vec2(q.x,0.0)).xyz;
-  velo = update(velo, pos, q.x);
-  
-  bool isVel = fragCoord.y < 30.;
+  vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.0)).xyz;
+  vec3 vel = texture2D(iChannel0, vec2(uv.x, 2.0 * one.y)).xyz;
 
-  if (isVel) {
-    col.rgb = velo;
+  // update vel
+  vel.xyz = vel.xyz*.999 + hash33(vel.xyz + time)*1.;
+
+  // write back and integrate pos
+  bool isPos = fragCoord.y < 1.0;
+  vec4 col= vec4(0);
+  if (isPos) {
+    pos.rgb += vel * 0.001;
+    col.rgb = pos.rgb;
   }
   else {
-    pos.rgb += velo * 0.002;
-    col.rgb = pos.rgb;
+    col.rgb = vel.rgb;
   }
   
   // init
   if (iFrame < 10) {
-    if (isVel) {
-      col = ((texture2D(iChannel1, q*1.9))-.5)*1.;
+    vec4 rand = texture2D(iChannel1, uv * 3.) - 0.5;
+    if (isPos) {
+      col = rand * 2.;
     }
     else {
-      col = ((texture2D(iChannel1, q*1.9))-.5)*4.5;
+      col = rand * 1.;
     }
   }
 
