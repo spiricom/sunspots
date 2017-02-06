@@ -47,9 +47,9 @@ void main() {
 
   // init
   if (iFrame < 20) {
-    vec4 rand = texture2D(iChannel1, uv * 3.) - vec4(0.5);
+    vec4 rand = texture2D(iChannel1, uv * 30.) - vec4(0.5);
     if (isPos) {
-      col = rand * 2.;
+      col = rand * 20.;
     }
     else {
       col = rand * 2.;

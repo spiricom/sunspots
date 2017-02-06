@@ -210,6 +210,9 @@ function onResize() {
   fragUniforms.iResolution.value.x = window.innerWidth;
   fragUniforms.iResolution.value.y = window.innerHeight;
 
+  fragUniforms.iFrame.value = 0;
+  fragUniforms.iGlobalTime.value = 0;
+
   refreshMeshes();
   refreshRenderTargets();
 }
