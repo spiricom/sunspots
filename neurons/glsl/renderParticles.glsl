@@ -29,8 +29,8 @@ const float pi2 = pi * 2.;
 
 #define time iGlobalTime
 
-const int numParticles = 100;
-const int stepsPerFrame = 5;
+const int numParticles = 30;
+const int stepsPerFrame = 3;
 
 float len2(vec3 p) { return dot(p, p); }
 
@@ -52,15 +52,15 @@ void main() {
     vec3 vel = texture2D(iChannel0, vec2(i, 2.0) * one.y).rgb;
 
     for (int j = 0; j < stepsPerFrame; j++) {
-      float dist = len2((rayOrigin + rayDir*dot(pos.xyz - rayOrigin, rayDir)) - pos.xyz);
+      float dist = len2((rayDir*dot(rayDir, pos.xyz-rayOrigin)+rayOrigin) - pos.xyz);
       dist *= 500.0;
       float falloffImmediate = 0.01;
       float falloffLong = 1.2;
-      float radiusMult = 0.3;
-      dist = radiusMult / (pow(dist, falloffLong) + falloffImmediate);
+      float mult = 0.016;
+      float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
       
-      newCol.rgb += dist * abs(sin(vec3(2.,3.4,1.2) * ( (time + float(i)*0.1)*0.04 + 1. ) + vec3(0.8, 0.0, 1.2)) * 0.7 + 0.3) * 0.04;
-      pos.xyz += vel*0.002*0.2;
+      newCol.rgb += alpha * abs( 0.3 + 0.7*sin( vec3(2., 3.4, 1.2) * ( (time + float(i)*0.1)*0.04 + 1. ) + vec3(0.8, 0.0, 1.2) ) );
+      pos.xyz += vel*0.0004;
     }
   }
   newCol /= float(stepsPerFrame);
