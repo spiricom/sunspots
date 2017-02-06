@@ -7,6 +7,8 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // init camera, scene, renderer
 var gl, scene, camera, renderer;
 var clock;
+var initialized = false;
+var shaderInitFailed = false;
 
 var fragUniforms;
 var meshes = [];
@@ -182,18 +184,21 @@ function init() {
     fragUniforms.iMouse.value.w = (e.clientY - rect.top) / window.innerHeight * -2 + 1; 
   });
 
-  // resize canvas function
-  window.addEventListener('resize', onResize);
-  fragUniforms.iResolution.value.x = window.innerWidth;
-  fragUniforms.iResolution.value.y = window.innerHeight;
-  fragUniforms.iResolution.value.z = 1; // pixel aspect ratio
-  
-  // meshes and shaders
-  // ( calls refreshShaders )
-  refreshMeshes();
 
-  // start update loop
-  updateAndRender();
+  // HACK - delay load because chrome devtools has canvas setup issues?
+  setTimeout(function() {
+    // setup canvas, render targets, meshes, and shaders (onResize calls all the others)
+    window.addEventListener('resize', onResize);
+    fragUniforms.iResolution.value.z = 1; // pixel aspect ratio
+    onResize();
+
+    if (!shaderInitFailed) {
+      // start update loop
+      updateAndRender();
+    }
+
+    initialized = true;
+  }, 0.1);
 }
 
 function onResize() {
@@ -283,6 +288,7 @@ function refreshShaders() {
 
     // restore old material if new one failed to compile
     var status = gl.getProgramParameter( mesh.material.program.program, gl.LINK_STATUS );
+
     if (!status) {
       mesh.material = mesh.oldMat;
       delete mesh.oldMat;
@@ -293,8 +299,13 @@ function refreshShaders() {
     }
   }
 
-  // if rendered with a bad material before, render over again so we don't see on screen
+  if(!initialized && materialReset) {
+    console.assert(false, "shader init failed");
+    shaderInitFailed = true;
+  }
+
   if (materialReset) {
+    // if rendered with a bad material before, render over again so we don't see on screen
     updateAndRender();
   }
 }

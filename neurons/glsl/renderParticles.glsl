@@ -29,7 +29,7 @@ const float pi2 = pi * 2.;
 
 #define time iGlobalTime
 
-const int numParticles = 30;
+const int numParticles = 10;
 const int stepsPerFrame = 3;
 
 float len2(vec3 p) { return dot(p, p); }
@@ -56,7 +56,7 @@ void main() {
       dist *= 500.0;
       float falloffImmediate = 0.01;
       float falloffLong = 1.2;
-      float mult = 0.016;
+      float mult = 0.09;
       float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
       
       newCol.rgb += alpha * abs( 0.3 + 0.7*sin( vec3(2., 3.4, 1.2) * ( (time + float(i)*0.1)*0.04 + 1. ) + vec3(0.8, 0.0, 1.2) ) );

@@ -27,36 +27,24 @@ const float pi2 = pi * 2.;
 
 ///////////////////////////////////////////
 
+float len2(vec3 p) { return dot(p, p); }
+
 const float initalSpeed = 10.;
 #define time iGlobalTime
 
 vec3 hash33(vec3 p) {
   p = fract(p * vec3(443.8975, 397.2973, 491.1871));
   p += dot(p.zxy, p.yxz + 19.1);
-  return fract(vec3(p.x * p.y, p.z*p.x, p.y*p.z))-0.5;
+  return fract(vec3(p.x*p.y, p.z*p.x, p.y*p.z))-0.5;
 }
 
 void main() {
   vec2 uv = fragCoord.xy / iResolution.xy;
   vec2 one = 1. / iResolution.xy;
   
-  vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.0)).xyz;
-  vec3 vel = texture2D(iChannel0, vec2(uv.x, 2.0 * one.y)).xyz;
-
-  // update vel
-  vel.xyz = vel.xyz*.999 + hash33(vel.xyz + time)*1.;
-
-  // write back and integrate pos
   bool isPos = fragCoord.y < 1.0;
   vec4 col= vec4(0);
-  if (isPos) {
-    pos.rgb += vel * 0.001;
-    col.rgb = pos.rgb;
-  }
-  else {
-    col.rgb = vel.rgb;
-  }
-  
+
   // init
   if (iFrame < 10) {
     vec4 rand = texture2D(iChannel1, uv * 3.) - 0.5;
@@ -64,9 +52,32 @@ void main() {
       col = rand * 2.;
     }
     else {
-      col = rand * 1.;
+      col = rand * 2.;
     }
   }
+  else {
+    vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.0)).xyz;
+    vec3 vel = texture2D(iChannel0, vec2(uv.x, 2.0 * one.y)).xyz;
+
+    // update vel
+    vel.xyz = vel.xyz*.999 + hash33(vel * 2. + time * 3.) * 1.;
+
+    if (length(pos) > 1.0 && dot(vel, pos) > 0.0) {
+      vel *= 0.99;
+      vel += normalize(pos) * -0.1;
+    }
+
+    // write back and integrate velocity
+    if (isPos) {
+      pos.rgb += vel * 0.001;
+      col.rgb = pos.rgb;
+    }
+    else {
+      col.rgb = vel.rgb;
+    }
+    
+  }
+  
 
   fragColor = col;
 }
