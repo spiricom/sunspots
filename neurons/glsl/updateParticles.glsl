@@ -46,8 +46,8 @@ void main() {
   vec4 col= vec4(0);
 
   // init
-  if (iFrame < 10) {
-    vec4 rand = texture2D(iChannel1, uv * 3.) - 0.5;
+  if (iFrame < 20) {
+    vec4 rand = texture2D(iChannel1, uv * 3.) - vec4(0.5);
     if (isPos) {
       col = rand * 2.;
     }
@@ -55,6 +55,7 @@ void main() {
       col = rand * 2.;
     }
   }
+  // update
   else {
     vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.0)).xyz;
     vec3 vel = texture2D(iChannel0, vec2(uv.x, 2.0 * one.y)).xyz;

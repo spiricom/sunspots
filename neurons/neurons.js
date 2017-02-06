@@ -39,7 +39,7 @@ var shaderDefs = [
   },
   {
     name: "renderParticles",
-    inBufferIdxs: [0, 1],
+    inBufferIdxs: [0, 1, "noise"],
     outBufferIdx: 1,
   },
   {
@@ -154,12 +154,14 @@ function init() {
     iChannel0: {
       type: 't',
       // value set during rendering
-      // value: ,
     },
     iChannel1: {
       type: 't',
       // value set during rendering
-      // value: ,
+    },
+    iChannel2: {
+      type: 't',
+      // value set during rendering
     },
     iMouse: {
       type: 'v4',
@@ -198,7 +200,7 @@ function init() {
     }
 
     initialized = true;
-  }, 0.1);
+  }, 0.3);
 }
 
 function onResize() {
@@ -318,6 +320,11 @@ function shaderLoadCallback(shaderChanged) {
 
 function updateAndRender() {
   requestAnimationFrame(updateAndRender);
+
+  // var curRes = fragUniforms.iResolution.value;
+  // if (curRes.x !== window.innerWidth || curRes.y !== window.innerHeight) {
+  //   onResize();
+  // }
 
   if (!ShaderLoader.loading) {
     delete shadersToLoad.neurons_vert;

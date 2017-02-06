@@ -14,6 +14,7 @@ uniform vec4 iMouse;
 
 uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
+uniform sampler2D iChannel2;
 
 uniform float iChannelTime[4];
 uniform vec3 iChannelResolution[4];
@@ -29,7 +30,7 @@ const float pi2 = pi * 2.;
 
 #define time iGlobalTime
 
-const int numParticles = 10;
+const int numParticles = 6;
 const int stepsPerFrame = 3;
 
 float len2(vec3 p) { return dot(p, p); }
@@ -65,10 +66,10 @@ void main() {
   }
   newCol /= float(stepsPerFrame);
   
-  vec4 col = (newCol + oldCol) * 0.99;
+  vec4 col = (newCol + oldCol * (0.98 + texture2D(iChannel2, vec2(time)).x * 0.022) );
   
   // init
-  if (iFrame < 20) col = vec4(0);
+  if (iFrame < 24) col = vec4(0);
   
   fragColor = col;
 }
