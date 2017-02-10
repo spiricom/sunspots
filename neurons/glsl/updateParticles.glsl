@@ -63,7 +63,8 @@ void main() {
     // update vel
     vel.xyz = vel.xyz*.999 + hash33(vel * 2. + time * 3.) * 1.;
 
-    if (length(pos) > 1.0 && dot(vel, pos) > 0.0) {
+    // keep close
+    if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
       vel *= 0.99;
       vel += normalize(pos) * -0.1;
     }

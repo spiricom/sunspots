@@ -30,7 +30,7 @@ const float pi2 = pi * 2.;
 
 #define time iGlobalTime
 
-const int numParticles = 6;
+const int numParticles = 8;
 const int stepsPerFrame = 3;
 
 float len2(vec3 p) { return dot(p, p); }
@@ -41,11 +41,12 @@ void main() {
 
   vec2 one = 1. / iResolution.xy;
 
+  float focalDist = 0.75;
   vec2 uvUniformCoords = fragCoord.xy / iResolution.xy-0.5;
   uvUniformCoords.x *= iResolution.x / iResolution.y;
-  vec3 rayDir = normalize(vec3(uvUniformCoords, -1.));
+  vec3 rayDir = normalize(vec3(uvUniformCoords, -focalDist));
   
-  vec3 rayOrigin = vec3(0., 0., 4.);
+  vec3 rayOrigin = vec3(0., 0., 2.5);
   
   vec4 newCol = vec4(0);
   for (int i = 0; i < numParticles; i++) {
@@ -53,15 +54,17 @@ void main() {
     vec3 vel = texture2D(iChannel0, vec2(i, 2.0) * one.y).rgb;
 
     for (int j = 0; j < stepsPerFrame; j++) {
-      float dist = len2((rayDir*dot(rayDir, pos.xyz-rayOrigin)+rayOrigin) - pos.xyz);
-      dist *= 500.0;
-      float falloffImmediate = 0.01;
-      float falloffLong = 1.2;
-      float mult = 0.09;
+      vec3 tracePos = pos.xyz*vec3(1.,1.,1.2);
+      float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
+      dist *= 1000.0;
+      float falloffImmediate = 0.013;
+      float falloffLong = 0.9;
+      float mult = 0.07;
       float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
       
-      newCol.rgb += alpha * abs( 0.3 + 0.7*sin( vec3(2., 3.4, 1.2) * ( (time + float(i)*0.1)*0.04 + 1. ) + vec3(0.8, 0.0, 1.2) ) );
-      pos.xyz += vel*0.0004;
+      newCol.rgb += alpha * abs( 0.1 + 0.9*sin( vec3(1.5, 1.2, 30.1) * ( time*0.04 + float(i)/float(numParticles)*3.14 ) + vec3(0.) ) );
+      
+      pos.xyz += vel / float(stepsPerFrame) * 0.001;
     }
   }
   newCol /= float(stepsPerFrame);
