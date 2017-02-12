@@ -11,7 +11,7 @@ var audioEnabled = true;
 var keepClothsCentered = true;
 
 var guiEnabled = false;
-var controlsEnabled = false;
+var controlsEnabled = true;
 
 // MISC GLOBALS
 var gl;

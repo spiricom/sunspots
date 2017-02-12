@@ -31,7 +31,7 @@ const float pi2 = pi * 2.;
 #define time iGlobalTime
 
 const int numParticles = 8;
-const int stepsPerFrame = 3;
+const int stepsPerFrame = 2;
 
 float len2(vec3 p) { return dot(p, p); }
 
@@ -54,22 +54,31 @@ void main() {
     vec3 vel = texture2D(iChannel0, vec2(i, 2.0) * one.y).rgb;
 
     for (int j = 0; j < stepsPerFrame; j++) {
-      vec3 tracePos = pos.xyz*vec3(1.,1.,1.2);
+      vec3 tracePos = pos.xyz*vec3(1.,1.,0.7);
+
       float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
       dist *= 1000.0;
-      float falloffImmediate = 0.013;
-      float falloffLong = 0.9;
-      float mult = 0.07;
+      float falloffImmediate = 0.0510;
+      float falloffLong = 0.85;
+      float mult = 0.3 / float(numParticles);
       float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
       
-      newCol.rgb += alpha * abs( 0.1 + 0.9*sin( vec3(1.5, 1.2, 30.1) * ( time*0.04 + float(i)/float(numParticles)*3.14 ) + vec3(0.) ) );
+      newCol.rgb += alpha * abs(
+        0.3 + 0.9*sin( 
+          vec3(1.0) * ( 
+            time*0.1 
+          ) 
+        + vec3(1.0, 0.66, 0.33)*3.14
+        + vec3(float(i)/float(numParticles))*3.14
+        ) 
+      );
       
-      pos.xyz += vel / float(stepsPerFrame) * 0.001;
+      pos.xyz += vel / float(stepsPerFrame) * 0.0002;
     }
   }
   newCol /= float(stepsPerFrame);
   
-  vec4 col = (newCol + oldCol * (0.98 + texture2D(iChannel2, vec2(time)).x * 0.022) );
+  vec4 col = (newCol + oldCol * (0.995 + texture2D(iChannel2, vec2(time/256.0 * 0.1)).x * 0.0) );
   
   // init
   if (iFrame < 24) col = vec4(0);

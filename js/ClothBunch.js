@@ -41,31 +41,17 @@ function ClothBunch( numCloths, fboWidth, fboHeight, tex, sideLength, options ) 
   }
 }
 
-var baseHue = 0.4;
-var simplex = new SimplexNoise();
-
 ClothBunch.prototype.update = function(camera, avgVolumes) {
 
   // colors
-  var avgAvg = 0;
-  for (var i = 0; i < avgVolumes.length; i++) {
-    avgAvg += avgVolumes[i];
-  }
-  avgAvg /= avgVolumes.length;
-
-  var t = Date.now() * 0.00002;
-  baseHue = simplex.noise(t, 0) + 1;
-
   if (this.colorScheme == "main") {
     for (var i = 0; i < this.cloths.length; i++) {
-      if (i < avgVolumes.length) {
-        var val = avgAvg * 0.85 + avgVolumes[i] * (1 - 0.85);
+      if (avgVolumes.length > i) {
         var col = HSVtoRGB(
           // EasingFunctions.easeOutQuad(avgVolumes[i] / 20 + 0.2) + 0.1,
-          // baseHue,
-          (val / 20)*0.1 + baseHue,
-          EasingFunctions.easeInQuart(THREE.Math.clamp(val / 30 + 0.3, 0, 1)),
-          THREE.Math.clamp(EasingFunctions.easeInCubic(val / 20) + 0.02, 0, 1)
+          avgVolumes[i] / 20 + 0.3,
+          EasingFunctions.easeInQuart(THREE.Math.clamp(avgVolumes[i] / 30 + 0.3, 0, 1)),
+          THREE.Math.clamp(EasingFunctions.easeInCubic(avgVolumes[i] / 20) + 0.02, 0, 1)
           );
       }
       else {
@@ -82,21 +68,19 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
   }
 
   // drift position
-  if (this.vel.x !== 0 || this.vel.y !== 0 || this.vel.z !== 0) {
+  if (this.vel.x !== 0 && this.vel.y !== 0) {
     if (this.pos.y < -5000) {
       this.vel.y = 1 * drifterSpeed;
     }
     else if (this.pos.y > 5000) {
       this.vel.y = -1 * drifterSpeed;
     }
-
     if (this.pos.x < -5000) {
       this.vel.x = 1 * drifterSpeed;
     }
     else if (this.pos.x > 5000) {
       this.vel.x = -1 * drifterSpeed;
     }
-
     if (this.pos.z < -5000) {
       this.vel.z = 1 * drifterSpeed;
     }

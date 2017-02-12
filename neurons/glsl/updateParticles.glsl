@@ -71,7 +71,7 @@ void main() {
 
     // write back and integrate velocity
     if (isPos) {
-      pos.rgb += vel * 0.001;
+      pos.rgb += vel * 0.0002;
       col.rgb = pos.rgb;
     }
     else {
