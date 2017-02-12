@@ -58,9 +58,9 @@ void main() {
 
       float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
       dist *= 1000.0;
-      float falloffImmediate = 0.0510;
-      float falloffLong = 0.85;
-      float mult = 0.3 / float(numParticles);
+      float falloffImmediate = 0.0030;
+      float falloffLong = 1.0;
+      float mult = 0.055;
       float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
       
       newCol.rgb += alpha * abs(
@@ -69,7 +69,7 @@ void main() {
             time*0.1 
           ) 
         + vec3(1.0, 0.66, 0.33)*3.14
-        + vec3(float(i)/float(numParticles))*3.14
+        + vec3(float(i)/float(numParticles))*3.14*0.5
         ) 
       );
       
