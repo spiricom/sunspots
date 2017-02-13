@@ -80,13 +80,25 @@ window.onload = function() {
   shaderLoader.loadShaders(shadersToLoad, "./glsl/", init);
 };
 
+
+var customDims = {
+  x: 20*20,
+  y: 14*20,
+}
+function getRenderWidth() {
+  return customDims ? customDims.x : window.innerWidth;
+}
+function getRenderHeight() {
+  return customDims ? customDims.y : window.innerHeight;
+}
+
 function init() {
   // scene
   scene = new THREE.Scene();
   
   // camera
   var fov = 75;
-  var aspect = window.innerWidth / window.innerHeight;
+  var aspect = getRenderWidth() / getRenderHeight();
   camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
   camera.position.z = 100;
   camera.lookAt(scene.position);
@@ -94,7 +106,7 @@ function init() {
   // renderer
   renderer = new THREE.WebGLRenderer();
   renderer.setClearColor(0xff00ff);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(getRenderWidth(), getRenderHeight());
   document.body.appendChild(renderer.domElement);
 
   // gl
@@ -119,8 +131,8 @@ function init() {
   clock = new THREE.Clock();
 
   // uniforms
-  var w = window.innerWidth;
-  var h = window.innerHeight;
+  var w = getRenderWidth();
+  var h = getRenderHeight();
 
   fragUniforms = {
     iResolution: {
@@ -182,8 +194,8 @@ function init() {
   renderer.domElement.addEventListener('mousedown', function(e) {
     var canvas = renderer.domElement;
     var rect = canvas.getBoundingClientRect();
-    fragUniforms.iMouse.value.z = (e.clientX - rect.left) / window.innerWidth * 2 - 1;
-    fragUniforms.iMouse.value.w = (e.clientY - rect.top) / window.innerHeight * -2 + 1; 
+    fragUniforms.iMouse.value.z = (e.clientX - rect.left) / getRenderWidth() * 2 - 1;
+    fragUniforms.iMouse.value.w = (e.clientY - rect.top) / getRenderHeight() * -2 + 1; 
   });
 
 
@@ -204,11 +216,13 @@ function init() {
 }
 
 function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  fragUniforms.iResolution.value.x = window.innerWidth;
-  fragUniforms.iResolution.value.y = window.innerHeight;
+  // if (customDims && initialized) return;
+
+  // camera.aspect = getRenderWidth() / getRenderHeight();
+  // camera.updateProjectionMatrix();
+  // renderer.setSize(getRenderWidth(), getRenderHeight());
+  // fragUniforms.iResolution.value.x = getRenderWidth();
+  // fragUniforms.iResolution.value.y = getRenderHeight();
 
   fragUniforms.iFrame.value = 0;
   fragUniforms.iGlobalTime.value = 0;
@@ -218,9 +232,6 @@ function onResize() {
 }
 
 var renderTargetOptions = {
-  // TODO per-shader bilinear support?
-  // minFilter: THREE.LinearFilter,
-  // magFilter: THREE.LinearFilter,
   magFilter: THREE.NearestFilter,
   minFilter: THREE.NearestFilter,
 
@@ -232,8 +243,8 @@ var renderTargetOptions = {
 };
 
 function refreshRenderTargets() {
-  var w = window.innerWidth;
-  var h = window.innerHeight;
+  var w = getRenderWidth();
+  var h = getRenderHeight();
 
   renderTargetPairs = [];
 
@@ -254,9 +265,10 @@ function refreshMeshes() {
     scene.remove(meshes[i]);
   }
 
-  var planeGeom = new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 40);
+  var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 40);
+  var planeGeomWindow = customDims ? new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 40) : planeGeom;
   for (var i = 0; i < shaderDefs.length; i++) {
-    var mesh = new THREE.Mesh( planeGeom );
+    var mesh = new THREE.Mesh( shaderDefs[i].outBufferIdx===-1 ? planeGeomWindow : planeGeom );
     scene.add(mesh);
     meshes[i] = mesh;
   }
@@ -276,11 +288,11 @@ function refreshShaders() {
 
     mesh.oldMat = mesh.material;
 
-    // HACK to initialize new material, need to render using it
+    // HACK render using new material to force-initialize it
     mesh.material = newMat;
   }
 
-  // HACK to initialize new material, need to render using it
+  // HACK render using new material to force-initialize it
   for (var i = 0; i < meshes.length; i++) {
     meshes[i].visible = true;
   }
@@ -324,11 +336,6 @@ function shaderLoadCallback(shaderChanged) {
 function updateAndRender() {
   requestAnimationFrame(updateAndRender);
 
-  // var curRes = fragUniforms.iResolution.value;
-  // if (curRes.x !== window.innerWidth || curRes.y !== window.innerHeight) {
-  //   onResize();
-  // }
-
   if (!ShaderLoader.loading) {
     delete shadersToLoad.neurons_vert;
     shaderLoader.loadShaders(shadersToLoad, "./glsl/", shaderLoadCallback);
@@ -366,11 +373,25 @@ function updateAndRender() {
     }
 
     if (sd.outBufferIdx < 0) { 
-      // bufferIdx < 0 means render to screen
+      // render to screen
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      fragUniforms.iResolution.value.x = window.innerWidth;
+      fragUniforms.iResolution.value.y = window.innerHeight;
+
       renderer.render(scene, camera);
     }
     else { 
       // render to buffer
+
+      camera.aspect = getRenderWidth() / getRenderHeight();
+      camera.updateProjectionMatrix();
+      renderer.setSize(getRenderWidth(), getRenderHeight());
+      fragUniforms.iResolution.value.x = getRenderWidth();
+      fragUniforms.iResolution.value.y = getRenderHeight();
+
       renderer.render(scene, camera, renderTargetPairs[sd.outBufferIdx][0]);
 
       // TODO is this the correct time to swap?
