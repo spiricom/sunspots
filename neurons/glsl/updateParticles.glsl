@@ -69,7 +69,7 @@ void main() {
     // keep close
     if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
       vel *= 0.99;
-      vel += normalize(pos) * -0.1;
+      vel += normalize(pos) * -0.3;
     }
 
     // write back and integrate velocity
