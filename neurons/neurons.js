@@ -81,10 +81,11 @@ window.onload = function() {
 };
 
 
-var customDims = {
-  x: 20*20,
-  y: 14*20,
-}
+var customDims = false;
+// var customDims = {
+//   x: 20*20,
+//   y: 14*20,
+// };
 function getRenderWidth() {
   return customDims ? customDims.x : window.innerWidth;
 }
@@ -212,7 +213,7 @@ function init() {
     }
 
     initialized = true;
-  }, 0.3);
+  }, 1);
 }
 
 function onResize() {

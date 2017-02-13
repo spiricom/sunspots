@@ -29,7 +29,11 @@ const float pi2 = pi * 2.;
 
 void main() {
   vec3 col = texture2D(iChannel0, fragCoord.xy/iResolution.xy).rgb;
-  col -= vec3(0.1);
+  col += vec3(0.1);
+  col = pow(col, vec3(0.4));
+  // col = pow(vec3(1.4), col);
+  col += vec3(-1.1);
+  col *= 1.4;
   fragColor = vec4(col, 1.0);
   // fragColor.x = 1.0;
 }

@@ -61,7 +61,10 @@ void main() {
     vec3 vel = texture2D(iChannel0, vec2(uv.x, 2.0 * one.y)).xyz;
 
     // update vel
-    vel.xyz = vel.xyz*.999 + hash33(vel * 2. + time * 3.) * 1.;
+    vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * 10.;
+    // vel.xyz = vel.xyz*.999 + texture2D(iChannel1, 
+    //   vec2(vel * 2. + time * 3.)
+    // );
 
     // keep close
     if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
