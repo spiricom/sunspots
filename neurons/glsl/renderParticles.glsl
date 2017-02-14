@@ -30,7 +30,7 @@ const float pi2 = pi * 2.;
 
 #define time iGlobalTime
 
-#define NUM_PARTICLES 8
+// #define NUM_PARTICLES 8
 #define DECAY_RATE 0.995
 // #define DECAY_RATE 0.99
 

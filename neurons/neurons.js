@@ -11,6 +11,7 @@ var initialized = false;
 var shaderInitFailed = false;
 
 var fragUniforms;
+var fragDefines;
 var meshes = [];
 var shaderLoader;
 
@@ -135,7 +136,18 @@ function init() {
   var w = getRenderWidth();
   var h = getRenderHeight();
 
+  fragDefines = {
+    NUM_PARTICLES: 8,
+  };
+
   fragUniforms = {
+    // CUSTOM UNIFORMS
+    targetPoss: {
+      type: 'v3v',
+      // value set during rendering
+    },
+
+    // SHADERTOY UNIFORMS
     iResolution: {
       type: 'v3',
       value: new THREE.Vector3(w, h, 1),
@@ -189,6 +201,11 @@ function init() {
       value: 44100,
     },
   };
+
+  for (var i = 0; i < fragDefines.NUM_PARTICLES; i++) {
+    fragUniforms.targetPoss[i] = 
+      new THREE.Vector3(0, 0, (i / fragDefines.NUM_PARTICLES-0.5)*2 * 1 );
+  }
 
   // Mouse position in - 1 to 1
   // TODO convert to pixels, set (x, y) every frame and (z, w) every frame button is down
@@ -281,6 +298,7 @@ function refreshShaders() {
   for (var i = 0; i < shaderDefs.length; i++) {
     var newMat = new THREE.ShaderMaterial({
       uniforms: fragUniforms,
+      defines: fragDefines,
       vertexShader: ShaderLoader.get("neurons_vert"),
       fragmentShader: ShaderLoader.get(shaderDefs[i].name),
     });
@@ -349,6 +367,8 @@ function updateAndRender() {
   fragUniforms.iFrameRate.value = 1 / dt;
   fragUniforms.iGlobalTime.value += dt;
   
+  // fragUniforms.targetPoss.value = [];
+
   // hide all meshes so we can toggle them on individually
   for (var i = 0; i < meshes.length; i++) {
     meshes[i].visible = false;

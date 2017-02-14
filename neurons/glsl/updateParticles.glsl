@@ -25,12 +25,15 @@ const float EPSILON = 1e-3;
 const float pi = 3.14159;
 const float pi2 = pi * 2.;
 
+#define time iGlobalTime
+
+///////////////////////////////////////////
+
+
+
 ///////////////////////////////////////////
 
 float len2(vec3 p) { return dot(p, p); }
-
-const float initalSpeed = 10.;
-#define time iGlobalTime
 
 vec3 hash33(vec3 p) {
   p = fract(p * vec3(443.8975, 397.2973, 491.1871));
@@ -59,6 +62,7 @@ void main() {
   else {
     vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.0)).xyz;
     vec3 vel = texture2D(iChannel0, vec2(uv.x, 2.0 * one.y)).xyz;
+    int particleIdx = int(fragCoord.x);
 
     // update vel
     vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * 10.;
@@ -67,10 +71,16 @@ void main() {
     // );
 
     // keep close
-    if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
-      vel *= 0.99;
-      vel += normalize(pos) * -0.3;
-    }
+    // if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
+    //   vel *= 0.99;
+    //   vel += normalize(pos) * -0.3;
+    // }
+
+    // go to target
+    // vec3 targetPos = vec3(0.0);
+    // if (length((targetPos-pos)) > 0.1) {
+    //   vel += targetPos-pos * 1.3;
+    // }
 
     // write back and integrate velocity
     if (isPos) {
