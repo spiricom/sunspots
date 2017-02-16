@@ -137,7 +137,7 @@ function init() {
   var h = getRenderHeight();
 
   fragDefines = {
-    NUM_PARTICLES: 8,
+    NUM_PARTICLES: 10,
   };
 
   fragUniforms = {

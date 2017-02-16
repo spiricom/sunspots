@@ -71,10 +71,10 @@ void main() {
     // );
 
     // keep close
-    // if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
-    //   vel *= 0.99;
-    //   vel += normalize(pos) * -0.3;
-    // }
+    if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
+      vel *= 0.99;
+      vel += normalize(pos) * -0.3;
+    }
 
     // go to target
     // vec3 targetPos = vec3(0.0);
