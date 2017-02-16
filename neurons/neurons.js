@@ -4,6 +4,10 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 // noise texture source: http://www.geeks3d.com/20091008/download-noise-textures-pack/
 
+// neuron-specific stuff
+var numParticles = 3;
+
+
 // init camera, scene, renderer
 var gl, scene, camera, renderer;
 var clock;
@@ -21,7 +25,10 @@ var renderTargetPairs = [];
 var pingPongNeeded = [];
 var numRenderTargets = 0;
 
-var shadersToLoad = { neurons_vert: "", }; 
+var shadersToLoad = { 
+  neurons_vert: "", 
+  neurons_basicComp: "", 
+}; 
 var shaderDefs = [
   // {
   //   name: "neurons_final",
@@ -99,14 +106,19 @@ function init() {
   scene = new THREE.Scene();
   
   // camera
-  var fov = 75;
+  var fov = 10; // arbitrary
   var aspect = getRenderWidth() / getRenderHeight();
   camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
   camera.position.z = 100;
   camera.lookAt(scene.position);
 
   // renderer
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({
+    // depth: false,
+  });
+  // renderer.sortObjects = false;
+  // renderer.autoClear = false;
+
   renderer.setClearColor(0xff00ff);
   renderer.setSize(getRenderWidth(), getRenderHeight());
   document.body.appendChild(renderer.domElement);
@@ -137,15 +149,15 @@ function init() {
   var h = getRenderHeight();
 
   fragDefines = {
-    NUM_PARTICLES: 10,
+    NUM_PARTICLES: numParticles,
   };
 
   fragUniforms = {
     // CUSTOM UNIFORMS
-    targetPoss: {
-      type: 'v3v',
-      // value set during rendering
-    },
+    // targetPoss: {
+    //   type: 'v3v',
+    //   // value set during rendering
+    // },
 
     // SHADERTOY UNIFORMS
     iResolution: {
@@ -201,12 +213,6 @@ function init() {
       value: 44100,
     },
   };
-
-  for (var i = 0; i < fragDefines.NUM_PARTICLES; i++) {
-    fragUniforms.targetPoss[i] = 
-      new THREE.Vector3(0, 0, (i / fragDefines.NUM_PARTICLES-0.5)*2 * 1 );
-  }
-
   // Mouse position in - 1 to 1
   // TODO convert to pixels, set (x, y) every frame and (z, w) every frame button is down
   renderer.domElement.addEventListener('mousedown', function(e) {
@@ -224,8 +230,10 @@ function init() {
     fragUniforms.iResolution.value.z = 1; // pixel aspect ratio
     onResize();
 
+    initNeurons();
+
+    // start update loop
     if (!shaderInitFailed) {
-      // start update loop
       updateAndRender();
     }
 
@@ -283,8 +291,8 @@ function refreshMeshes() {
     scene.remove(meshes[i]);
   }
 
-  var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 40);
-  var planeGeomWindow = customDims ? new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 40) : planeGeom;
+  var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 1);
+  var planeGeomWindow = customDims ? new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 1) : planeGeom;
   for (var i = 0; i < shaderDefs.length; i++) {
     var mesh = new THREE.Mesh( shaderDefs[i].outBufferIdx===-1 ? planeGeomWindow : planeGeom );
     scene.add(mesh);
@@ -352,6 +360,101 @@ function shaderLoadCallback(shaderChanged) {
   }
 }
 
+var neuronUpdateScene;
+var neuronUpdateMesh;
+
+function initNeurons() {
+  // STUFF FOR RENDERING GL_POINTS DATA TO DATA BUFFER
+
+  // scene
+  neuronUpdateScene = new THREE.Scene();
+
+  // material
+  var compMat = new THREE.ShaderMaterial({
+    uniforms: fragUniforms,
+    defines: fragDefines,
+    vertexShader: ShaderLoader.get("neurons_vert"),
+    fragmentShader: ShaderLoader.get("neurons_basicComp"),
+  });
+
+  // mesh
+  // var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 1);
+  // var planeGeom = new THREE.PlaneGeometry(1, .1, 1);
+  var planeGeom = new THREE.PlaneGeometry(1, .1, 1);
+  var mesh = new THREE.Mesh( planeGeom );
+  mesh.material = compMat;
+  // mesh.material = new THREE.MeshBasicMaterial();
+  neuronUpdateMesh = mesh;
+
+}
+
+function updateNeurons() {
+
+  // read from tex[1]
+  fragUniforms.iChannel0.value = renderTargetPairs[0][1].texture;;
+
+  // write to tex[0]
+  var renderTarget = renderTargetPairs[0][0];
+
+  // res stuff
+  camera.aspect = getRenderWidth() / getRenderHeight();
+  camera.updateProjectionMatrix();
+  renderer.setSize(getRenderWidth(), getRenderHeight());
+  fragUniforms.iResolution.value.x = getRenderWidth();
+  fragUniforms.iResolution.value.y = getRenderHeight();
+
+  // make data update point cloud
+  // var vector = new THREE.Vector3();
+  // vector.set(-1, -1, 0.5);
+  // vector.unproject( camera );
+
+  // var dir = vector.sub( camera.position ).normalize();
+
+  // var distance = - camera.position.z / dir.z;
+
+  // var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
+  
+  ////
+
+  var geom = new THREE.Geometry();
+  
+  // var pos = new THREE.Vector3(-getRenderWidth()/2, -getRenderHeight()/2, camera.position.z / 2);
+  var pos = new THREE.Vector3(0, 0, 40);
+  geom.vertices.push(pos);
+  var pos = new THREE.Vector3(0.5, 0.5, -40);
+  geom.vertices.push(pos);
+
+  var mat = new THREE.PointsMaterial({
+    size: 100,
+    sizeAttenuation: false,
+    color: new THREE.Color(0, 200, 0, 255),
+  });
+
+  var pointsMesh = new THREE.Points(geom, mat);
+
+
+  // pointsMesh.position.z = 50;
+  // neuronUpdateMesh.position.z = -90;
+  
+  pointsMesh.renderOrder = 2;
+  neuronUpdateMesh.renderOrder = 1;
+
+
+  // // render  
+  // renderer.render(neuronUpdateScene, camera);
+
+  neuronUpdateScene.add(pointsMesh);
+  neuronUpdateScene.add(neuronUpdateMesh);
+  renderer.render(neuronUpdateScene, camera);
+  neuronUpdateScene.remove(pointsMesh);
+  neuronUpdateScene.remove(neuronUpdateMesh);
+
+  // ping pong
+  // var temp = renderTargetPairs[0][0];
+  // renderTargetPairs[0][0] = renderTargetPairs[0][1];
+  // renderTargetPairs[0][1] = temp;
+}
+
 function updateAndRender() {
   requestAnimationFrame(updateAndRender);
 
@@ -367,8 +470,8 @@ function updateAndRender() {
   fragUniforms.iFrameRate.value = 1 / dt;
   fragUniforms.iGlobalTime.value += dt;
   
-  // fragUniforms.targetPoss.value = [];
-
+  updateNeurons();
+return;
   // hide all meshes so we can toggle them on individually
   for (var i = 0; i < meshes.length; i++) {
     meshes[i].visible = false;
@@ -388,6 +491,7 @@ function updateAndRender() {
       }
       else {
         console.assert(!isNaN(bufferIdx));
+        // read from tex[1]
         tex = renderTargetPairs[bufferIdx][1].texture;
       }
       fragUniforms[ "iChannel" + j ].value = tex;
@@ -413,13 +517,13 @@ function updateAndRender() {
       fragUniforms.iResolution.value.x = getRenderWidth();
       fragUniforms.iResolution.value.y = getRenderHeight();
 
+      // render to buffer 0
       renderer.render(scene, camera, renderTargetPairs[sd.outBufferIdx][0]);
 
-      // TODO is this the correct time to swap?
       // ping pong (if this buffer doesn't need ping pong, this will nop)
-      var temp = renderTargetPairs[sd.outBufferIdx][0]
-      renderTargetPairs[sd.outBufferIdx][0] = renderTargetPairs[sd.outBufferIdx][1]
-      renderTargetPairs[sd.outBufferIdx][1] = temp
+      var temp = renderTargetPairs[sd.outBufferIdx][0];
+      renderTargetPairs[sd.outBufferIdx][0] = renderTargetPairs[sd.outBufferIdx][1];
+      renderTargetPairs[sd.outBufferIdx][1] = temp;
     }
 
 

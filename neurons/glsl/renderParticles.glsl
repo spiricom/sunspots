@@ -53,7 +53,7 @@ void main() {
   
   vec4 newCol = vec4(0);
   for (int i = 0; i < NUM_PARTICLES; i++) {
-    vec3 pos = texture2D(iChannel0, vec2(i, 0.0) * one.y).rgb;
+    vec3 pos = texture2D(iChannel0, vec2(i, 0.0) * one.x).rgb;
     vec3 vel = texture2D(iChannel0, vec2(i, 2.0) * one.y).rgb;
 
     for (int j = 0; j < stepsPerFrame; j++) {
