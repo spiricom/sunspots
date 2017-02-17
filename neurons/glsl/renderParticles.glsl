@@ -81,7 +81,8 @@ void main() {
   }
   newCol /= float(stepsPerFrame);
   
-  vec4 col = (newCol + oldCol * (DECAY_RATE 
+  // vec4 col = (newCol + oldCol * (DECAY_RATE 
+  vec4 col = (newCol * (DECAY_RATE 
     // + texture2D(iChannel2, vec2(time/256.0 * 0.1)).x * 0.007) 
     + (sin(time*3.14 * 0.1)*0.5+0.5) * 0.003
   ));

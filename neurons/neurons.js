@@ -5,7 +5,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // noise texture source: http://www.geeks3d.com/20091008/download-noise-textures-pack/
 
 // neuron-specific stuff
-var numParticles = 3;
+var numParticles = 11;
 
 
 // init camera, scene, renderer
@@ -115,11 +115,7 @@ function init() {
   camera.lookAt(scene.position);
 
   // renderer
-  renderer = new THREE.WebGLRenderer({
-    // depth: false,
-  });
-  // renderer.sortObjects = false;
-  // renderer.autoClear = false;
+  renderer = new THREE.WebGLRenderer({  });
 
   renderer.setClearColor(0xff00ff);
   renderer.setSize(getRenderWidth(), getRenderHeight());
@@ -411,28 +407,25 @@ function updateNeurons() {
   fragUniforms.iResolution.value.x = getRenderWidth();
   fragUniforms.iResolution.value.y = getRenderHeight();
 
-  var geom = new THREE.Geometry();
+  var geom = new THREE.BufferGeometry();
 
-  // var pos = new THREE.Vector3(-getRenderWidth()/2, -getRenderHeight()/2, 0);
-  geom.vertices.push(new THREE.Vector3(
-    1/getRenderWidth() - 1, 
-    1/getRenderHeight() - 1, 
-  0));
-  geom.vertices.push(new THREE.Vector3(
-    2/getRenderWidth() - 1, 
-    1/getRenderHeight() - 1, 
-  0));
-  geom.vertices.push(new THREE.Vector3(
-    3/getRenderWidth() - 1, 
-    1/getRenderHeight() - 1, 
-  0));
+  var position = new Float32Array( 3 * numParticles );
+  var val = new Float32Array( 3 * numParticles );
 
-  geom.colors.push(new THREE.Color(-1, 0, 0));
-  geom.colors.push(new THREE.Color(-0.5, 0, 0));
-  geom.colors.push(new THREE.Color(0, 0, 0));
+  for (var i = 0; i < numParticles; i++) {
+    position[i*3 + 0] = (i + 1) / getRenderWidth()*2 - 1;
+    position[i*3 + 1] = 1/getRenderHeight()*2 - 1;
+    position[i*3 + 2] = 0;
 
-  geom.verticesNeedUpdate = true;
-  geom.colorsNeedUpdate = true;
+    var theta = 3.14*2 * i / numParticles;
+    var r = 1.3;
+    val[i*3 + 0] = Math.cos(theta)*r;
+    val[i*3 + 1] = Math.sin(theta)*r;
+    val[i*3 + 2] = 0;
+  }
+
+  geom.addAttribute( 'position', new THREE.BufferAttribute( position, 3 ) );
+  geom.addAttribute( 'val', new THREE.BufferAttribute( val, 3 ) );
 
   var mat = new THREE.ShaderMaterial({
     uniforms: fragUniforms,
