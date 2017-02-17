@@ -28,6 +28,8 @@ var numRenderTargets = 0;
 var shadersToLoad = { 
   neurons_vert: "", 
   neurons_basicComp: "", 
+  neurons_point_frag: "", 
+  neurons_point_vert: "", 
 }; 
 var shaderDefs = [
   // {
@@ -125,6 +127,9 @@ function init() {
 
   // gl
   gl = renderer.getContext();
+  if (!gl.getExtension("EXT_frag_depth")){
+    throw new Error("fragDepth not supported");
+  }
   if (!gl.getExtension("OES_texture_float")){
     throw new Error("float textures not supported");
   }
@@ -375,6 +380,9 @@ function initNeurons() {
     defines: fragDefines,
     vertexShader: ShaderLoader.get("neurons_vert"),
     fragmentShader: ShaderLoader.get("neurons_basicComp"),
+    extensions: {
+      fragDepth: true,
+    },
   });
 
   // mesh
@@ -385,6 +393,7 @@ function initNeurons() {
   mesh.material = compMat;
   // mesh.material = new THREE.MeshBasicMaterial();
   neuronUpdateMesh = mesh;
+
 
 }
 
@@ -403,46 +412,36 @@ function updateNeurons() {
   fragUniforms.iResolution.value.x = getRenderWidth();
   fragUniforms.iResolution.value.y = getRenderHeight();
 
-  // make data update point cloud
-  // var vector = new THREE.Vector3();
-  // vector.set(-1, -1, 0.5);
-  // vector.unproject( camera );
-
-  // var dir = vector.sub( camera.position ).normalize();
-
-  // var distance = - camera.position.z / dir.z;
-
-  // var pos = camera.position.clone().add( dir.multiplyScalar( distance ) );
-  
-  ////
-
   var geom = new THREE.Geometry();
-  
+
   // var pos = new THREE.Vector3(-getRenderWidth()/2, -getRenderHeight()/2, camera.position.z / 2);
-  var pos = new THREE.Vector3(0, 0, 40);
+  var pos = new THREE.Vector3(0, 0, 0);
   geom.vertices.push(pos);
-  var pos = new THREE.Vector3(0.5, 0.5, -40);
+  var pos = new THREE.Vector3(0.5, 0.5, 0);
   geom.vertices.push(pos);
 
-  var mat = new THREE.PointsMaterial({
-    size: 100,
-    sizeAttenuation: false,
-    color: new THREE.Color(0, 200, 0, 255),
+  geom.colors.push(new THREE.Color(0, 255, 0));
+  geom.colors.push(new THREE.Color(0, 0, 255));
+
+  geom.verticesNeedUpdate = true;
+  geom.colorsNeedUpdate = true;
+
+  var mat = new THREE.ShaderMaterial({
+    uniforms: fragUniforms,
+    vertexColors: THREE.VertexColors,
+
+    vertexShader: ShaderLoader.get("neurons_point_vert"),
+    fragmentShader: ShaderLoader.get("neurons_point_frag"),
+    extensions: {
+      fragDepth: true,
+    },
   });
 
   var pointsMesh = new THREE.Points(geom, mat);
-
-
-  // pointsMesh.position.z = 50;
-  // neuronUpdateMesh.position.z = -90;
-  
   pointsMesh.renderOrder = 2;
   neuronUpdateMesh.renderOrder = 1;
 
-
-  // // render  
-  // renderer.render(neuronUpdateScene, camera);
-
+  // render
   neuronUpdateScene.add(pointsMesh);
   neuronUpdateScene.add(neuronUpdateMesh);
   renderer.render(neuronUpdateScene, camera);
@@ -472,6 +471,7 @@ function updateAndRender() {
   
   updateNeurons();
 return;
+
   // hide all meshes so we can toggle them on individually
   for (var i = 0; i < meshes.length; i++) {
     meshes[i].visible = false;

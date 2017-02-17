@@ -48,4 +48,6 @@ void main() {
   col = vec3(0.75, 0.0, 0.0);
 
   fragColor = vec4(col, 1.0);
+
+  gl_FragDepthEXT = 1.0;
 }
