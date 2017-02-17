@@ -40,21 +40,24 @@ float len2(vec3 p) { return dot(p, p); }
 
 void main() {
   vec2 uv = fragCoord.xy / iResolution.xy;
-  vec4 oldCol = texture2D(iChannel1, uv);
-
   vec2 one = 1. / iResolution.xy;
 
+  vec4 oldCol = texture2D(iChannel1, uv);
+
+  // ray dir
   float focalDist = 0.75;
-  vec2 uvUniformCoords = fragCoord.xy / iResolution.xy-0.5;
-  uvUniformCoords.x *= iResolution.x / iResolution.y;
-  vec3 rayDir = normalize(vec3(uvUniformCoords, -focalDist));
+  vec2 rayScreenCoords = fragCoord.xy / iResolution.xy-0.5;
+  rayScreenCoords.x *= iResolution.x / iResolution.y;
+  vec3 rayDir = normalize(vec3(rayScreenCoords, -focalDist));
   
+  // ray origin
   vec3 rayOrigin = vec3(0., 0., 2.5);
   
   vec4 newCol = vec4(0);
   for (int i = 0; i < NUM_PARTICLES; i++) {
-    vec3 pos = texture2D(iChannel0, vec2(i, 0.0) * one.x).rgb;
-    vec3 vel = texture2D(iChannel0, vec2(i, 2.0) * one.y).rgb;
+    vec3 pos = texture2D(iChannel0, vec2(float(i) * one.x, 0.5*one.y)).rgb;
+    vec3 vel = texture2D(iChannel0, one * vec2(float(i) * one.x, 1.5*one.y)).rgb;
+    vec3 target = texture2D(iChannel0, vec2(float(i) * one.x, 2.5*one.y)).rgb;
 
     for (int j = 0; j < stepsPerFrame; j++) {
       vec3 tracePos = pos.xyz * vec3(1., 1., 0.5);
@@ -76,7 +79,7 @@ void main() {
         ) 
       );
       
-      pos.xyz += vel / float(stepsPerFrame) * 0.0002;
+      // pos.xyz += vel / float(stepsPerFrame) * 0.0002;
     }
   }
   newCol /= float(stepsPerFrame);

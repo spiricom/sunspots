@@ -45,7 +45,8 @@ void main() {
   vec2 uv = fragCoord.xy / iResolution.xy;
   vec2 one = 1. / iResolution.xy;
   
-  bool isPos = fragCoord.y < 1.0;
+  bool isPos = fragCoord.y == 0.5;
+  bool isVel = fragCoord.y == 1.5;
   vec4 col= vec4(0);
 
   // init
@@ -54,14 +55,19 @@ void main() {
     if (isPos) {
       col = rand * 20.;
     }
-    else {
+    else if (isVel) {
       col = rand * 2.;
+    }
+    else {
+      col.rgb = vec3(0.0);
     }
   }
   // update
   else {
-    vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.0)).xyz;
-    vec3 vel = texture2D(iChannel0, vec2(uv.x, 2.0 * one.y)).xyz;
+    vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.5 * one.y)).xyz;
+    vec3 vel = texture2D(iChannel0, vec2(uv.x, 1.5 * one.y)).xyz;
+    vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
+
     int particleIdx = int(fragCoord.x);
 
     // update vel
@@ -71,24 +77,29 @@ void main() {
     // );
 
     // keep close
-    if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
-      vel *= 0.99;
-      vel += normalize(pos) * -0.3;
-    }
+    // if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
+    //   vel *= 0.99;
+    //   vel += normalize(pos) * -0.3;
+    // }
 
     // go to target
-    // vec3 targetPos = vec3(0.0);
-    // if (length((targetPos-pos)) > 0.1) {
-    //   vel += targetPos-pos * 1.3;
-    // }
+    if (length((targetPos-pos)) > 0.3) {
+      vec3 targetVel = (targetPos-pos) / 0.0002;
+      vel = vel * 0.95 + targetVel * 0.05;
+      // vel = vec3(0.0);
+    }
+    // pos = targetPos;
 
     // write back and integrate velocity
     if (isPos) {
       pos.rgb += vel * 0.0002;
       col.rgb = pos.rgb;
     }
-    else {
+    else if (isVel) {
       col.rgb = vel.rgb;
+    }
+    else {
+      col.rgb = targetPos;
     }
     
   }

@@ -5,7 +5,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // noise texture source: http://www.geeks3d.com/20091008/download-noise-textures-pack/
 
 // neuron-specific stuff
-var numParticles = 11;
+var numParticles = 3;
 
 
 // init camera, scene, renderer
@@ -149,6 +149,7 @@ function init() {
   var w = getRenderWidth();
   var h = getRenderHeight();
 
+  // need to have this set to something for initial shader loading
   fragDefines = {
     NUM_PARTICLES: numParticles,
   };
@@ -383,7 +384,6 @@ function initNeurons() {
 
   // mesh
   var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 1);
-  // var planeGeom = new THREE.PlaneGeometry(1, .1, 1);
   var mesh = new THREE.Mesh( planeGeom );
   mesh.material = compMat;
   // mesh.material = new THREE.MeshBasicMaterial();
@@ -393,6 +393,9 @@ function initNeurons() {
 }
 
 function updateNeurons() {
+
+  // set shader defines
+  fragDefines.NUM_PARTICLES = numParticles;
 
   // read from tex[1]
   fragUniforms.iChannel0.value = renderTargetPairs[0][1].texture;;
@@ -412,16 +415,19 @@ function updateNeurons() {
   var position = new Float32Array( 3 * numParticles );
   var val = new Float32Array( 3 * numParticles );
 
+  var posIdx = 0;
+  var valIdx = 0;
   for (var i = 0; i < numParticles; i++) {
-    position[i*3 + 0] = (i + 1) / getRenderWidth()*2 - 1;
-    position[i*3 + 1] = 1/getRenderHeight()*2 - 1;
-    position[i*3 + 2] = 0;
+    position[posIdx++] = (i + 1) / getRenderWidth()*2 - 1;
+    position[posIdx++] = (2 + 1)/getRenderHeight()*2 - 1;
+    position[posIdx++] = 0;
 
-    var theta = 3.14*2 * i / numParticles;
-    var r = 1.3;
-    val[i*3 + 0] = Math.cos(theta)*r;
-    val[i*3 + 1] = Math.sin(theta)*r;
-    val[i*3 + 2] = 0;
+    var theta = 3.14*2 * i / numParticles 
+      + fragUniforms.iGlobalTime.value * 0.0;
+    var r = 0.5;
+    val[valIdx++] = Math.cos(theta)*r;
+    val[valIdx++] = Math.sin(theta)*r;
+    val[valIdx++] = 0;
   }
 
   geom.addAttribute( 'position', new THREE.BufferAttribute( position, 3 ) );
@@ -446,7 +452,6 @@ function updateNeurons() {
   neuronUpdateScene.add(pointsMesh);
   neuronUpdateScene.add(neuronUpdateMesh);
   renderer.render(neuronUpdateScene, camera, renderTarget);
-  // renderer.render(neuronUpdateScene, camera);
   neuronUpdateScene.remove(pointsMesh);
   neuronUpdateScene.remove(neuronUpdateMesh);
 
