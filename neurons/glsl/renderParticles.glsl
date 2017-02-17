@@ -55,8 +55,9 @@ void main() {
   
   vec4 newCol = vec4(0);
   for (int i = 0; i < NUM_PARTICLES; i++) {
-    vec3 pos = texture2D(iChannel0, vec2(float(i) * one.x, 0.5*one.y)).rgb;
-    vec3 vel = texture2D(iChannel0, one * vec2(float(i) * one.x, 1.5*one.y)).rgb;
+    float x = float(i) + 0.5;
+    vec3 pos = texture2D(iChannel0, vec2(x * one.x, 0.5*one.y)).rgb;
+    vec3 vel = texture2D(iChannel0, one * vec2(x * one.x, 1.5*one.y)).rgb;
     vec3 target = texture2D(iChannel0, vec2(float(i) * one.x, 2.5*one.y)).rgb;
 
     for (int j = 0; j < stepsPerFrame; j++) {
@@ -84,8 +85,8 @@ void main() {
   }
   newCol /= float(stepsPerFrame);
   
-  // vec4 col = (newCol + oldCol * (DECAY_RATE 
-  vec4 col = (newCol * (DECAY_RATE 
+  vec4 col = (newCol + oldCol * (DECAY_RATE 
+  // vec4 col = (newCol * (DECAY_RATE 
     // + texture2D(iChannel2, vec2(time/256.0 * 0.1)).x * 0.007) 
     + (sin(time*3.14 * 0.1)*0.5+0.5) * 0.003
   ));

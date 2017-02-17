@@ -5,7 +5,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // noise texture source: http://www.geeks3d.com/20091008/download-noise-textures-pack/
 
 // neuron-specific stuff
-var numParticles = 3;
+var numParticles = 9;
 
 
 // init camera, scene, renderer
@@ -422,9 +422,9 @@ function updateNeurons() {
     position[posIdx++] = (2 + 1)/getRenderHeight()*2 - 1;
     position[posIdx++] = 0;
 
-    var theta = 3.14*2 * i / numParticles 
+    var theta = 3.14*2 * i / numParticles + 0.25
       + fragUniforms.iGlobalTime.value * 0.0;
-    var r = 0.5;
+    var r = 1.3;
     val[valIdx++] = Math.cos(theta)*r;
     val[valIdx++] = Math.sin(theta)*r;
     val[valIdx++] = 0;
@@ -445,8 +445,8 @@ function updateNeurons() {
   });
 
   var pointsMesh = new THREE.Points(geom, mat);
-  pointsMesh.renderOrder = 2;
   neuronUpdateMesh.renderOrder = 1;
+  pointsMesh.renderOrder = 2;
 
   // render
   neuronUpdateScene.add(pointsMesh);
