@@ -43,9 +43,9 @@ void main() {
   // if (particleIdx == 1) {
   //   col = vec3(0.5, 0.0, 0.0);  
   // }
-  if (particleIdx == 200) {
+  if (particleIdx == 2) {
+    col = vec3(1.0, 0.0, 0.0);
   }
-  col = vec3(0.75, 0.0, 0.0);
 
   fragColor = vec4(col, 1.0);
 

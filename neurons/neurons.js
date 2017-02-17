@@ -386,9 +386,8 @@ function initNeurons() {
   });
 
   // mesh
-  // var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 1);
+  var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 1);
   // var planeGeom = new THREE.PlaneGeometry(1, .1, 1);
-  var planeGeom = new THREE.PlaneGeometry(1, .1, 1);
   var mesh = new THREE.Mesh( planeGeom );
   mesh.material = compMat;
   // mesh.material = new THREE.MeshBasicMaterial();
@@ -414,14 +413,23 @@ function updateNeurons() {
 
   var geom = new THREE.Geometry();
 
-  // var pos = new THREE.Vector3(-getRenderWidth()/2, -getRenderHeight()/2, camera.position.z / 2);
-  var pos = new THREE.Vector3(0, 0, 0);
-  geom.vertices.push(pos);
-  var pos = new THREE.Vector3(0.5, 0.5, 0);
-  geom.vertices.push(pos);
+  // var pos = new THREE.Vector3(-getRenderWidth()/2, -getRenderHeight()/2, 0);
+  geom.vertices.push(new THREE.Vector3(
+    1/getRenderWidth() - 1, 
+    1/getRenderHeight() - 1, 
+  0));
+  geom.vertices.push(new THREE.Vector3(
+    2/getRenderWidth() - 1, 
+    1/getRenderHeight() - 1, 
+  0));
+  geom.vertices.push(new THREE.Vector3(
+    3/getRenderWidth() - 1, 
+    1/getRenderHeight() - 1, 
+  0));
 
-  geom.colors.push(new THREE.Color(0, 255, 0));
-  geom.colors.push(new THREE.Color(0, 0, 255));
+  geom.colors.push(new THREE.Color(-1, 0, 0));
+  geom.colors.push(new THREE.Color(-0.5, 0, 0));
+  geom.colors.push(new THREE.Color(0, 0, 0));
 
   geom.verticesNeedUpdate = true;
   geom.colorsNeedUpdate = true;
@@ -444,14 +452,15 @@ function updateNeurons() {
   // render
   neuronUpdateScene.add(pointsMesh);
   neuronUpdateScene.add(neuronUpdateMesh);
-  renderer.render(neuronUpdateScene, camera);
+  renderer.render(neuronUpdateScene, camera, renderTarget);
+  // renderer.render(neuronUpdateScene, camera);
   neuronUpdateScene.remove(pointsMesh);
   neuronUpdateScene.remove(neuronUpdateMesh);
 
   // ping pong
-  // var temp = renderTargetPairs[0][0];
-  // renderTargetPairs[0][0] = renderTargetPairs[0][1];
-  // renderTargetPairs[0][1] = temp;
+  var temp = renderTargetPairs[0][0];
+  renderTargetPairs[0][0] = renderTargetPairs[0][1];
+  renderTargetPairs[0][1] = temp;
 }
 
 function updateAndRender() {
@@ -470,7 +479,7 @@ function updateAndRender() {
   fragUniforms.iGlobalTime.value += dt;
   
   updateNeurons();
-return;
+  // return;
 
   // hide all meshes so we can toggle them on individually
   for (var i = 0; i < meshes.length; i++) {
