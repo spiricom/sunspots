@@ -22,6 +22,8 @@ var shaderLoader;
 
 var noiseTex;
 
+var time = 0;
+
 var renderTargetPairs = [];
 var pingPongNeeded = [];
 var numRenderTargets = 0;
@@ -455,6 +457,20 @@ function updateNeurons() {
   var position = new Float32Array( 3 * (numParticles+numSmallParticles) * attributesPerParticle );
   var val = new Float32Array( 3 * (numParticles+numSmallParticles) * attributesPerParticle );
 
+  var getTargetPos = function(i) {
+    var thetaIdx = i % numParticles;
+
+    var extra = 0.1;
+    var theta = thetaIdx / (numParticles-1) * (3.14+extra*2) - extra;
+      + fragUniforms.iGlobalTime.value * 0.0;
+    var r = 2.0;
+    return [
+      Math.cos(theta)*r * 1.1,
+      Math.sin(theta)*r - 0.7,
+      0,
+    ];
+  }
+
   var posIdx = 0;
   var valIdx = 0;
   for (var i = 0; i < numParticles + numSmallParticles; i++) {
@@ -470,14 +486,21 @@ function updateNeurons() {
     position[posIdx++] = (2 + 1) / getRenderHeight() * 2 - 1;
     position[posIdx++] = 0;
 
-    var extra = 0.1;
-    var thetaIdx = i % numParticles;
-    var theta = thetaIdx / (numParticles-1) * (3.14+extra*2) - extra;
-      + fragUniforms.iGlobalTime.value * 0.0;
-    var r = 2.0;
-    val[valIdx++] = Math.cos(theta)*r * 1.1;
-    val[valIdx++] = Math.sin(theta)*r - 0.7;
-    val[valIdx++] = 0;
+    if (isPlayer) {
+      var targetPos = getTargetPos(i);
+      val[valIdx++] = targetPos[0];
+      val[valIdx++] = targetPos[1];
+      val[valIdx++] = targetPos[2];
+    }
+    else {
+      var targetIdx = i + Math.floor((time+25) / 30);
+      targetIdx = targetIdx % numParticles;
+      targetIdx = particleArrIdxToPlayerIdx[targetIdx];
+      var targetPos = getTargetPos(targetIdx);
+      val[valIdx++] = targetPos[0];
+      val[valIdx++] = targetPos[1];
+      val[valIdx++] = targetPos[2]; 
+    }
 
     // data flags
     position[posIdx++] = partX;
@@ -485,10 +508,13 @@ function updateNeurons() {
     position[posIdx++] = 0;
 
     // enabled
-    val[valIdx++] = i < numParticles*6 ? 1.0 : 0.0;
+    val[valIdx++] = 1.0;
+    // val[valIdx++] = i < numParticles*6 ? 1.0 : 0.0;
+
     // seek target
-    // val[valIdx++] = 1.0;
-    val[valIdx++] = i < numParticles ? 1.0 : -1.0;
+    val[valIdx++] = 1.0;
+    // val[valIdx++] = i < numParticles ? 1.0 : -1.0;
+
     // unused
     val[valIdx++] = 0;
   }
@@ -543,6 +569,7 @@ function updateAndRender() {
   fragUniforms.iTimeDelta.value = dt;
   fragUniforms.iFrameRate.value = 1 / dt;
   fragUniforms.iGlobalTime.value += dt;
+  time = fragUniforms.iGlobalTime.value;
   
   updateNeurons();
   // return;

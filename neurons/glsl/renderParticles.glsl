@@ -34,7 +34,7 @@ const float pi2 = pi * 2.;
 #define DECAY_RATE 0.995
 // #define DECAY_RATE 0.99
 
-const int stepsPerFrame = 5;
+const int stepsPerFrame = 4;
 
 float len2(vec3 p) { return dot(p, p); }
 
@@ -68,13 +68,13 @@ void main() {
       vec3 vel = texture2D(iChannel0, one * vec2(x * one.x, 1.5*one.y)).rgb;
 
       for (int j = 0; j < stepsPerFrame; j++) {
-        vec3 tracePos = pos.xyz * vec3(1., 1., 0.5);
+        vec3 tracePos = pos.xyz * vec3(1., 1., 0.25);
 
         float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
-        dist *= isPlayer ? 400.0 : 5000.0;
+        dist *= isPlayer ? 400.0 : 600.0;
         float falloffImmediate = 0.0030;
-        float falloffLong = 1.0;
-        float mult = 0.085;
+        float falloffLong = isPlayer ? 1.0 : 0.6;
+        float mult = isPlayer ? 0.085 : 0.0025;
         float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
         
         newCol.rgb += alpha * abs(
@@ -87,7 +87,8 @@ void main() {
           ) 
         );
         
-        pos.xyz += vel / float(stepsPerFrame) * INTEGRATE_STEP;
+        // step through backwards
+        pos.xyz -= vel / float(stepsPerFrame) * INTEGRATE_STEP;
       }
     }
   }

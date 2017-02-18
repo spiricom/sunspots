@@ -49,6 +49,9 @@ void main() {
   bool isVel = fragCoord.y == 1.5;
   vec4 col= vec4(0.5);
 
+  int particleIdx = int(fragCoord.x);
+  bool isPlayer = particleIdx < NUM_PARTICLES;
+
   vec4 data = texture2D(iChannel0, vec2(uv.x, 3.5 * one.y));
   bool enabled = data.x > 0.0;
   // bool targetSeek = data.y > 0.0;
@@ -57,10 +60,16 @@ void main() {
   // init
   if (iFrame < 20) {
     vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
-    vec4 rand = texture2D(iChannel1, uv * 30.) - vec4(0.5);
+    vec4 rand = texture2D(iChannel1, fragCoord.xy/256.0) - vec4(0.5);
     if (isPos) {
-      // col = rand * 20.;
-      col.rgb = targetPos;
+      // if (isPlayer) {
+        col.rgb = targetPos;
+      // }
+      // else {
+      //   col = rand * 4.0;
+      //   col.z = -1.0;
+      //   col.y -= 0.5;
+      // }
     }
     else if (isVel) {
       col = rand * 2.;
@@ -71,7 +80,6 @@ void main() {
   }
   // update
   else {
-    int particleIdx = int(fragCoord.x);
 
     if (particleIdx < NUM_PARTICLES + NUM_SMALL_PARTICLES && enabled) {
       vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.5 * one.y)).xyz;
@@ -79,7 +87,8 @@ void main() {
       vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
 
       // update vel
-      vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * 10.;
+      float velMult = isPlayer ? 10. : 100.;
+      vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * velMult;
 
       // keep close
       // if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
@@ -96,19 +105,22 @@ void main() {
       if (targetSeek) {
         vec3 offsetToTarget = targetPos - pos;
         float distToTarget = length(offsetToTarget);
-        float maxDist = 0.1;
+        float maxDist = isPlayer ? 0.1 : 0.03;
         if (distToTarget > maxDist || data.y < 0.0 && distToTarget < 0.0) {
           vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));
           vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;
           targetVel *= sign(data.y); // data.y == -1 -> seek away
-          vel = vel * 0.9999 + targetVel * 0.0001;
+
+          float a = isPlayer ? 0.0001 : 0.001;
+          vel = vel * (1.0-a) + targetVel * a;
         }
       }
 
       // clamp vel
       float velMag = length(vel);
-      if (velMag > 30.5) {
-        vel = normalize(vel) * 30.5;
+      float maxVel = isPlayer ? 30.5 : 100.5;
+      if (velMag > maxVel) {
+        vel = normalize(vel) * maxVel;
       }
 
       // write back and integrate velocity
