@@ -31,7 +31,8 @@ const float pi2 = pi * 2.;
 #define time iGlobalTime
 
 // #define NUM_PARTICLES 8
-#define DECAY_RATE 0.995
+// #define DECAY_RATE 0.995
+#define DECAY_RATE 0.99
 // #define DECAY_RATE 0.99
 
 const int stepsPerFrame = 4;
@@ -71,14 +72,14 @@ void main() {
         vec3 tracePos = pos.xyz * vec3(1., 1., 0.25);
 
         float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
-        dist *= isPlayer ? 300.0 : 100.0;
-        float falloffImmediate = isPlayer ? 0.0030 : 0.1;
-        float falloffLong = isPlayer ? 1.0 : 10.8;
-        float mult = isPlayer ? 0.085 : 0.0095;
+        dist *= isPlayer ? 300.0 : 400.0;
+        float falloffImmediate = isPlayer ? 0.0030 : 0.007; // blur
+        float falloffLong = isPlayer ? 1.0 : 0.92; // focus
+        float mult = isPlayer ? 0.105 : 0.0145;
         float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
         
-        newCol.rgb += alpha * abs(
-          0.3 + 0.9*sin( 
+        newCol.rgb += alpha * (
+          0.0 + 0.9*sin( 
             vec3(1.0) * ( 
               time*0.1 
             ) 
@@ -94,7 +95,7 @@ void main() {
   }
   newCol /= float(stepsPerFrame);
   
-  vec4 col = (newCol + oldCol * (DECAY_RATE 
+  vec4 col = (newCol + vec4(0.01) + oldCol * (DECAY_RATE 
   // vec4 col = (newCol * (DECAY_RATE 
     + (sin(time*3.14 * 0.1)*0.5+0.5) * 0.003
     // + texture2D(iChannel2, vec2(time/256.0 * 0.1)).x * 0.007) 

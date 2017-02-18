@@ -60,30 +60,38 @@ vec3 unch2ToneMapping(vec3 color) {
 void main() {
   vec3 col = texture2D(iChannel0, fragCoord.xy/iResolution.xy).rgb;
 
-  col *= 0.8;
+  // col *= 0.8;
 
-  col += 1.0;
+  // col += 1.0;
 
 
-  // col = log(col);
+  // // col = log(col);
+  // col = pow(col, vec3(0.7));
+
+  // col -= 1.0;
+
+  // col *= 0.3;
+
+  // col += -0.3;
+
+
+  // col += vec3(0.1);
   col = pow(col, vec3(0.7));
 
-  col -= 1.0;
+  // col += vec3(-1.05);
+  // col *= 1.1 + sin(iGlobalTime * 2.) * 0.2;
 
-  col *= 0.3;
+  col *= 0.5;
 
-  col += -0.3;
+  col -= 0.4;
+
+  col *= 1.0 +  + sin(iGlobalTime * 1.) * 0.1;
 
 
-  // col = log(col);
-  // col = pow(vec3(1.8), col);
-
-  // col *= 0.5;
-  // col += vec3(-0.7);
-  // col *= 1.4;
-  // col = pow(col, vec3(0.9));
 
   // col = unch2ToneMapping(col);
+
+  col = clamp(col, 0.0, 9999.0);
 
   // col = fract(col);
 
