@@ -54,41 +54,49 @@ void main() {
   vec3 rayOrigin = vec3(0., 0., 2.5);
   
   vec4 newCol = vec4(0);
-  for (int i = 0; i < NUM_PARTICLES; i++) {
+  for (int i = 0; i < NUM_PARTICLES + NUM_SMALL_PARTICLES; i++) {
+    bool isPlayer = i < NUM_PARTICLES;
+
     float x = float(i) + 0.5;
-    vec3 pos = texture2D(iChannel0, vec2(x * one.x, 0.5*one.y)).rgb;
-    vec3 vel = texture2D(iChannel0, one * vec2(x * one.x, 1.5*one.y)).rgb;
-    vec3 target = texture2D(iChannel0, vec2(float(i) * one.x, 2.5*one.y)).rgb;
 
-    for (int j = 0; j < stepsPerFrame; j++) {
-      vec3 tracePos = pos.xyz * vec3(1., 1., 0.5);
+    vec3 target = texture2D(iChannel0, vec2((float(i)+0.5) * one.x, 2.5*one.y)).xyz;
+    bool enabled = texture2D(iChannel0, vec2((float(i)+0.5) * one.x, 3.5*one.y)).x > 0.0;
+    enabled = isPlayer || enabled;
 
-      float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
-      dist *= 400.0;
-      float falloffImmediate = 0.0030;
-      float falloffLong = 1.0;
-      float mult = 0.085;
-      float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
-      
-      newCol.rgb += alpha * abs(
-        0.3 + 0.9*sin( 
-          vec3(1.0) * ( 
-            time*0.1 
+    if (enabled) {
+      vec3 pos = texture2D(iChannel0, vec2(x * one.x, 0.5*one.y)).rgb;
+      vec3 vel = texture2D(iChannel0, one * vec2(x * one.x, 1.5*one.y)).rgb;
+
+      for (int j = 0; j < stepsPerFrame; j++) {
+        vec3 tracePos = pos.xyz * vec3(1., 1., 0.5);
+
+        float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
+        dist *= isPlayer ? 400.0 : 5000.0;
+        float falloffImmediate = 0.0030;
+        float falloffLong = 1.0;
+        float mult = 0.085;
+        float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
+        
+        newCol.rgb += alpha * abs(
+          0.3 + 0.9*sin( 
+            vec3(1.0) * ( 
+              time*0.1 
+            ) 
+          + vec3(1.0, 0.66, 0.33)*3.14
+          + vec3(float(i)/float(NUM_PARTICLES))*3.14*0.5
           ) 
-        + vec3(1.0, 0.66, 0.33)*3.14
-        + vec3(float(i)/float(NUM_PARTICLES))*3.14*0.5
-        ) 
-      );
-      
-      // pos.xyz += vel / float(stepsPerFrame) * 0.0002;
+        );
+        
+        pos.xyz += vel / float(stepsPerFrame) * INTEGRATE_STEP;
+      }
     }
   }
   newCol /= float(stepsPerFrame);
   
   vec4 col = (newCol + oldCol * (DECAY_RATE 
   // vec4 col = (newCol * (DECAY_RATE 
-    // + texture2D(iChannel2, vec2(time/256.0 * 0.1)).x * 0.007) 
     + (sin(time*3.14 * 0.1)*0.5+0.5) * 0.003
+    // + texture2D(iChannel2, vec2(time/256.0 * 0.1)).x * 0.007) 
   ));
   
   // init

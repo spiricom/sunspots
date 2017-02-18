@@ -6,6 +6,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 // neuron-specific stuff
 var numParticles = 9;
+var numSmallParticles = 100;
 
 
 // init camera, scene, renderer
@@ -149,10 +150,8 @@ function init() {
   var w = getRenderWidth();
   var h = getRenderHeight();
 
-  // need to have this set to something for initial shader loading
-  fragDefines = {
-    NUM_PARTICLES: numParticles,
-  };
+  fragDefines = {};
+  updateFragDefines(); // needs to have this set to something for initial shader loading
 
   fragUniforms = {
     // CUSTOM UNIFORMS
@@ -389,13 +388,53 @@ function initNeurons() {
   // mesh.material = new THREE.MeshBasicMaterial();
   neuronUpdateMesh = mesh;
 
+}
 
+// in-place fisher-yates shuffle
+// source http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+var particleArrIdxToPlayerIdx = [];
+for (var i = 0; i < numParticles; i++) {
+  particleArrIdxToPlayerIdx[i] = i;
+}
+shuffle(particleArrIdxToPlayerIdx);
+
+var playerIdxToParticleArrIdx = [];
+for (var i = 0; i < numParticles; i++) {
+  playerIdxToParticleArrIdx[particleArrIdxToPlayerIdx[i]] = i;
+}
+
+
+function updateFragDefines() {
+  var defs = fragDefines;
+
+  defs.NUM_PARTICLES = numParticles;
+  defs.NUM_SMALL_PARTICLES = numSmallParticles;
+  defs.INTEGRATE_STEP = 0.0001;
 }
 
 function updateNeurons() {
 
   // set shader defines
-  fragDefines.NUM_PARTICLES = numParticles;
+  updateFragDefines();
 
   // read from tex[1]
   fragUniforms.iChannel0.value = renderTargetPairs[0][1].texture;;
@@ -412,26 +451,55 @@ function updateNeurons() {
 
   var geom = new THREE.BufferGeometry();
 
-  var position = new Float32Array( 3 * numParticles );
-  var val = new Float32Array( 3 * numParticles );
+  var attributesPerParticle = 2;
+  var position = new Float32Array( 3 * (numParticles+numSmallParticles) * attributesPerParticle );
+  var val = new Float32Array( 3 * (numParticles+numSmallParticles) * attributesPerParticle );
 
   var posIdx = 0;
   var valIdx = 0;
-  for (var i = 0; i < numParticles; i++) {
-    position[posIdx++] = (i + 1) / getRenderWidth()*2 - 1;
-    position[posIdx++] = (2 + 1)/getRenderHeight()*2 - 1;
+  for (var i = 0; i < numParticles + numSmallParticles; i++) {
+
+    var isPlayer = i < numParticles;
+
+    // put them in random order around the ring to mix up colors
+    var particleIdx = isPlayer ? particleArrIdxToPlayerIdx[i] : i;
+
+    // targetPos
+    var partX = (particleIdx + 1) / getRenderWidth() * 2 - 1;
+    position[posIdx++] = partX;
+    position[posIdx++] = (2 + 1) / getRenderHeight() * 2 - 1;
     position[posIdx++] = 0;
 
-    var theta = 3.14*2 * i / numParticles + 0.25
+    var extra = 0.1;
+    var thetaIdx = i % numParticles;
+    var theta = thetaIdx / (numParticles-1) * (3.14+extra*2) - extra;
       + fragUniforms.iGlobalTime.value * 0.0;
-    var r = 1.3;
-    val[valIdx++] = Math.cos(theta)*r;
-    val[valIdx++] = Math.sin(theta)*r;
+    var r = 2.0;
+    val[valIdx++] = Math.cos(theta)*r * 1.1;
+    val[valIdx++] = Math.sin(theta)*r - 0.7;
+    val[valIdx++] = 0;
+
+    // data flags
+    position[posIdx++] = partX;
+    position[posIdx++] = (3 + 1) / getRenderHeight() * 2 - 1;
+    position[posIdx++] = 0;
+
+    // enabled
+    val[valIdx++] = i < numParticles*6 ? 1.0 : 0.0;
+    // seek target
+    // val[valIdx++] = 1.0;
+    val[valIdx++] = i < numParticles ? 1.0 : -1.0;
+    // unused
     val[valIdx++] = 0;
   }
 
-  geom.addAttribute( 'position', new THREE.BufferAttribute( position, 3 ) );
-  geom.addAttribute( 'val', new THREE.BufferAttribute( val, 3 ) );
+  console.assert(posIdx <= position.length);
+  console.assert(valIdx <= val.length);
+
+  geom.addAttribute( 'position', 
+    new THREE.BufferAttribute( position, 3 ) );
+  geom.addAttribute( 'val', 
+    new THREE.BufferAttribute( val, 3 ) );
 
   var mat = new THREE.ShaderMaterial({
     uniforms: fragUniforms,
