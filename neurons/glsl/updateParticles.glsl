@@ -87,7 +87,7 @@ void main() {
       vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
 
       // update vel
-      float velMult = isPlayer ? 10. : 50.;
+      float velMult = isPlayer ? 10. : 100.;
       vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * velMult;
 
       // keep close
@@ -118,7 +118,7 @@ void main() {
 
       // clamp vel
       float velMag = length(vel);
-      float maxVel = isPlayer ? 30.5 : 100.5;
+      float maxVel = isPlayer ? 30.5 : 80.5;
       if (velMag > maxVel) {
         vel = normalize(vel) * maxVel;
       }
