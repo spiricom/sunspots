@@ -71,10 +71,10 @@ void main() {
         vec3 tracePos = pos.xyz * vec3(1., 1., 0.25);
 
         float dist = len2((rayDir*dot(rayDir, tracePos-rayOrigin)+rayOrigin) - tracePos);
-        dist *= isPlayer ? 400.0 : 600.0;
-        float falloffImmediate = 0.0030;
-        float falloffLong = isPlayer ? 1.0 : 0.6;
-        float mult = isPlayer ? 0.085 : 0.0025;
+        dist *= isPlayer ? 300.0 : 100.0;
+        float falloffImmediate = isPlayer ? 0.0030 : 0.1;
+        float falloffLong = isPlayer ? 1.0 : 10.8;
+        float mult = isPlayer ? 0.085 : 0.0095;
         float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
         
         newCol.rgb += alpha * abs(
