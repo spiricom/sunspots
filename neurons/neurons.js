@@ -24,6 +24,8 @@ var noiseTex;
 
 var time = 0;
 
+var oscPort;
+
 var renderTargetPairs = [];
 var pingPongNeeded = [];
 var numRenderTargets = 0;
@@ -107,6 +109,18 @@ function getRenderHeight() {
 }
 
 function init() {
+
+
+  // listening for OSC messages on this port
+  var incomingPort = 3333; 
+  // sending OSC messages to this IP address
+  var connect_to_this_ip = '127.0.0.1'; 
+  // sending OSC messages on this port
+  var outgoingPort = 3333;
+
+  // sets up OSC by opening a connection to node
+  setupOsc(incomingPort, outgoingPort, connect_to_this_ip); 
+
   // scene
   scene = new THREE.Scene();
   
@@ -433,7 +447,21 @@ function updateFragDefines() {
   defs.INTEGRATE_STEP = 0.0001;
 }
 
+
+// This is run every time an OSC message is received
+function receiveOsc(addressStr, data) {
+  var addr = addressStr.split("/").filter(function(el) {return el.length > 0});
+
+  // console.log("received OSC: " + addr +  ", " + data);
+
+  if (addr[0] === "connect") {
+    // console.log("connect: " + addr[1] + ", " + addr[2]);
+  }
+}
+
 function updateNeurons() {
+
+  sendOsc('/connect/1/2', [time, 100]);
 
   // set shader defines
   updateFragDefines();
