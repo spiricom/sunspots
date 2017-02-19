@@ -30,15 +30,13 @@ const float pi2 = pi * 2.;
 float gamma = 2.2;
 
 // https://www.shadertoy.com/view/lslGzl
-vec3 lumaBasedReinhardToneMapping(vec3 color)
-{
+vec3 lumaBasedReinhardToneMapping(vec3 color) {
   float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
   float toneMappedLuma = luma / (1. + luma);
   color *= toneMappedLuma / luma;
   color = pow(color, vec3(1. / gamma));
   return color;
 }
-
 
 vec3 unch2ToneMapping(vec3 color) {
   float A = 0.15;

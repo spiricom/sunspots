@@ -53,7 +53,7 @@ void main() {
   bool isPlayer = particleIdx < NUM_PARTICLES;
 
   vec4 data = texture2D(iChannel0, vec2(uv.x, 3.5 * one.y));
-  bool enabled = data.x > 0.0;
+  bool enabled = data.x > 0.0 || isPlayer;
   // bool targetSeek = data.y > 0.0;
   // enabled = true;
 
@@ -101,8 +101,8 @@ void main() {
       // }
 
       // go to target
-      bool targetSeek = data.y != 0.0;
-      if (targetSeek) {
+      // bool targetSeek = data.y != 0.0;
+      // if (targetSeek) {
         vec3 offsetToTarget = targetPos - pos;
         float distToTarget = length(offsetToTarget);
         float maxDist = isPlayer ? 0.1 : 0.0;
@@ -114,7 +114,7 @@ void main() {
           float a = isPlayer ? 0.0001 : 0.001;
           vel = vel * (1.0-a) + targetVel * a;
         }
-      }
+      // }
 
       // clamp vel
       float velMag = length(vel);

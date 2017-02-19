@@ -447,6 +447,21 @@ function updateFragDefines() {
   defs.INTEGRATE_STEP = 0.0001;
 }
 
+var getParticlePos = function(i) {
+  if (i < numParticles) {
+    // i = particleArrIdxToPlayerIdx[i];
+  }
+  i = i % numParticles;
+
+  var extra = 0.1;
+  var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
+  var r = 2.0;
+  return [
+    Math.cos(theta)*r * 1.1,
+    Math.sin(theta)*r - 0.7,
+    0,
+  ];
+}
 
 // This is run every time an OSC message is received
 function receiveOsc(addressStr, data) {
@@ -455,13 +470,44 @@ function receiveOsc(addressStr, data) {
   // console.log("received OSC: " + addr +  ", " + data);
 
   if (addr[0] === "connect") {
-    // console.log("connect: " + addr[1] + ", " + addr[2]);
+    connectParticles(addr[1], addr[2]);
+  }
+}
+
+function connectParticles(idx0, idx1) {
+  console.log("CONNECT: " + idx0 + ", " + idx1);
+  
+  for (var i = 0; i < 2; i++) {
+    if (disabledParticlesList.length === 0) break;
+
+    var idx = disabledParticlesList.pop();
+    partEnabled[idx] = 1.0;
+    posToSet[idx] = getParticlePos[idx0];
+    partTargetPoss[idx] = getParticlePos(idx1);
+  }
+}
+
+var posToSet = [];
+var partEnabled = [];
+var partTargetPoss = [];
+var disabledParticlesList = [];
+for (var i = 0; i < numParticles + numSmallParticles; i++) {
+  posToSet[i] = false;
+  partEnabled[i] = 0.0;
+  partTargetPoss[i] = getParticlePos(i % numParticles);
+}
+for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
+  if (partEnabled[i] <= 0.0) {
+    disabledParticlesList.push(i);
   }
 }
 
 function updateNeurons() {
 
-  sendOsc('/connect/1/2', [time, 100]);
+  // test
+  if (time > 5) {
+    sendOsc('/connect/1/7', 0);
+  }
 
   // set shader defines
   updateFragDefines();
@@ -481,23 +527,9 @@ function updateNeurons() {
 
   var geom = new THREE.BufferGeometry();
 
-  var attributesPerParticle = 2;
+  var attributesPerParticle = 3;
   var position = new Float32Array( 3 * (numParticles+numSmallParticles) * attributesPerParticle );
   var val = new Float32Array( 3 * (numParticles+numSmallParticles) * attributesPerParticle );
-
-  var getTargetPos = function(i) {
-    var thetaIdx = i % numParticles;
-
-    var extra = 0.1;
-    var theta = thetaIdx / (numParticles-1) * (3.14+extra*2) - extra;
-      + fragUniforms.iGlobalTime.value * 0.0;
-    var r = 2.0;
-    return [
-      Math.cos(theta)*r * 1.1,
-      Math.sin(theta)*r - 0.7,
-      0,
-    ];
-  }
 
   var posIdx = 0;
   var valIdx = 0;
@@ -505,30 +537,29 @@ function updateNeurons() {
 
     var isPlayer = i < numParticles;
 
-    // put them in random order around the ring to mix up colors
-    var particleIdx = isPlayer ? particleArrIdxToPlayerIdx[i] : i;
-
     // targetPos
-    var partX = (particleIdx + 1) / getRenderWidth() * 2 - 1;
+    var partX = (i + 1) / getRenderWidth() * 2 - 1;
     position[posIdx++] = partX;
     position[posIdx++] = (2 + 1) / getRenderHeight() * 2 - 1;
     position[posIdx++] = 0;
 
-    if (isPlayer) {
-      var targetPos = getTargetPos(i);
-      val[valIdx++] = targetPos[0];
-      val[valIdx++] = targetPos[1];
-      val[valIdx++] = targetPos[2];
-    }
-    else {
-      var targetIdx = i + Math.floor((time+25) / 30);
-      targetIdx = targetIdx % numParticles;
-      targetIdx = particleArrIdxToPlayerIdx[targetIdx];
-      var targetPos = getTargetPos(targetIdx);
+    // if (isPlayer) {
+    //   var targetPos = getParticlePos(particleArrIdxToPlayerIdx[i]);
+    //   val[valIdx++] = targetPos[0];
+    //   val[valIdx++] = targetPos[1];
+    //   val[valIdx++] = targetPos[2];
+    // }
+    // else {
+      // var targetIdx = i + Math.floor((time+25) / 30);
+      // targetIdx = targetIdx % numParticles;
+      // targetIdx = particleArrIdxToPlayerIdx[targetIdx];
+      var targetPos = partTargetPoss[i];
+
+      // var targetPos = getParticlePos(targetIdx);
       val[valIdx++] = targetPos[0];
       val[valIdx++] = targetPos[1];
       val[valIdx++] = targetPos[2]; 
-    }
+    // }
 
     // data flags
     position[posIdx++] = partX;
@@ -536,7 +567,7 @@ function updateNeurons() {
     position[posIdx++] = 0;
 
     // enabled
-    val[valIdx++] = 1.0;
+    val[valIdx++] = partEnabled[i];
     // val[valIdx++] = i < numParticles*6 ? 1.0 : 0.0;
 
     // seek target
@@ -545,6 +576,23 @@ function updateNeurons() {
 
     // unused
     val[valIdx++] = 0;
+
+
+    // position
+    var newPartPos = posToSet[i];
+    if (newPartPos) {
+      posToSet[i] = false;
+      console.log(newPartPos);
+
+      position[posIdx++] = partX;
+      position[posIdx++] = (0 + 1) / getRenderHeight() * 2 - 1;
+      position[posIdx++] = 0;
+
+      val[valIdx++] = newPartPos[0];
+      val[valIdx++] = newPartPos[1];
+      val[valIdx++] = newPartPos[2];
+    }
+
   }
 
   console.assert(posIdx <= position.length);
