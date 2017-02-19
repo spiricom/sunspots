@@ -72,7 +72,7 @@ void main() {
       float falloffImmediate = isPlayer ? 0.0030 : 0.007; // blur
       float falloffLong = isPlayer ? 1.0 : 0.92; // focus
       float mult = isPlayer ? 0.105 : 0.0045;
-      
+
       for (int j = 0; j < stepsPerFrame; j++) {
         vec3 tracePos = pos.xyz * vec3(1., 1., 0.25);
 

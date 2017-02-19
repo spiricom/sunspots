@@ -467,8 +467,6 @@ var getParticlePos = function(i) {
 function receiveOsc(addressStr, data) {
   var addr = addressStr.split("/").filter(function(el) {return el.length > 0});
 
-  // console.log("received OSC: " + addr +  ", " + data);
-
   if (addr[0] === "connect") {
     connectParticles(addr[1], addr[2]);
   }
@@ -477,12 +475,12 @@ function receiveOsc(addressStr, data) {
 function connectParticles(idx0, idx1) {
   console.log("CONNECT: " + idx0 + ", " + idx1);
   
-  for (var i = 0; i < 2; i++) {
+  for (var i = 0; i < 12; i++) {
     if (disabledParticlesList.length === 0) break;
 
     var idx = disabledParticlesList.pop();
     partEnabled[idx] = 1.0;
-    posToSet[idx] = getParticlePos[idx0];
+    posToSet[idx] = getParticlePos(idx0);
     partTargetPoss[idx] = getParticlePos(idx1);
   }
 }
@@ -502,11 +500,21 @@ for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
   }
 }
 
+function getRandomIntInclusive(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+var lastSendTime = 1;
 function updateNeurons() {
 
   // test
-  if (time > 5) {
-    sendOsc('/connect/1/7', 0);
+  if (time - lastSendTime > 0.5) {
+    lastSendTime = time;
+    var idx0 = getRandomIntInclusive(0, 8);
+    var idx1 = getRandomIntInclusive(0, 8);
+    sendOsc("/connect/" + idx0 +"/" + idx1, 0);
   }
 
   // set shader defines
@@ -650,62 +658,67 @@ function updateAndRender() {
   updateNeurons();
   // return;
 
-  // hide all meshes so we can toggle them on individually
-  for (var i = 0; i < meshes.length; i++) {
-    meshes[i].visible = false;
+  var passesThisFrame = time > 0.5 ? 5 : 1;
+
+  for (var passIdx = 0; passIdx < passesThisFrame; passIdx++) {
+    // hide all meshes so we can toggle them on individually
+    for (var i = 0; i < meshes.length; i++) {
+      meshes[i].visible = false;
+    }
+
+    for (var i = 0; i < shaderDefs.length; i++) {
+      var sd = shaderDefs[i];
+
+      // render just the mesh with the shader for this pass
+      meshes[i].visible = true;
+
+      for (var j = 0; j < sd.inBufferIdxs.length; j++) {
+        var bufferIdx = sd.inBufferIdxs[j];
+        var tex;
+        if (bufferIdx === "noise") {
+          tex = noiseTex;
+        }
+        else {
+          console.assert(!isNaN(bufferIdx));
+          // read from tex[1]
+          tex = renderTargetPairs[bufferIdx][1].texture;
+        }
+        fragUniforms[ "iChannel" + j ].value = tex;
+      }
+
+      if (sd.outBufferIdx < 0) { 
+        // render to screen
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        fragUniforms.iResolution.value.x = window.innerWidth;
+        fragUniforms.iResolution.value.y = window.innerHeight;
+
+        renderer.render(scene, camera);
+      }
+      else { 
+        // render to buffer
+
+        camera.aspect = getRenderWidth() / getRenderHeight();
+        camera.updateProjectionMatrix();
+        renderer.setSize(getRenderWidth(), getRenderHeight());
+        fragUniforms.iResolution.value.x = getRenderWidth();
+        fragUniforms.iResolution.value.y = getRenderHeight();
+
+        // render to buffer 0
+        renderer.render(scene, camera, renderTargetPairs[sd.outBufferIdx][0]);
+
+        // ping pong (if this buffer doesn't need ping pong, this will nop)
+        var temp = renderTargetPairs[sd.outBufferIdx][0];
+        renderTargetPairs[sd.outBufferIdx][0] = renderTargetPairs[sd.outBufferIdx][1];
+        renderTargetPairs[sd.outBufferIdx][1] = temp;
+      }
+
+
+      meshes[i].visible = false;
+    }
   }
 
-  for (var i = 0; i < shaderDefs.length; i++) {
-    var sd = shaderDefs[i];
-
-    // render just the mesh with the shader for this pass
-    meshes[i].visible = true;
-
-    for (var j = 0; j < sd.inBufferIdxs.length; j++) {
-      var bufferIdx = sd.inBufferIdxs[j];
-      var tex;
-      if (bufferIdx === "noise") {
-        tex = noiseTex;
-      }
-      else {
-        console.assert(!isNaN(bufferIdx));
-        // read from tex[1]
-        tex = renderTargetPairs[bufferIdx][1].texture;
-      }
-      fragUniforms[ "iChannel" + j ].value = tex;
-    }
-
-    if (sd.outBufferIdx < 0) { 
-      // render to screen
-
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      fragUniforms.iResolution.value.x = window.innerWidth;
-      fragUniforms.iResolution.value.y = window.innerHeight;
-
-      renderer.render(scene, camera);
-    }
-    else { 
-      // render to buffer
-
-      camera.aspect = getRenderWidth() / getRenderHeight();
-      camera.updateProjectionMatrix();
-      renderer.setSize(getRenderWidth(), getRenderHeight());
-      fragUniforms.iResolution.value.x = getRenderWidth();
-      fragUniforms.iResolution.value.y = getRenderHeight();
-
-      // render to buffer 0
-      renderer.render(scene, camera, renderTargetPairs[sd.outBufferIdx][0]);
-
-      // ping pong (if this buffer doesn't need ping pong, this will nop)
-      var temp = renderTargetPairs[sd.outBufferIdx][0];
-      renderTargetPairs[sd.outBufferIdx][0] = renderTargetPairs[sd.outBufferIdx][1];
-      renderTargetPairs[sd.outBufferIdx][1] = temp;
-    }
-
-
-    meshes[i].visible = false;
-  }
 }
 
