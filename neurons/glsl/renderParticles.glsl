@@ -35,7 +35,7 @@ const float pi2 = pi * 2.;
 #define DECAY_RATE 0.99
 // #define DECAY_RATE 0.99
 
-const int stepsPerFrame = 3;
+const int stepsPerFrame = 2;
 
 float len2(vec3 p) { return dot(p, p); }
 

@@ -6,7 +6,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 // neuron-specific stuff
 var numParticles = 9;
-var numSmallParticles = 100;
+var numSmallParticles = 200;
 
 
 // init camera, scene, renderer
@@ -453,12 +453,19 @@ var getParticlePos = function(i) {
   }
   i = i % numParticles;
 
-  var extra = 0.1;
+  // var extra = 0.1;
+  // var r = 2.0;
+  // var yOff = -0.7;
+  // var xScale = 1.1;
+
+  var extra = 3.14/2 - 0.3;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
-  var r = 2.0;
+  var r = 1.3;
+  var xScale = 1.6;
+  var yOff = 0;
   return [
-    Math.cos(theta)*r * 1.1,
-    Math.sin(theta)*r - 0.7,
+    Math.cos(theta)*r * xScale,
+    Math.sin(theta)*r + yOff,
     0,
   ];
 }
@@ -470,13 +477,33 @@ function receiveOsc(addressStr, data) {
   if (addr[0] === "connect") {
     connectParticles(addr[1], addr[2]);
   }
+  else if (addr[0] === "amp") {
+    receiveAmplitude(addr[1], addr[2]);
+  }
+  else if (addr[0] === "b") {
+    gotoBSection();
+  }
+}
+
+function receiveAmplitude(idx, amp) {
+  // TODO
+}
+
+function gotoBSection() {
+  // TODO
 }
 
 function connectParticles(idx0, idx1) {
-  console.log("CONNECT: " + idx0 + ", " + idx1);
+  // console.log("CONNECT: " + idx0 + ", " + idx1);
   
-  for (var i = 0; i < 12; i++) {
-    if (disabledParticlesList.length === 0) break;
+  for (var i = 0; i < 8; i++) {
+    if (disabledParticlesList.length === 0) {
+      for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
+        disabledParticlesList.push(i);
+      }
+      shuffle(disabledParticlesList);
+      // break;
+    }
 
     var idx = disabledParticlesList.pop();
     partEnabled[idx] = 1.0;
@@ -590,7 +617,6 @@ function updateNeurons() {
     var newPartPos = posToSet[i];
     if (newPartPos) {
       posToSet[i] = false;
-      console.log(newPartPos);
 
       position[posIdx++] = partX;
       position[posIdx++] = (0 + 1) / getRenderHeight() * 2 - 1;
@@ -658,7 +684,7 @@ function updateAndRender() {
   updateNeurons();
   // return;
 
-  var passesThisFrame = time > 0.5 ? 5 : 1;
+  var passesThisFrame = time > 0.5 ? 3 : 1;
 
   for (var passIdx = 0; passIdx < passesThisFrame; passIdx++) {
     // hide all meshes so we can toggle them on individually

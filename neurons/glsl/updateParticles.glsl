@@ -111,7 +111,7 @@ void main() {
           vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;
           targetVel *= sign(data.y); // data.y == -1 -> seek away
 
-          float a = isPlayer ? 0.0001 : 0.001;
+          float a = isPlayer ? 0.0001 : 0.0022 + sin(float(particleIdx)) * 0.0005;
           vel = vel * (1.0-a) + targetVel * a;
         }
       // }
