@@ -6,7 +6,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 // neuron-specific stuff
 var numParticles = 9;
-var numSmallParticles = 200;
+var numSmallParticles = 160;
 
 
 // init camera, scene, renderer
@@ -25,6 +25,9 @@ var noiseTex;
 var time = 0;
 
 var oscPort;
+
+var oscEnabled = true;
+var localTest = true;
 
 var renderTargetPairs = [];
 var pingPongNeeded = [];
@@ -110,16 +113,17 @@ function getRenderHeight() {
 
 function init() {
 
+  if (oscEnabled) {
+    // listening for OSC messages on this port
+    var incomingPort = 3333; 
+    // sending OSC messages to this IP address
+    var connect_to_this_ip = '127.0.0.1'; 
+    // sending OSC messages on this port
+    var outgoingPort = 3333;
 
-  // listening for OSC messages on this port
-  var incomingPort = 3333; 
-  // sending OSC messages to this IP address
-  var connect_to_this_ip = '127.0.0.1'; 
-  // sending OSC messages on this port
-  var outgoingPort = 3333;
-
-  // sets up OSC by opening a connection to node
-  setupOsc(incomingPort, outgoingPort, connect_to_this_ip); 
+    // sets up OSC by opening a connection to node
+    setupOsc(incomingPort, outgoingPort, connect_to_this_ip); 
+  }
 
   // scene
   scene = new THREE.Scene();
@@ -267,8 +271,11 @@ function onResize() {
   // fragUniforms.iResolution.value.x = getRenderWidth();
   // fragUniforms.iResolution.value.y = getRenderHeight();
 
+  console.log("dims: " + window.innerWidth + ", " + window.innerHeight);
+
   fragUniforms.iFrame.value = 0;
   fragUniforms.iGlobalTime.value = 0;
+  lastSendTime = 0;
 
   refreshMeshes();
   refreshRenderTargets();
@@ -458,7 +465,7 @@ var getParticlePos = function(i) {
   // var yOff = -0.7;
   // var xScale = 1.1;
 
-  var extra = 3.14/2 - 0.3;
+  var extra = 3.14/2 - 0.5;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
   var r = 1.3;
   var xScale = 1.6;
@@ -474,8 +481,8 @@ var getParticlePos = function(i) {
 function receiveOsc(addressStr, data) {
   var addr = addressStr.split("/").filter(function(el) {return el.length > 0});
 
-  if (addr[0] === "connect") {
-    connectParticles(addr[1], addr[2]);
+  if (addr[1] === "connect") {
+    connectParticles(addr[0], addr[2]);
   }
   else if (addr[0] === "amp") {
     receiveAmplitude(addr[1], addr[2]);
@@ -536,12 +543,12 @@ function getRandomIntInclusive(min, max) {
 var lastSendTime = 1;
 function updateNeurons() {
 
-  // test
-  if (time - lastSendTime > 0.5) {
+  // DEBUG TEST
+  if (localTest && time - lastSendTime > 0.5) {
     lastSendTime = time;
     var idx0 = getRandomIntInclusive(0, 8);
     var idx1 = getRandomIntInclusive(0, 8);
-    sendOsc("/connect/" + idx0 +"/" + idx1, 0);
+    sendOsc("/" + idx0 + "/" + "connect" +"/" + idx1, 0);
   }
 
   // set shader defines

@@ -87,7 +87,7 @@ void main() {
       vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
 
       // update vel
-      float velMult = isPlayer ? 10. : 100.;
+      float velMult = isPlayer ? 10. : 80.;
       vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * velMult;
 
       // keep close
@@ -105,13 +105,13 @@ void main() {
       // if (targetSeek) {
         vec3 offsetToTarget = targetPos - pos;
         float distToTarget = length(offsetToTarget);
-        float maxDist = isPlayer ? 0.1 : 0.0;
+        float maxDist = isPlayer ? 0.1 : 0.05;
         if (distToTarget > maxDist || data.y < 0.0 && distToTarget < 0.0) {
           vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));
           vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;
           targetVel *= sign(data.y); // data.y == -1 -> seek away
 
-          float a = isPlayer ? 0.0001 : 0.0022 + sin(float(particleIdx)) * 0.0005;
+          float a = isPlayer ? 0.0001 : 0.0026 + sin(float(particleIdx)) * 0.0005;
           vel = vel * (1.0-a) + targetVel * a;
         }
       // }

@@ -79,9 +79,9 @@ void main() {
   // col += vec3(-1.05);
   // col *= 1.1 + sin(iGlobalTime * 2.) * 0.2;
 
-  col *= 0.5;
+  col *= 0.35;
 
-  col -= 0.4;
+  col += 0.1;
 
   col *= 1.0 +  + sin(iGlobalTime * 1.) * 0.1;
 
