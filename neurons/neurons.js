@@ -5,8 +5,8 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // noise texture source: http://www.geeks3d.com/20091008/download-noise-textures-pack/
 
 // neuron-specific stuff
-var numParticles = 9;
-var numSmallParticles = 160;
+var numParticles = 11;
+var numSmallParticles = 300;
 
 
 // init camera, scene, renderer
@@ -115,11 +115,11 @@ function init() {
 
   if (oscEnabled) {
     // listening for OSC messages on this port
-    var incomingPort = 3333; 
+    var incomingPort = 50506; 
     // sending OSC messages to this IP address
     var connect_to_this_ip = '127.0.0.1'; 
     // sending OSC messages on this port
-    var outgoingPort = 3333;
+    var outgoingPort = 50506;
 
     // sets up OSC by opening a connection to node
     setupOsc(incomingPort, outgoingPort, connect_to_this_ip); 
@@ -467,7 +467,7 @@ var getParticlePos = function(i) {
 
   var extra = 3.14/2 - 0.5;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
-  var r = 1.3;
+  var r = 1;
   var xScale = 1.6;
   var yOff = 0;
   return [
@@ -481,11 +481,18 @@ var getParticlePos = function(i) {
 function receiveOsc(addressStr, data) {
   var addr = addressStr.split("/").filter(function(el) {return el.length > 0});
 
+
   if (addr[1] === "connect") {
-    connectParticles(addr[0], addr[2]);
+    // console.log("OSC RECEIVED: " + addressStr + " :: " + data);
+    var addr0 = addr[0];
+    var addr1 = addr[2] || (!isNaN(data) && data);
+    // console.log(addr0 + ", " + addr1);
+    if (addr0 && addr1) {
+      connectParticles(addr0, addr1);
+    }
   }
-  else if (addr[0] === "amp") {
-    receiveAmplitude(addr[1], addr[2]);
+  else if (addr[1] === "amp") {
+    receiveAmplitude(addr[0], data);
   }
   else if (addr[0] === "b") {
     gotoBSection();
@@ -493,7 +500,12 @@ function receiveOsc(addressStr, data) {
 }
 
 function receiveAmplitude(idx, amp) {
-  // TODO
+  idx = parseInt(idx);
+  amp = parseFloat(amp);
+  // console.log(typeof amp);
+  // console.log("AMP: " + idx + " = " + amp);
+  // amps[idx] = idx === 6 ? .25 : amp;
+  amps[idx] = amp;
 }
 
 function gotoBSection() {
@@ -501,8 +513,16 @@ function gotoBSection() {
 }
 
 function connectParticles(idx0, idx1) {
-  // console.log("CONNECT: " + idx0 + ", " + idx1);
+  idx0 = parseInt(idx0);
+  idx1 = parseInt(idx1);
+
+  if (idx0 >= numParticles || idx1 >= numParticles || idx0 < 0 || idx1 < 0) {
+    console.log("INVALID CONNECTION: " + idx0 + ", " + idx1);
+    return;
+  }
   
+  // console.log("CONNECT: " + idx0 + ", " + idx1);
+
   for (var i = 0; i < 8; i++) {
     if (disabledParticlesList.length === 0) {
       for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
@@ -515,10 +535,12 @@ function connectParticles(idx0, idx1) {
     var idx = disabledParticlesList.pop();
     partEnabled[idx] = 1.0;
     posToSet[idx] = getParticlePos(idx0);
-    partTargetPoss[idx] = getParticlePos(idx1);
+    partTargetPoss[idx] = idx1;
+    // partTargetPoss[idx] = getParticlePos(idx1);
   }
 }
 
+var amps = [];
 var posToSet = [];
 var partEnabled = [];
 var partTargetPoss = [];
@@ -526,7 +548,13 @@ var disabledParticlesList = [];
 for (var i = 0; i < numParticles + numSmallParticles; i++) {
   posToSet[i] = false;
   partEnabled[i] = 0.0;
-  partTargetPoss[i] = getParticlePos(i % numParticles);
+  amps[i] = 0.0;
+  if (i < numParticles) {
+    partTargetPoss[i] = getParticlePos(i % numParticles);
+  }
+  else {
+    partTargetPoss[i] = i % numParticles;
+  }
 }
 for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
   if (partEnabled[i] <= 0.0) {
@@ -544,7 +572,7 @@ var lastSendTime = 1;
 function updateNeurons() {
 
   // DEBUG TEST
-  if (localTest && time - lastSendTime > 0.5) {
+  if (localTest && time - lastSendTime > 0.05) {
     lastSendTime = time;
     var idx0 = getRandomIntInclusive(0, 8);
     var idx1 = getRandomIntInclusive(0, 8);
@@ -585,23 +613,18 @@ function updateNeurons() {
     position[posIdx++] = (2 + 1) / getRenderHeight() * 2 - 1;
     position[posIdx++] = 0;
 
-    // if (isPlayer) {
-    //   var targetPos = getParticlePos(particleArrIdxToPlayerIdx[i]);
-    //   val[valIdx++] = targetPos[0];
-    //   val[valIdx++] = targetPos[1];
-    //   val[valIdx++] = targetPos[2];
-    // }
-    // else {
-      // var targetIdx = i + Math.floor((time+25) / 30);
-      // targetIdx = targetIdx % numParticles;
-      // targetIdx = particleArrIdxToPlayerIdx[targetIdx];
+    if (isPlayer) {
       var targetPos = partTargetPoss[i];
-
-      // var targetPos = getParticlePos(targetIdx);
       val[valIdx++] = targetPos[0];
       val[valIdx++] = targetPos[1];
       val[valIdx++] = targetPos[2]; 
-    // }
+    }
+    else {
+      var targetPos = partTargetPoss[i];
+      val[valIdx++] = targetPos;
+      val[valIdx++] = 0;
+      val[valIdx++] = 0;
+    }
 
     // data flags
     position[posIdx++] = partX;
@@ -616,8 +639,9 @@ function updateNeurons() {
     val[valIdx++] = 1.0;
     // val[valIdx++] = i < numParticles ? 1.0 : -1.0;
 
-    // unused
-    val[valIdx++] = 0;
+    // amp
+    val[valIdx++] = amps[i];
+    // val[valIdx++] = 1.0;
 
 
     // position
@@ -675,10 +699,10 @@ function updateNeurons() {
 function updateAndRender() {
   requestAnimationFrame(updateAndRender);
 
-  if (!ShaderLoader.loading) {
-    delete shadersToLoad.neurons_vert;
-    shaderLoader.loadShaders(shadersToLoad, "./glsl/", shaderLoadCallback);
-  }
+  // if (!ShaderLoader.loading) {
+  //   delete shadersToLoad.neurons_vert;
+  //   shaderLoader.loadShaders(shadersToLoad, "./glsl/", shaderLoadCallback);
+  // }
 
   var dt = clock.getDelta();
 

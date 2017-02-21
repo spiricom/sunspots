@@ -84,7 +84,15 @@ void main() {
     if (particleIdx < NUM_PARTICLES + NUM_SMALL_PARTICLES && enabled) {
       vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.5 * one.y)).xyz;
       vec3 vel = texture2D(iChannel0, vec2(uv.x, 1.5 * one.y)).xyz;
-      vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
+
+      vec3 targetPos;
+      if (isPlayer) {
+        targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
+      }
+      else {
+        targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
+        targetPos = texture2D(iChannel0, vec2((floor(targetPos.x)+0.5)*one.x, 0.5 * one.y)).xyz;
+      }
 
       // update vel
       float velMult = isPlayer ? 10. : 80.;
@@ -102,19 +110,18 @@ void main() {
 
       // go to target
       // bool targetSeek = data.y != 0.0;
-      // if (targetSeek) {
-        vec3 offsetToTarget = targetPos - pos;
-        float distToTarget = length(offsetToTarget);
-        float maxDist = isPlayer ? 0.1 : 0.05;
-        if (distToTarget > maxDist || data.y < 0.0 && distToTarget < 0.0) {
-          vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));
-          vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;
-          targetVel *= sign(data.y); // data.y == -1 -> seek away
 
-          float a = isPlayer ? 0.0001 : 0.0026 + sin(float(particleIdx)) * 0.0005;
-          vel = vel * (1.0-a) + targetVel * a;
-        }
-      // }
+      vec3 offsetToTarget = targetPos - pos;
+      float distToTarget = length(offsetToTarget);
+      float maxDist = isPlayer ? 0.1 : 0.1;
+      if (distToTarget > maxDist || data.y < 0.0 && distToTarget < 0.0) {
+        vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));
+        vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;
+        targetVel *= sign(data.y); // data.y == -1 -> seek away
+
+        float a = isPlayer ? 0.0001 : 0.0026 + sin(float(particleIdx)) * 0.0005;
+        vel = vel * (1.0-a) + targetVel * a;
+      }
 
       // clamp vel
       float velMag = length(vel);

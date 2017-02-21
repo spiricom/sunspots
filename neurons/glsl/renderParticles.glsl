@@ -32,7 +32,7 @@ const float pi2 = pi * 2.;
 
 // #define NUM_PARTICLES 8
 // #define DECAY_RATE 0.995
-#define DECAY_RATE 0.99
+#define DECAY_RATE 0.98
 // #define DECAY_RATE 0.99
 
 const int stepsPerFrame = 1;
@@ -61,17 +61,27 @@ void main() {
     float x = float(i) + 0.5;
 
     vec3 target = texture2D(iChannel0, vec2((float(i)+0.5) * one.x, 2.5*one.y)).xyz;
-    bool enabled = texture2D(iChannel0, vec2((float(i)+0.5) * one.x, 3.5*one.y)).x > 0.0;
+    vec3 data = texture2D(iChannel0, vec2((float(i)+0.5) * one.x, 3.5*one.y)).xyz;
+    bool enabled = data.x > 0.0;
     enabled = isPlayer || enabled;
+    float amp = data.z;
 
     if (enabled) {
       vec3 pos = texture2D(iChannel0, vec2(x * one.x, 0.5*one.y)).rgb;
       vec3 vel = texture2D(iChannel0, one * vec2(x * one.x, 1.5*one.y)).rgb;
 
-      float distMult = isPlayer ? 300.0 : 400.0;
+      float a = clamp(amp * 4.0, 0.0, 1.0);
+      float distMult = 
+        isPlayer ? mix(6000.0, 300.0, a) * mix(1.0, mix(1.0, 1.4, a), abs(sin(time*6.0)))
+        // isPlayer ? mix(clamp(1.0, 0.0, 1.0), 3000.0, 300.0)
+        // isPlayer ? 300.0
+        : 400.0;
       float falloffImmediate = isPlayer ? 0.0030 : 0.007; // blur
       float falloffLong = isPlayer ? 1.0 : 0.92; // focus
-      float mult = isPlayer ? 0.105 : 0.0045;
+      float mult = 
+        isPlayer ? mix(0.0105, 0.105, a)
+        // isPlayer ? 0.105 
+        : 0.0045;
 
       for (int j = 0; j < stepsPerFrame; j++) {
         vec3 tracePos = pos.xyz * vec3(1., 1., 0.25);
@@ -85,10 +95,11 @@ void main() {
             vec3(1.0) * ( 
               time*0.1 
             ) 
-          + vec3(1.0, 0.66, 0.33)*3.14
+          // + vec3(1.0, 0.66, 0.33)*3.14
           + vec3(float(i)/float(NUM_PARTICLES))*3.14*0.5
           ) 
         );
+
         
         // step through backwards
         pos.xyz -= vel / float(stepsPerFrame) * INTEGRATE_STEP;
