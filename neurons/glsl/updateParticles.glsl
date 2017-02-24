@@ -95,7 +95,7 @@ void main() {
       }
 
       // update vel
-      float velMult = isPlayer ? 10. : 80.;
+      float velMult = isPlayer ? 20. : 80.;
       vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * velMult;
 
       // keep close
@@ -108,12 +108,12 @@ void main() {
       // if (particleIdx < NUM_PARTICLES) {
       // }
 
-      // go to target
+      // GO TO TARGET
       // bool targetSeek = data.y != 0.0;
 
       vec3 offsetToTarget = targetPos - pos;
       float distToTarget = length(offsetToTarget);
-      float maxDist = isPlayer ? 0.1 : 0.1;
+      float maxDist = isPlayer ? 0.05 : 0.1;
       if (distToTarget > maxDist || data.y < 0.0 && distToTarget < 0.0) {
         vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));
         vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;
@@ -125,7 +125,7 @@ void main() {
 
       // clamp vel
       float velMag = length(vel);
-      float maxVel = isPlayer ? 30.5 : 80.5;
+      float maxVel = isPlayer ? 50.5 : 80.5;
       if (velMag > maxVel) {
         vel = normalize(vel) * maxVel;
       }

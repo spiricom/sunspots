@@ -61,15 +61,16 @@ void main() {
 
 
   // PROJECTOR
-  // col = pow(col, vec3(0.7));
-  // col *= 0.35;
-  // col += -0.05;
+  col = pow(col, vec3(0.6));
+  col *= 0.5;
+  col += -0.4;
+  // col -= 0.05;
 
 
   // SCREEN
-  col = pow(col, vec3(0.7));
-  col *= 0.5;
-  col += -0.4;
+  // col = pow(col, vec3(0.7));
+  // col *= 0.5;
+  // col += -0.4;
 
 
   col *= 1.0 +  + sin(iGlobalTime * 1.) * 0.1;

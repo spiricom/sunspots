@@ -5,11 +5,11 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // noise texture source: http://www.geeks3d.com/20091008/download-noise-textures-pack/
 
 // neuron-specific stuff
-var numParticles = 11;
-var numSmallParticles = 520;
+var numParticles = 9;
+var numSmallParticles = 720;
 
 // NOTE: disable when live
-var LIVE_UPDATE = true;
+var LIVE_UPDATE = false;
 
 // general stuff
 var gl, scene, camera, renderer;
@@ -29,7 +29,7 @@ var time = 0;
 var oscPort;
 
 var oscEnabled = true;
-var localTest = true;
+var localTest = false;
 
 var renderTargetPairs = [];
 var pingPongNeeded = [];
@@ -460,21 +460,22 @@ var getParticlePos = function(i) {
   if (i < numParticles) {
     // i = particleArrIdxToPlayerIdx[i];
   }
-  i = i % numParticles;
+  i = (numParticles-1) - (i % numParticles);
 
   // var extra = 0.1;
   // var r = 2.0;
   // var yOff = -0.7;
   // var xScale = 1.1;
 
-  var extra = 3.14/2 - 0.5;
+  var extra = 0.2;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
   var r = 1.3;
-  var xScale = 1.6;
-  var yOff = 0;
+  var xScale = 1.6 * 1.2;
+  var yScale = 1.2 * 1.2;
+  var yOff = -0.55;
   return [
     Math.cos(theta)*r * xScale,
-    Math.sin(theta)*r + yOff,
+    Math.sin(theta)*r * yScale + yOff,
     0,
   ];
 }
@@ -504,7 +505,9 @@ function receiveOsc(addressStr, data) {
 function receiveAmplitude(idx, amp) {
   idx = parseInt(idx);
   amp = parseFloat(amp);
-  amps[idx] = Math.max(amps[idx], amp);
+  // amps[idx] = Math.max(amps[idx], amp);
+  var a = 0.3;
+  amps[idx] = amp * a + amps[idx] * (1-a);
 }
 
 function gotoBSection() {
@@ -516,7 +519,7 @@ function sendPulse(idx0, idx1) {
 
   // console.log("PULSE: " + idx0 + ", " + idx1);
 
-  for (var i = 0; i < 6; i++) {
+  for (var i = 0; i < 4; i++) {
     if (disabledParticlesList.length === 0) {
       for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
         disabledParticlesList.push(i);
@@ -572,10 +575,10 @@ function connectParticles(idx0, idx1) {
   idx0 = parseInt(idx0);
   idx1 = parseInt(idx1);
 
-  if (idx0 >= numParticles || idx1 >= numParticles || idx0 < 0 || idx1 < 0) {
-    console.log("INVALID CONNECTION: " + idx0 + ", " + idx1);
-    return;
-  }
+  // if (idx0 >= numParticles || idx1 >= numParticles || idx0 < 0 || idx1 < 0) {
+  //   console.log("INVALID CONNECTION: " + idx0 + ", " + idx1);
+  //   return;
+  // }
 
   console.log("CONN: " + idx0 + ", " + idx1);
 
@@ -599,7 +602,7 @@ function connectParticles(idx0, idx1) {
     sendPulse(idx0, idx1);
     sendPulse(idx1, idx0);
   };
-  var repeater = setInterval(repeaterFunc, 0.5 * 1000)
+  var repeater = setInterval(repeaterFunc, 0.8 * 1000)
 
   // send the first pulse
   repeaterFunc();
@@ -658,9 +661,9 @@ function updateNeurons() {
     sendOsc("/" + idx0 + "/" + "connect", idx1);
   }
 
-  for (var i = 0; i < numParticles + numSmallParticles; i++) {
-    amps[i] *= 0.9;
-  }
+  // for (var i = 0; i < numParticles + numSmallParticles; i++) {
+  //   amps[i] *= 0.85;
+  // }
 
   // set shader defines
   updateFragDefines();
@@ -798,7 +801,7 @@ function updateAndRender() {
   updateNeurons();
   // return;
 
-  var passesThisFrame = time > 0.5 ? 2 : 1;
+  var passesThisFrame = time > 0.5 ? 1 : 1;
 
   for (var passIdx = 0; passIdx < passesThisFrame; passIdx++) {
     // hide all meshes so we can toggle them on individually

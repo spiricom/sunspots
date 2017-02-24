@@ -32,7 +32,7 @@ const float pi2 = pi * 2.;
 
 // #define NUM_PARTICLES 8
 // #define DECAY_RATE 0.995
-#define DECAY_RATE 0.985
+#define DECAY_RATE 0.99
 // #define DECAY_RATE 0.99
 
 const int stepsPerFrame = 1;
@@ -71,13 +71,20 @@ void main() {
       vec3 vel = texture2D(iChannel0, one * vec2(x * one.x, 1.5*one.y)).rgb;
 
       float a = clamp(amp * 4.0, 0.0, 1.0);
+      a = pow(a, 0.3);
       float distMult = 
-        isPlayer ? mix(1000.0, 300.0, a) * mix(1.0, mix(1.0, 1.4, a), abs(sin(time*6.0)))
+        isPlayer ? mix(1000.0, 50.0, a) * mix(1.0, mix(1.0, 0.95, a), abs(sin(time*12.0)))
         // isPlayer ? mix(clamp(1.0, 0.0, 1.0), 3000.0, 300.0)
         // isPlayer ? 300.0
         : 400.0;
-      float falloffImmediate = isPlayer ? 0.0030 : 0.007; // blur
-      float falloffLong = isPlayer ? 1.0 : 0.92; // focus
+      float falloffImmediate = 
+        isPlayer ? mix(0.0030, 0.0030, a)
+        // isPlayer ? 0.0030 
+        : 0.007; // blur
+      float falloffLong = 
+        isPlayer ? mix(1.0, 0.6, a) 
+        // isPlayer ? 0.7
+        : 0.92; // focus
       float mult = 
         isPlayer ? mix(0.0105, 0.105, a)
         // isPlayer ? 0.105 
