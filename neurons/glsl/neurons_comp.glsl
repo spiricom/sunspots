@@ -57,7 +57,7 @@ vec3 unch2ToneMapping(vec3 color) {
 
 void main() {
   vec3 col = texture2D(iChannel0, fragCoord.xy/iResolution.xy).rgb;
-
+  vec2 uv = fragCoord.xy / iResolution.xy;
 
 
   // PROJECTOR
@@ -74,10 +74,23 @@ void main() {
 
   col *= 1.0 +  + sin(iGlobalTime * 1.) * 0.1;
 
+  // vignette
+  // https://www.shadertoy.com/view/4lSXDm
+  float Falloff = 0.25;
+  vec2 coord = (uv - 0.5) * (iResolution.x/iResolution.y) * 2.0;
+  float rf = sqrt(dot(coord, coord)) * Falloff;
+  float rf2_1 = rf * rf + 1.0;
+  float e = 1.0 / (rf2_1 * rf2_1);
+  
 
 
-  // col = clamp(col, 0.0, 9999.0);
-  // col = fract(col);
+  col = clamp(col, 0.0, 9999.0);
+  col = fract(col);
 
-  fragColor = vec4(col, 1.0);
+  float a = clamp(col.r, 0.0, 1.0);
+  // col = mix(vec3(206.0, 171.0, 121.0), vec3(34.0, 4.0, 0.0), a) / 255.0;
+  col = vec3(1.0 - a);
+
+  fragColor = vec4(col * e, 1.0);
 }
+

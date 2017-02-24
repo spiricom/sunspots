@@ -32,7 +32,7 @@ const float pi2 = pi * 2.;
 
 // #define NUM_PARTICLES 8
 // #define DECAY_RATE 0.995
-#define DECAY_RATE 0.98
+#define DECAY_RATE 0.985
 // #define DECAY_RATE 0.99
 
 const int stepsPerFrame = 1;
@@ -72,7 +72,7 @@ void main() {
 
       float a = clamp(amp * 4.0, 0.0, 1.0);
       float distMult = 
-        isPlayer ? mix(6000.0, 300.0, a) * mix(1.0, mix(1.0, 1.4, a), abs(sin(time*6.0)))
+        isPlayer ? mix(1000.0, 300.0, a) * mix(1.0, mix(1.0, 1.4, a), abs(sin(time*6.0)))
         // isPlayer ? mix(clamp(1.0, 0.0, 1.0), 3000.0, 300.0)
         // isPlayer ? 300.0
         : 400.0;

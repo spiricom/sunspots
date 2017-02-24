@@ -6,10 +6,12 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 // neuron-specific stuff
 var numParticles = 11;
-var numSmallParticles = 300;
+var numSmallParticles = 520;
 
+// NOTE: disable when live
+var LIVE_UPDATE = true;
 
-// init camera, scene, renderer
+// general stuff
 var gl, scene, camera, renderer;
 var clock;
 var initialized = false;
@@ -467,7 +469,7 @@ var getParticlePos = function(i) {
 
   var extra = 3.14/2 - 0.5;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
-  var r = 1;
+  var r = 1.3;
   var xScale = 1.6;
   var yOff = 0;
   return [
@@ -502,14 +504,68 @@ function receiveOsc(addressStr, data) {
 function receiveAmplitude(idx, amp) {
   idx = parseInt(idx);
   amp = parseFloat(amp);
-  // console.log(typeof amp);
-  // console.log("AMP: " + idx + " = " + amp);
-  // amps[idx] = idx === 6 ? .25 : amp;
-  amps[idx] = amp;
+  amps[idx] = Math.max(amps[idx], amp);
 }
 
 function gotoBSection() {
   // TODO
+}
+
+function sendPulse(idx0, idx1) {
+  amps[idx0] = 1;
+
+  // console.log("PULSE: " + idx0 + ", " + idx1);
+
+  for (var i = 0; i < 6; i++) {
+    if (disabledParticlesList.length === 0) {
+      for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
+        disabledParticlesList.push(i);
+      }
+      // shuffle(disabledParticlesList);
+      // break;
+    }
+
+    var idx = disabledParticlesList.pop();
+    partEnabled[idx] = 1.0;
+    posToSet[idx] = getParticlePos(idx0);
+    partTargetPoss[idx] = idx1;
+    // partTargetPoss[idx] = getParticlePos(idx1);
+  }
+}
+
+var attemptedConnections = [];
+var connections = [];
+
+for (var i = 0; i < numParticles; i++) {
+  connections[i] = false;
+  attemptedConnections[i] = -1;
+}
+
+function breakConnections(idx) {
+  var conn = connections[idx];
+
+  if (conn) {
+    // stop the pulses
+    clearInterval(conn.repeater);
+
+    // un-store the connection
+    connections[conn.firstIdx] = false;
+    connections[conn.secondIdx] = false;
+
+    // un-store attempt
+    attemptedConnections[conn.firstIdx] = -1;
+    attemptedConnections[conn.secondIdx] = -1;    
+
+    console.log("CONN-BREAK: " + conn.firstIdx + ", " + conn.secondIdx)
+  }
+}
+
+function getConnected(idx0, idx1) {
+  var firstIdx = Math.min(idx0, idx1);
+  var secondIdx = Math.max(idx0, idx1);
+
+  var connection = connections[firstIdx];
+  return connection && connection.secondIdx === secondIdx;
 }
 
 function connectParticles(idx0, idx1) {
@@ -520,24 +576,47 @@ function connectParticles(idx0, idx1) {
     console.log("INVALID CONNECTION: " + idx0 + ", " + idx1);
     return;
   }
-  
-  // console.log("CONNECT: " + idx0 + ", " + idx1);
 
-  for (var i = 0; i < 8; i++) {
-    if (disabledParticlesList.length === 0) {
-      for (var i = numParticles; i < numParticles + numSmallParticles; i++) {
-        disabledParticlesList.push(i);
-      }
-      shuffle(disabledParticlesList);
-      // break;
-    }
+  console.log("CONN: " + idx0 + ", " + idx1);
 
-    var idx = disabledParticlesList.pop();
-    partEnabled[idx] = 1.0;
-    posToSet[idx] = getParticlePos(idx0);
-    partTargetPoss[idx] = idx1;
-    // partTargetPoss[idx] = getParticlePos(idx1);
-  }
+  if (idx0 === idx1) return;
+
+  if (getConnected(idx0, idx1)) return;
+
+  breakConnections(idx0);
+  // breakConnections(idx1);
+
+  // attempt connection
+  attemptedConnections[idx0] = idx1;
+  // done for now, unless partner has also attempted
+  if (attemptedConnections[idx1] !== idx0) return;
+
+  // CONNECTION ESTABLISHED //
+  console.log("CONN-SUCCESS: " + idx0 + ", " + idx1);
+
+  // make the pulse repeater
+  var repeaterFunc = function() {
+    sendPulse(idx0, idx1);
+    sendPulse(idx1, idx0);
+  };
+  var repeater = setInterval(repeaterFunc, 0.5 * 1000)
+
+  // send the first pulse
+  repeaterFunc();
+
+  // store the connection
+  var firstIdx = Math.min(idx0, idx1);
+  var secondIdx = Math.max(idx0, idx1);
+  var connection = {
+    startTime: time,
+    firstIdx: firstIdx,
+    secondIdx: secondIdx,
+    repeater: repeater,
+  };
+  connections[firstIdx] = connection;
+  connections[secondIdx] = connection;
+
+  // console.assert(getConnected(firstIdx, secondIdx));
 }
 
 var amps = [];
@@ -572,11 +651,15 @@ var lastSendTime = 1;
 function updateNeurons() {
 
   // DEBUG TEST
-  if (localTest && time - lastSendTime > 0.05) {
+  if (localTest && time - lastSendTime > 0.2) {
     lastSendTime = time;
-    var idx0 = getRandomIntInclusive(0, 8);
-    var idx1 = getRandomIntInclusive(0, 8);
-    sendOsc("/" + idx0 + "/" + "connect" +"/" + idx1, 0);
+    var idx0 = getRandomIntInclusive(0, numParticles-1);
+    var idx1 = getRandomIntInclusive(0, numParticles-1);
+    sendOsc("/" + idx0 + "/" + "connect", idx1);
+  }
+
+  for (var i = 0; i < numParticles + numSmallParticles; i++) {
+    amps[i] *= 0.9;
   }
 
   // set shader defines
@@ -699,10 +782,10 @@ function updateNeurons() {
 function updateAndRender() {
   requestAnimationFrame(updateAndRender);
 
-  // if (!ShaderLoader.loading) {
-  //   delete shadersToLoad.neurons_vert;
-  //   shaderLoader.loadShaders(shadersToLoad, "./glsl/", shaderLoadCallback);
-  // }
+  if (LIVE_UPDATE && !ShaderLoader.loading) {
+    delete shadersToLoad.neurons_vert;
+    shaderLoader.loadShaders(shadersToLoad, "./glsl/", shaderLoadCallback);
+  }
 
   var dt = clock.getDelta();
 
@@ -715,7 +798,7 @@ function updateAndRender() {
   updateNeurons();
   // return;
 
-  var passesThisFrame = time > 0.5 ? 3 : 1;
+  var passesThisFrame = time > 0.5 ? 2 : 1;
 
   for (var passIdx = 0; passIdx < passesThisFrame; passIdx++) {
     // hide all meshes so we can toggle them on individually
