@@ -9,7 +9,7 @@ var numParticles = 9;
 var numSmallParticles = 720;
 
 // NOTE: disable when live
-var LIVE_UPDATE = false;
+var LIVE_UPDATE = true;
 
 // general stuff
 var gl, scene, camera, renderer;
@@ -29,7 +29,7 @@ var time = 0;
 var oscPort;
 
 var oscEnabled = true;
-var localTest = false;
+var localTest = true;
 
 var renderTargetPairs = [];
 var pingPongNeeded = [];
@@ -469,10 +469,12 @@ var getParticlePos = function(i) {
 
   var extra = 0.2;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
-  var r = 1.3;
+  // var r = 1.3;
+  var r = 0;
   var xScale = 1.6 * 1.2;
   var yScale = 1.2 * 1.2;
-  var yOff = -0.55;
+  var yOff = 0;
+  // var yOff = -0.55;
   return [
     Math.cos(theta)*r * xScale,
     Math.sin(theta)*r * yScale + yOff,
@@ -654,7 +656,7 @@ var lastSendTime = 1;
 function updateNeurons() {
 
   // DEBUG TEST
-  if (localTest && time - lastSendTime > 0.2) {
+  if (localTest && time - lastSendTime > 1.2) {
     lastSendTime = time;
     var idx0 = getRandomIntInclusive(0, numParticles-1);
     var idx1 = getRandomIntInclusive(0, numParticles-1);

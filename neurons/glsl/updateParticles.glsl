@@ -113,7 +113,8 @@ void main() {
 
       vec3 offsetToTarget = targetPos - pos;
       float distToTarget = length(offsetToTarget);
-      float maxDist = isPlayer ? 0.05 : 0.1;
+      float maxDist = isPlayer ? 1.4 : 0.1;
+      // float maxDist = isPlayer ? 0.05 : 0.1;
       if (distToTarget > maxDist || data.y < 0.0 && distToTarget < 0.0) {
         vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));
         vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;

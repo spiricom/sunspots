@@ -47,11 +47,18 @@ const NUMBER_OF_DOMES = 5;
 const PALETTES = [[75,0,0],[72,26,19],[113,0,1],[112,16,17],[81,48,38],[103,38,25],[82,65,62],[147,0,2],[126,54,59],[107,70,58],[165,22,23],[171,5,10],[173,36,35],[147,71,65],[187,57,42],[128,95,84],[138,112,106],[161,104,93],[202,93,55],[208,150,132],[109,51,20],[81,72,14],[102,84,27],[185,100,0],[187,107,61],[214,96,7],[193,113,9],[183,121,40],[155,135,101],[152,144,138],[177,139,75],[196,131,92],[227,119,54],[198,141,51],[212,134,25],[172,152,142],[234,139,72],[204,154,84],[174,164,158],[223,157,62],[232,150,93],[211,164,111],[208,183,143],[233,203,160],[123,124,101],[185,191,188],[73,99,105],[76,122,137],[138,157,154],[14,19,40],[1,31,50],[26,31,52],[25,42,79],[2,63,91],[18,79,127],[53,84,111],[110,116,125],[173,175,181],[6,2,20],[57,53,61],[88,84,92],[103,99,105],[48,25,34],[170,135,146]];
 const BACKGROUND_COLOR = 0x0;
 
+// Randomly select from a variety of color palettes for the scene
+function getRandomPaletteColor() {
+  var myIndex = (Math.round(Math.random() * (PALETTES.length - 1)));
+  var myColor = PALETTES[myIndex];
+  return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
+}
+
 const PARTICLE_COUNT = 0;
 // const PARTICLE_COUNT = 500;
 const PARTICLE_SPEED_SCALE = 1;
 
-const WORLD_WIDTH = 10, WORLD_DEPTH = 10;
+const WORLD_WIDTH = 128, WORLD_DEPTH = 128;
 
 // AUDIO CONSTANTS
 
@@ -69,13 +76,13 @@ const REF_DIST = 10000;
 const WAIT_MAX = 20;
 const WAIT_OFFSET = 4;
 const RANDOM_VOLUME = true;
-const MAX_VOLUME = 0.0;
+const MAX_VOLUME = 5.0;
 const ANALYSER_DIVISOR = 16;
 
 
-const AUDIO_ENABLED = false;
+const AUDIO_ENABLED = true;
 
-const GUI_ENABLED = true;
+const GUI_ENABLED = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //     INIT AND RUN
@@ -137,23 +144,27 @@ function onWindowResize()
 
 function initControlElements()
 {
-  // controls = new THREE.FirstPersonControls(camera, renderer.domElement);
-  // controls.movementSpeed = 1000;
-  // controls.lookSpeed = 0.05;
-  // // controls.lookSpeed = 0;
-  // controls.noFly = true;
+  controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+  controls.movementSpeed = 4000;
+  controls.lookSpeed = 0.05;
+  // controls.lookSpeed = 0;
+  controls.noFly = true;
   // controls.lookVertical = false;
-  // // controls.activeLook = false;
+  // controls.activeLook = false;
   // controls.freeze = true;
 
-  controls = new THREE.TrackballControls(camera, renderer.domElement);
+  // controls = new THREE.TrackballControls(camera, renderer.domElement);
 }
 
 function initVisualElements()
 {
   // SCENE
-  camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.1, 1000 );
-  camera.position.set( 0, -1.5, 10 );
+  camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 10, 2000000 );
+  // var width = 10000;
+  // var height = 10000;
+  // camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 10, 2000000 );
+  camera.position.set( 0, -1500, 100-0 );
+  // camera.lookAt(new THREE.Vector3(0, 10000, 0));
   scene = new THREE.Scene();
 
   //var helper = new THREE.GridHelper( 5000, 5000, 0xffffff, 0xffffff );
@@ -166,14 +177,13 @@ function initVisualElements()
     gammaInput: true,
     gammaOutput: true,
   });
-  renderer.setClearColor( getPaletteColor() );
+  renderer.setClearColor( getRandomPaletteColor() );
 
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
   THREEx.Screenshot.bindKey(renderer);
 
   document.body.appendChild( renderer.domElement );
-
 
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
@@ -195,7 +205,6 @@ function initVisualElements()
   composer.addPass(copyShader);
   //renderer.toneMapping = THREE.ReinhardToneMapping;
 
-
   if (GUI_ENABLED) {
     var gui = new dat.GUI();
 
@@ -212,9 +221,8 @@ function initVisualElements()
     gui.open();
   }
 
-
   // LIGHTS
-  scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0001 );
+  scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.0001 );
 
   // DOMES
   var skyGeo = [];
@@ -222,17 +230,18 @@ function initVisualElements()
   for (var j = 0; j < NUMBER_OF_DOMES; j++)
   {
     uniforms = {
-      topColor:    { value: new THREE.Color(  getPaletteColor() ) },
-      bottomColor: { value: new THREE.Color(  getPaletteColor() ) },
+      topColor:    { value: new THREE.Color( getRandomPaletteColor() ) },
+      bottomColor: { value: new THREE.Color( getRandomPaletteColor() ) },
       offset:      { value: -33 },
       exponent:    { value: 0.6 },
       time: {type: "f", value: 0.0 },
-      amp: {type: "f", value: 5.0 },
+      amp: {type: "f", value: 500.0 },
       bscalar: {type: "f", value: -5.0 },
       positionscalar: {type: "f", value: .05 },
       turbulencescalar: {type: "f", value: .5 }
     };
-    skyGeo[j] = new THREE.SphereGeometry( (4*(j+1)), 32, 32 );
+    // skyGeo[j] = new THREE.SphereGeometry( (4000*(j+1)), 32, 32 );
+    skyGeo[j] = new THREE.IcosahedronGeometry( (4000*(j+1)), 3 );
     skyMat[j] = new THREE.ShaderMaterial({ 
       vertexShader: ShaderLoader.get( "posNoise_vert" ), 
       fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
@@ -247,12 +256,12 @@ function initVisualElements()
   var geometry = [];
   for (j = 0; j < NUMBER_OF_WAVES; j++)
   {
-    geometry[j] = new THREE.PlaneGeometry( 100, 100, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
+    geometry[j] = new THREE.PlaneGeometry( 100000, 100000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
     geometry[j].rotateX( - Math.PI / 2 );
     geometry[j].rotateY(Math.random() * 3.14 );
     uniforms = {
-      topColor:    { value: new THREE.Color(  getPaletteColor() ) },
-      bottomColor: { value: new THREE.Color(  getPaletteColor() ) },
+      topColor:    { value: new THREE.Color(  getRandomPaletteColor() ) },
+      bottomColor: { value: new THREE.Color(  getRandomPaletteColor() ) },
       offset:      { value: 0 },
       exponent:    { value: 0.6 },
       time: {type: "f", value: 0.0 },
@@ -268,7 +277,7 @@ function initVisualElements()
       side: THREE.DoubleSide,
     });
     // material[j] = new THREE.MeshBasicMaterial({ 
-    //   color: new THREE.Color(getPaletteColor()) ,
+    //   color: new THREE.Color(getRandomPaletteColor()) ,
     // });
     // material[j].uniforms = {
     //   time: {},
@@ -281,7 +290,7 @@ function initVisualElements()
   // PARTICLES
   particlesGeom = new THREE.Geometry();
   var textureLoader = new THREE.TextureLoader();
-  var particleColor = getPaletteColor();
+  var particleColor = getRandomPaletteColor();
   pMaterial = new THREE.PointsMaterial({
     color: particleColor,
     size: 5,
@@ -380,21 +389,12 @@ function renderVisuals() {
   composer.render();
 }
 
-// Randomly select from a variety of color palettes for the scene
-function getPaletteColor()
-{
-	var myIndex = (Math.round(Math.random() * (PALETTES.length - 1)));
-	var myColor = PALETTES[myIndex];
-	return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //     AUDIO STUFF
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Initialize the (all important) audio elements of the piece
-function initAudioElements()
-{
+function initAudioElements() {
   // Create invisible spheres to attach the audio to (convenience)
   var sphere = new THREE.SphereGeometry(100, 3, 2);
   var material_spheres = [];
@@ -541,8 +541,7 @@ function bufferLoader(buffer)
   sounds[index] = new THREE.PositionalAudio( listener );
   // sounds[index].setPanningModel(PAN_MODEL);
   sounds[index].setFilter(soundGains[index]);
-  sounds[index].setRolloffFactor(2);
-  sounds[index].setRefDistance(5000);
+  // sounds[index].setRolloffFactor(2);
 
   sounds[index].setBuffer(buffer);
   sounds[index].setRefDistance(REF_DIST);
@@ -589,7 +588,7 @@ function whenLoaded()
 
       prevTime[i] = now;
       waitTimes[i] = ((Math.random() * WAIT_MAX) + WAIT_OFFSET);
-      onOff[i] = Math.round(Math.random());
+      onOff[i] = Math.round(Math.random()); // NOTE(drew) was used in original but isn't now?
 
       if (RANDOM_VOLUME)
       {
