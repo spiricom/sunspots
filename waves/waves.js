@@ -159,9 +159,9 @@ function initControlElements()
 function initVisualElements()
 {
   // SCENE
-  camera = new THREE.PerspectiveCamera( 20, window.innerWidth / window.innerHeight, 10, 2000000 );
+  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 2000000 );
   // var width = 10000;
-  // var height = 10000;
+  var height = 10000;
   // camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 10, 2000000 );
   camera.position.set( 0, -1500, 100-0 );
   // camera.lookAt(new THREE.Vector3(0, 10000, 0));
