@@ -1,6 +1,6 @@
 "use strict";
 
-var pinMode = "random";
+// var pinMode = "random";
 // var pinMode = "none";
 // var pinMode = "corners";
 
@@ -10,6 +10,8 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
 
   var fboWidth = width;
   var fboHeight = height;
+
+  var pinMode = options.pinMode;
 
   // init pos data, w/ pinned bool in alpha channel
   // var side = Math.random() * 100 + 200
@@ -25,12 +27,15 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       posData[idx] = 0;
       idx++;
 
-      if (pinMode == "random")
-        posData[idx] = Math.random() < 0.003; 
-      else if (pinMode == "corners")
+      if (pinMode == "random") {
+        posData[idx] = Math.random() < 0.1 / (width * height); 
+      }
+      else if (pinMode == "corners") {
         posData[idx] = (x == 0 || x == fboWidth-1) && (y == 0 || y == fboHeight-1);
-      else
+      }
+      else {
         posData[idx] = 0;
+      }
       idx++;
     }
   }

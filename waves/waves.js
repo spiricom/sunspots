@@ -21,6 +21,21 @@ var guiParams = {
   bloomRadius: 0.63,
 };
 
+// CONTROLS VARS
+var pointerLocked = false;
+
+var moveForward = false;
+var moveBackward = false;
+var moveLeft = false;
+var moveRight = false;
+var moveUp = false;
+var moveDown = false;
+var canJump = false;
+
+var prevTime = performance.now();
+var velocity = new THREE.Vector3();
+
+
 // AUDIO VARS
 
 var convolver;
@@ -44,7 +59,7 @@ var noiseSound;
 const NUMBER_OF_WAVES = 5;
 const NUMBER_OF_DOMES = 5;
 
-const PALETTES = [[75,0,0],[72,26,19],[113,0,1],[112,16,17],[81,48,38],[103,38,25],[82,65,62],[147,0,2],[126,54,59],[107,70,58],[165,22,23],[171,5,10],[173,36,35],[147,71,65],[187,57,42],[128,95,84],[138,112,106],[161,104,93],[202,93,55],[208,150,132],[109,51,20],[81,72,14],[102,84,27],[185,100,0],[187,107,61],[214,96,7],[193,113,9],[183,121,40],[155,135,101],[152,144,138],[177,139,75],[196,131,92],[227,119,54],[198,141,51],[212,134,25],[172,152,142],[234,139,72],[204,154,84],[174,164,158],[223,157,62],[232,150,93],[211,164,111],[208,183,143],[233,203,160],[123,124,101],[185,191,188],[73,99,105],[76,122,137],[138,157,154],[14,19,40],[1,31,50],[26,31,52],[25,42,79],[2,63,91],[18,79,127],[53,84,111],[110,116,125],[173,175,181],[6,2,20],[57,53,61],[88,84,92],[103,99,105],[48,25,34],[170,135,146]];
+const PALETTES = [[75,0,0], [72,26,19], [113,0,1], [112,16,17], [81,48,38], [103,38,25], [82,65,62], [147,0,2], [126,54,59], [107,70,58], [165,22,23], [171,5,10], [173,36,35], [147,71,65], [187,57,42], [128,95,84], [138,112,106], [161,104,93], [202,93,55], [208,150,132], [109,51,20], [81,72,14], [102,84,27], [185,100,0], [187,107,61], [214,96,7], [193,113,9], [183,121,40], [155,135,101], [152,144,138], [177,139,75], [196,131,92], [227,119,54], [198,141,51], [212,134,25], [172,152,142], [234,139,72], [204,154,84], [174,164,158], [223,157,62], [232,150,93], [211,164,111], [208,183,143], [233,203,160], [123,124,101], [185,191,188], [73,99,105], [76,122,137], [138,157,154], [14,19,40], [1,31,50], [26,31,52], [25,42,79], [2,63,91], [18,79,127], [53,84,111], [110,116,125], [173,175,181], [6,2,20], [57,53,61], [88,84,92], [103,99,105], [48,25,34], [170,135,146]];
 const BACKGROUND_COLOR = 0x0;
 
 // Randomly select from a variety of color palettes for the scene
@@ -58,7 +73,7 @@ const PARTICLE_COUNT = 0;
 // const PARTICLE_COUNT = 500;
 const PARTICLE_SPEED_SCALE = 1;
 
-const WORLD_WIDTH = 128, WORLD_DEPTH = 128;
+const WORLD_WIDTH = 40, WORLD_DEPTH = 40;
 
 // AUDIO CONSTANTS
 
@@ -79,14 +94,32 @@ const RANDOM_VOLUME = true;
 const MAX_VOLUME = 5.0;
 const ANALYSER_DIVISOR = 16;
 
-
 const AUDIO_ENABLED = true;
 
 const GUI_ENABLED = false;
 
+var testCloths = [];
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //     INIT AND RUN
 ////////////////////////////////////////////////////////////////////////////////////////////////
+
+window.onload = function() {
+  var sl = new ShaderLoader();
+  sl.loadShaders({
+    posNoise_vert : "",
+    posNoise_frag : "",
+
+    posUpdate_vert : "",
+    posUpdate_frag : "",
+
+    velUpdate_vert : "",
+    velUpdate_frag : "",
+
+    render_vert : "",
+    render_frag : "",
+  }, "./glsl/", init );
+};
 
 function init()
 {
@@ -98,26 +131,55 @@ function init()
   // Listen for window resizing
   window.addEventListener('resize', onWindowResize, false);
 
-  animate();
-}
-
-window.onload = function() {
-  var sl = new ShaderLoader();
-  sl.loadShaders({
-    posNoise_vert : "",
-    posNoise_frag : ""
-  }, "./glsl/", init );
-};
-
-function animate()
-{
-  requestAnimationFrame(animate);
   render();
 }
 
 // Renders a frame
 function render()
 {
+  requestAnimationFrame(render);
+
+  var time = performance.now();
+  var delta = ( time - prevTime ) / 1000;
+
+  velocity.x -= velocity.x * 10.0 * delta;
+  velocity.y -= velocity.y * 10.0 * delta;
+  velocity.z -= velocity.z * 10.0 * delta;
+
+  // velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+  if ( moveForward ) velocity.z -= 400.0 * delta;
+  if ( moveBackward ) velocity.z += 400.0 * delta;
+
+  if ( moveLeft ) velocity.x -= 400.0 * delta;
+  if ( moveRight ) velocity.x += 400.0 * delta;
+  
+  if ( moveUp ) velocity.y += 400.0 * delta;
+  if ( moveDown ) velocity.y -= 400.0 * delta;
+
+  // velocity.y = Math.max( 0, velocity.y );
+  // if ( isOnObject === true ) {
+  //   velocity.y = Math.max( 0, velocity.y );
+
+  //   canJump = true;
+  // }
+
+  controls.getObject().translateX( velocity.x * delta * 1000 );
+  controls.getObject().translateY( velocity.y * delta * 1000 );
+  controls.getObject().translateZ( velocity.z * delta * 1000 );
+
+  // if ( controls.getObject().position.y < 10 ) {
+
+  //   velocity.y = 0;
+  //   controls.getObject().position.y = 10;
+
+  //   canJump = true;
+
+  // }
+
+  prevTime = time;
+
+
   if (AUDIO_ENABLED) {
     renderAudio();
   }
@@ -129,31 +191,166 @@ function onWindowResize()
 {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setClearColor(BACKGROUND_COLOR);
-  renderer.setPixelRatio( window.devicePixelRatio );
+  // renderer.setClearColor(BACKGROUND_COLOR);
+  // renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
-  render();
 }
 
-
+function HSVtoRGB(h, s, v) {
+  h = h % 1;
+  s = THREE.Math.clamp(s, 0, 1);
+  v = THREE.Math.clamp(v, 0, 1);
+  var r, g, b, i, f, p, q, t;
+  if (arguments.length === 1) {
+    s = h.s, v = h.v, h = h.h;
+  }
+  i = Math.floor(h * 6);
+  f = h * 6 - i;
+  p = v * (1 - s);
+  q = v * (1 - f * s);
+  t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+    case 0: r = v, g = t, b = p; break;
+    case 1: r = q, g = v, b = p; break;
+    case 2: r = p, g = v, b = t; break;
+    case 3: r = p, g = q, b = v; break;
+    case 4: r = t, g = p, b = v; break;
+    case 5: r = v, g = p, b = q; break;
+  }
+  
+  return new THREE.Color(r, g, b);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //     VISUALS STUFF
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
 function initControlElements()
 {
-  controls = new THREE.FirstPersonControls(camera, renderer.domElement);
-  controls.movementSpeed = 4000;
-  controls.lookSpeed = 0.05;
-  // controls.lookSpeed = 0;
-  controls.noFly = true;
+  // controls = new THREE.FirstPersonControls(camera, renderer.domElement);
+  // controls.movementSpeed = 10000;
+  // controls.lookSpeed = 0.1;
+  // // controls.lookSpeed = 0;
+  // controls.noFly = true;
+
   // controls.lookVertical = false;
   // controls.activeLook = false;
   // controls.freeze = true;
 
-  // controls = new THREE.TrackballControls(camera, renderer.domElement);
+  controls = new THREE.PointerLockControls(camera);
+  scene.add(controls.getObject());
+  controls.getObject().position.set(0, -10000, 30000);
+  controls.enabled = true;
+
+  var element = document.body;
+
+  var onKeyDown = function ( event ) {
+
+    switch ( event.keyCode ) {
+
+      case 38: // up
+      case 87: // w
+        moveForward = true;
+        break;
+
+      case 37: // left
+      case 65: // a
+        moveLeft = true; break;
+
+      case 40: // down
+      case 83: // s
+        moveBackward = true;
+        break;
+
+      case 39: // right
+      case 68: // d
+        moveRight = true;
+        break;
+
+      case 69: // e
+        moveUp = true;
+        break;
+      case 67: // c
+        moveDown = true;
+        break;
+
+      // case 32: // space
+      //   if ( canJump === true ) velocity.y += 350;
+      //   canJump = false;
+      //   break;
+
+    }
+
+  };
+
+  var onKeyUp = function ( event ) {
+
+    switch( event.keyCode ) {
+
+      case 38: // up
+      case 87: // w
+        moveForward = false;
+        break;
+
+      case 37: // left
+      case 65: // a
+        moveLeft = false;
+        break;
+
+      case 40: // down
+      case 83: // s
+        moveBackward = false;
+        break;
+
+      case 39: // right
+      case 68: // d
+        moveRight = false;
+        break;
+
+      case 69: // e
+        moveUp = false;
+        break;
+      case 67: // c
+        moveDown = false;
+        break;
+
+    }
+
+  };
+
+  document.addEventListener( 'keydown', onKeyDown, false );
+  document.addEventListener( 'keyup', onKeyUp, false );
+
+
+  // pointer lock
+  var canvas = document.querySelector('canvas');
+  var ctx = canvas.getContext('2d');
+
+  canvas.requestPointerLock = canvas.requestPointerLock ||
+                              canvas.mozRequestPointerLock;
+
+  document.exitPointerLock = document.exitPointerLock ||
+                             document.mozExitPointerLock;
+
+  canvas.onclick = function() {
+    canvas.requestPointerLock();
+  };
+
+  document.addEventListener('pointerlockchange', lockChangeAlert, false);
+  document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+
+  controls.enabled = pointerLocked;
+}
+
+
+function lockChangeAlert() {
+  var canvas = document.querySelector('canvas');
+
+  pointerLocked = document.pointerLockElement === canvas || document.mozPointerLockElement === canvas;
+
+  controls.enabled = pointerLocked;
 }
 
 function initVisualElements()
@@ -163,12 +360,9 @@ function initVisualElements()
   // var width = 10000;
   var height = 10000;
   // camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 10, 2000000 );
-  camera.position.set( 0, -1500, 100-0 );
-  // camera.lookAt(new THREE.Vector3(0, 10000, 0));
+  // camera.position.set( 0, -6000, -20000 );
+  // camera.lookAt(new THREE.Vector3(0, 0, 0));
   scene = new THREE.Scene();
-
-  //var helper = new THREE.GridHelper( 5000, 5000, 0xffffff, 0xffffff );
-  //scene.add( helper );
 
   // RENDERER 
   renderer = new THREE.WebGLRenderer({ 
@@ -188,6 +382,29 @@ function initVisualElements()
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
 
+  // CLOTH TEST
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  var clothTex = THREE.ImageUtils.loadTexture("textures/gridTex.jpg");
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4559510781_4e94a042b2_o_b.jpg");
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4086773135_2dde2925c1_o.jpg");
+  clothTex.wrapS = THREE.RepeatWrapping;
+  clothTex.wrapT = THREE.RepeatWrapping;
+  clothTex.anisotropy = 16;
+
+  var sideOptions = {
+    flatShading: false,
+    color: new THREE.Color(0.5, 0.5, 0.5),
+    pinMode: "random",
+  };
+
+  var clothRes = 40;
+  var clothSize = 50000;
+  for (var i = 0; i < 2; i++) {
+    testCloths[i] = new ClothBunch(1, clothRes, clothRes, clothTex, clothSize, sideOptions);
+    testCloths[i].colorScheme = "fixed";
+  }
+
+  // POST FX
   renderScene = new THREE.RenderPass(scene, camera);
 
   effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
@@ -205,6 +422,7 @@ function initVisualElements()
   composer.addPass(copyShader);
   //renderer.toneMapping = THREE.ReinhardToneMapping;
 
+  // GUI (FX TUNING)
   if (GUI_ENABLED) {
     var gui = new dat.GUI();
 
@@ -323,6 +541,11 @@ function initVisualElements()
 
 // NOTE: call AFTER renderAudio()
 function renderVisuals() {
+
+  for (var i = 0; i < testCloths.length; i++) {
+    testCloths[i].update(camera, []);
+  }
+
   for (var j = 0; j < NUMBER_OF_WAVES; j++)
   {
     // Update the ceiling visualizers
@@ -383,7 +606,7 @@ function renderVisuals() {
   // flag to the particle system that we've changed its vertices.
   particleSystem.geometry.verticesNeedUpdate = true;
 
-  controls.update(clock.getDelta());
+  // controls.update(clock.getDelta());
 	// renderer.render(scene, camera);
   renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
   composer.render();

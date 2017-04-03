@@ -117,7 +117,7 @@ window.onload = function() {
     velUpdate_frag : "",
 
     render_vert : "",
-    render_frag : ""
+    render_frag : "",
   }, "./glsl/", init );
 };
 
@@ -247,7 +247,7 @@ function init() {
   var sideOptions = {
     flatShading: true,
     color: col,
-  }
+  };
 
   // orbiters
   var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
