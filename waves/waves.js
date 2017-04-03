@@ -1,3 +1,4 @@
+"use strict";
 
 // MISC VARS
 
@@ -32,7 +33,7 @@ var moveUp = false;
 var moveDown = false;
 var canJump = false;
 
-var prevTime = performance.now();
+var prevTickTime = performance.now();
 var velocity = new THREE.Vector3();
 
 
@@ -68,10 +69,6 @@ function getRandomPaletteColor() {
   var myColor = PALETTES[myIndex];
   return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
 }
-
-const PARTICLE_COUNT = 0;
-// const PARTICLE_COUNT = 500;
-const PARTICLE_SPEED_SCALE = 1;
 
 const WORLD_WIDTH = 40, WORLD_DEPTH = 40;
 
@@ -140,7 +137,7 @@ function render()
   requestAnimationFrame(render);
 
   var time = performance.now();
-  var delta = ( time - prevTime ) / 1000;
+  var delta = ( time - prevTickTime ) / 1000;
 
   velocity.x -= velocity.x * 10.0 * delta;
   velocity.y -= velocity.y * 10.0 * delta;
@@ -177,7 +174,7 @@ function render()
 
   // }
 
-  prevTime = time;
+  prevTickTime = time;
 
 
   if (AUDIO_ENABLED) {
@@ -241,7 +238,7 @@ function initControlElements()
 
   controls = new THREE.PointerLockControls(camera);
   scene.add(controls.getObject());
-  controls.getObject().position.set(0, -10000, 30000);
+  // controls.getObject().position.set(0, -10000, 30000);
   controls.enabled = true;
 
   var element = document.body;
@@ -504,38 +501,6 @@ function initVisualElements()
     meshes[j] = new THREE.Mesh( geometry[j], material[j] );
     scene.add( meshes[j] );
   }
-
-  // PARTICLES
-  particlesGeom = new THREE.Geometry();
-  var textureLoader = new THREE.TextureLoader();
-  var particleColor = getRandomPaletteColor();
-  pMaterial = new THREE.PointsMaterial({
-    color: particleColor,
-    size: 5,
-    map: textureLoader.load("./images/lens.png"),
-    blending: THREE.AdditiveBlending,
-    transparent: true
-  });
-  pMaterial.alphaTest = 0.5;
-
-  for (var p = 0; p < PARTICLE_COUNT; p++) {
-    var pX = Math.random() * 50 - 25,
-        pY = Math.random() * 25 - 25;
-        pZ = Math.random() * 50 - 25;
-
-    var particle = new THREE.Vector3(pX, pY, pZ);
-
-    particle.velocity = new THREE.Vector3(
-      (Math.random() * PARTICLE_SPEED_SCALE) - PARTICLE_SPEED_SCALE / 2,
-      (Math.random() * PARTICLE_SPEED_SCALE) - PARTICLE_SPEED_SCALE / 2,
-      (Math.random() * PARTICLE_SPEED_SCALE) - PARTICLE_SPEED_SCALE / 2
-      );
-
-    particlesGeom.vertices.push(particle);
-  }
-
-  particleSystem = new THREE.Points(particlesGeom, pMaterial);
-  scene.add(particleSystem);
 }
 
 
@@ -569,42 +534,6 @@ function renderVisuals() {
   {
     skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
   }
-
-  var pCount = PARTICLE_COUNT;
-  while (pCount--) {
-    // get the particle
-    var particle = particlesGeom.vertices[pCount];
-
-    // check if we need to reset
-    if (particle.y < -50) {
-      particle.velocity.y = 1 * PARTICLE_SPEED_SCALE;
-    }
-    if (particle.y > 0) {
-      particle.velocity.y = -1 * PARTICLE_SPEED_SCALE;
-    }
-    if (particle.x < -50) {
-      particle.velocity.x = 1 * PARTICLE_SPEED_SCALE;
-    }
-    else if (particle.x > 50) {
-      particle.velocity.x = -1 * PARTICLE_SPEED_SCALE;
-    }
-    if (particle.z < -50) {
-      particle.velocity.z = 1 * PARTICLE_SPEED_SCALE;
-    }
-    else if (particle.z > 50) {
-      particle.velocity.z = -1 * PARTICLE_SPEED_SCALE;
-    }
-
-    // update the velocity with a splat of randomniz
-    particle.velocity.x += (Math.random() * PARTICLE_SPEED_SCALE) - PARTICLE_SPEED_SCALE / 2;
-    particle.velocity.y += (Math.random() * PARTICLE_SPEED_SCALE) - PARTICLE_SPEED_SCALE / 2;
-    particle.velocity.z += (Math.random() * PARTICLE_SPEED_SCALE) - PARTICLE_SPEED_SCALE / 2;
-    
-    particle.add(particle.velocity);
-  }
-
-  // flag to the particle system that we've changed its vertices.
-  particleSystem.geometry.verticesNeedUpdate = true;
 
   // controls.update(clock.getDelta());
 	// renderer.render(scene, camera);
@@ -669,7 +598,7 @@ function initAudioElements() {
 
   // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
-  noiseSound.setRolloffFactor(2);
+  noiseSound.setRolloffFactor(0);
   noiseMesh.add(noiseSound);
 
   // Setup each of the sound sources
