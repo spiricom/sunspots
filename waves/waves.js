@@ -23,6 +23,8 @@ var guiParams = {
 };
 
 // CONTROLS VARS
+var moveSpeed = 10;
+
 var pointerLocked = false;
 
 var moveForward = false;
@@ -167,9 +169,9 @@ function render()
   //   canJump = true;
   // }
 
-  controls.getObject().translateX( velocity.x * delta * 1000 );
-  controls.getObject().translateY( velocity.y * delta * 1000 );
-  controls.getObject().translateZ( velocity.z * delta * 1000 );
+  controls.getObject().translateX( velocity.x * delta * moveSpeed );
+  controls.getObject().translateY( velocity.y * delta * moveSpeed );
+  controls.getObject().translateZ( velocity.z * delta * moveSpeed );
 
   // if ( controls.getObject().position.y < 10 ) {
 
