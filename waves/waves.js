@@ -69,6 +69,12 @@ function getRandomPaletteColor() {
   var myColor = PALETTES[myIndex];
   return ((myColor[0] << 16) + (myColor[1] << 8) + myColor[2]);
 }
+function getRandomThreePaletteColor() {
+  var myIndex = (Math.round(Math.random() * (PALETTES.length - 1)));
+  var col = PALETTES[myIndex];
+  // return new THREE.Vector3(col[0], col[1], col[2]);
+  return new THREE.Color(col[0]/255, col[1]/255, col[2]/255);
+}
 
 const WORLD_WIDTH = 40, WORLD_DEPTH = 40;
 
@@ -361,7 +367,7 @@ function initVisualElements()
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
   scene = new THREE.Scene();
 
-  // RENDERER 
+  // RENDERER //////////////////////////
   renderer = new THREE.WebGLRenderer({ 
     // antialias: true,
     preserveDrawingBuffer: true,
@@ -379,9 +385,9 @@ function initVisualElements()
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
 
-  // CLOTH TEST
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
-  var clothTex = THREE.ImageUtils.loadTexture("textures/gridTex.jpg");
+  // CLOTHS //////////////////////////
+  var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/gridTex.jpg");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4559510781_4e94a042b2_o_b.jpg");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4086773135_2dde2925c1_o.jpg");
   clothTex.wrapS = THREE.RepeatWrapping;
@@ -390,18 +396,24 @@ function initVisualElements()
 
   var sideOptions = {
     flatShading: false,
-    color: new THREE.Color(0.5, 0.5, 0.5),
+    color: new THREE.Color(0.5, 1, 0.5),
     pinMode: "random",
+    noRandomRot: true,
   };
 
-  var clothRes = 40;
-  var clothSize = 50000;
-  for (var i = 0; i < 2; i++) {
-    testCloths[i] = new ClothBunch(1, clothRes, clothRes, clothTex, clothSize, sideOptions);
-    testCloths[i].colorScheme = "fixed";
+  var clothRes = 80;
+  var clothSize = 50;
+  for (var i = 0; i < NUMBER_OF_WAVES; i++) {
+    var opts = Object.assign({}, sideOptions);
+    // opts.color = HSVtoRGB(0.5, 1, 0.5);
+    opts.color = getRandomThreePaletteColor();
+    var newCloth = new ClothBunch(1, clothRes, clothRes, clothTex, clothSize, opts);
+    newCloth.colorScheme = "fixed";
+    newCloth.rootNode.rotation.x = Math.PI / 2;
+    testCloths[i] = newCloth;
   }
 
-  // POST FX
+  // POST FX //////////////////////////
   renderScene = new THREE.RenderPass(scene, camera);
 
   effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
@@ -419,7 +431,7 @@ function initVisualElements()
   composer.addPass(copyShader);
   //renderer.toneMapping = THREE.ReinhardToneMapping;
 
-  // GUI (FX TUNING)
+  // GUI (FX TUNING) //////////////////////////
   if (GUI_ENABLED) {
     var gui = new dat.GUI();
 
@@ -436,10 +448,10 @@ function initVisualElements()
     gui.open();
   }
 
-  // LIGHTS
+  // LIGHTS //////////////////////////
   scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.0001 );
 
-  // DOMES
+  // DOMES //////////////////////////
   var skyGeo = [];
   var dome = [];
   for (var j = 0; j < NUMBER_OF_DOMES; j++)
@@ -467,7 +479,7 @@ function initVisualElements()
     scene.add( dome[j] );
   }
 
-  // WAVES
+  // WAVES //////////////////////////
   var geometry = [];
   for (j = 0; j < NUMBER_OF_WAVES; j++)
   {
@@ -499,7 +511,7 @@ function initVisualElements()
     //   amp: {},
     // };
     meshes[j] = new THREE.Mesh( geometry[j], material[j] );
-    scene.add( meshes[j] );
+    // scene.add( meshes[j] );
   }
 }
 

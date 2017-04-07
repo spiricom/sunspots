@@ -28,7 +28,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       idx++;
 
       if (pinMode == "random") {
-        posData[idx] = Math.random() < 0.1 / (width * height); 
+        posData[idx] = Math.random() < 0.08; 
       }
       else if (pinMode == "corners") {
         posData[idx] = (x == 0 || x == fboWidth-1) && (y == 0 || y == fboHeight-1);
