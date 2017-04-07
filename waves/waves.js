@@ -404,7 +404,7 @@ function initVisualElements()
   };
 
   var clothRes = 80;
-  var clothSize = 50;
+  var clothSize = 5000;
   for (var i = 0; i < NUMBER_OF_WAVES; i++) {
     var opts = Object.assign({}, sideOptions);
     // opts.color = HSVtoRGB(0.5, 1, 0.5);
@@ -470,7 +470,7 @@ function initVisualElements()
       turbulencescalar: {type: "f", value: .5 }
     };
     // skyGeo[j] = new THREE.SphereGeometry( (4000*(j+1)), 32, 32 );
-    skyGeo[j] = new THREE.IcosahedronGeometry( (4000*(j+1)), 3 );
+    skyGeo[j] = new THREE.IcosahedronGeometry( (2000*(j+1)), 3 );
     skyMat[j] = new THREE.ShaderMaterial({ 
       vertexShader: ShaderLoader.get( "posNoise_vert" ), 
       fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
