@@ -161,9 +161,9 @@ function init() {
 
   // camera
   camera = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 50000);
-  camera.position.x = 2500 * scene.scale.x;
-  camera.position.y = 2500 * scene.scale.x;
-  camera.position.z = 2500 * scene.scale.x;
+  camera.position.x = 1200 * scene.scale.x;
+  camera.position.y = 1200 * scene.scale.y;
+  camera.position.z = 1200 * scene.scale.z;
   // cameraFixed = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 50000);
 
   // renderer
@@ -236,7 +236,13 @@ function init() {
   clothTex.wrapT = THREE.RepeatWrapping;
   clothTex.anisotropy = 16;
 
-  var group = new ClothBunch(clothsPerGroup, fboWidth, fboHeight, clothTex, 256);
+  // var group = new ClothBunch(clothsPerGroup, fboWidth, fboHeight, clothTex, 256, {
+  var group = new ClothBunch(1, 40, 40, clothTex, 256, {
+    pinMode: "random",
+    // pinMode: "corners",
+    noRandomRot: true,
+    pinFreq: 0.01,
+  });
   group.colorScheme = "main";
   allClothGroups.push(group);
 

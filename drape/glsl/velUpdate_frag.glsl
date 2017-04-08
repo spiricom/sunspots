@@ -23,6 +23,14 @@ bool IS_EDGE_Y(vec2 uv) { return (uv.y <= py || uv.y >= 1.0 - py); }
 bool IS_EDGE(vec2 uv) { return (IS_EDGE_X(uv) || IS_EDGE_Y(uv)); }
 bool IS_CORNER(vec2 uv) { return (IS_EDGE_X(uv) && IS_EDGE_Y(uv)); }
 
+vec3 GetDv(vec3 normal, vec3 windDir, float windStrength) {  
+  float dirDot = dot(normal, windDir);
+  // dirDot = sign(dirDot) * dirDot * dirDot * dirDot; 
+  // dirDot = sign(dirDot) * dirDot * dirDot * dirDot; 
+  vec3 dv = normal * dirDot * windStrength; 
+
+  return dv;
+}
 
 void main() {
 
@@ -43,39 +51,44 @@ void main() {
   vec3 poscb = texture2D( positions, uvcb ).rgb;
 
   // wind
-  float windStrength = cos(time / 7000.0) * 20.0 + 40.0;
-  windStrength = windStrength / 60.0 / 60.0 * 2.0;
+  float windStrength = cos(time / 7000.0) * 30.0 + 40.0;
+  windStrength = windStrength / 60.0 / 60.0 * 20.0;
 
+  float timeScale = 5.0;
   vec3 windDir = vec3(
-    sin((time+100.0) / 2.6),
-    cos((time+32.0) / 3.3),
-    sin(time / 3.7)
+    sin((time*timeScale + 100.0) / 2.6),
+    cos((time*timeScale + 32.0) / 3.3),
+    sin(time*timeScale / 3.7)
   );
   windDir = normalize(windDir);
 
   if (!IS_EDGE_R(uvcc) && !IS_EDGE_T(uvcc)) {
     vec3 normal = cross(poscc - posrc, poscc - posct);
     normal = normalize(normal);
-
-    vel += normal * dot(normal, windDir) * windStrength;
+    
+    vec3 dv = GetDv(normal, windDir, windStrength);
+    vel += dv;
   }
   if (!IS_EDGE_L(uvcc) && !IS_EDGE_T(uvcc)) {
     vec3 normal = -cross(poscc - poslc, poscc - posct);
     normal = normalize(normal);
-
-    vel += normal * dot(normal, windDir) * windStrength;
+  
+    vec3 dv = GetDv(normal, windDir, windStrength);
+    vel += dv;
   }
   if (!IS_EDGE_L(uvcc) && !IS_EDGE_B(uvcc)) {
     vec3 normal = cross(poscc - poslc, poscc - poscb);
     normal = normalize(normal);
-
-    vel += normal * dot(normal, windDir) * windStrength;
+    
+    vec3 dv = GetDv(normal, windDir, windStrength);
+    vel += dv;
   }
   if (!IS_EDGE_R(uvcc) && !IS_EDGE_B(uvcc)) {
     vec3 normal = -cross(poscc - posrc, poscc - poscb);
     normal = normalize(normal);
-
-    vel += normal * dot(normal, windDir) * windStrength;
+  
+    vec3 dv = GetDv(normal, windDir, windStrength);
+    vel += dv;
   }
   
   // damping

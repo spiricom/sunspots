@@ -49,7 +49,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
       if (avgVolumes.length > i) {
         var col = HSVtoRGB(
           // EasingFunctions.easeOutQuad(avgVolumes[i] / 20 + 0.2) + 0.1,
-          avgVolumes[i] / 20 + 0.3,
+          avgVolumes[i] / 80 + 0.3,
           EasingFunctions.easeInQuart(THREE.Math.clamp(avgVolumes[i] / 30 + 0.3, 0, 1)),
           THREE.Math.clamp(EasingFunctions.easeInCubic(avgVolumes[i] / 20) + 0.02, 0, 1)
           );
@@ -57,6 +57,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
       else {
         var col = HSVtoRGB(1, 0, 1);
       }
+      var col = HSVtoRGB(1, 0, 1);
       this.cloths[i].setColor(col);
     }
   }
@@ -97,7 +98,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
     this.rootNode.position.copy(camera.position);
 
     var fwd = (new THREE.Vector3()).copy(camera.getWorldDirection());
-    fwd.multiplyScalar(8000);
+    fwd.multiplyScalar(28000);
     this.rootNode.position.add(fwd);
 
     this.rootNode.lookAt(camera.position);
