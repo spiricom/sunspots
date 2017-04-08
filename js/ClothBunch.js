@@ -58,22 +58,6 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
       var v = avgVolumes[i] / 30;
       this.cloths[i].setColor(HSVtoRGB(v, v, v));
     }
-    
-
-    // for (var i = 0; i < this.cloths.length; i++) {
-    //   if (avgVolumes.length > i) {
-    //     var col = HSVtoRGB(
-    //       // EasingFunctions.easeOutQuad(avgVolumes[i] / 20 + 0.2) + 0.1,
-    //       avgVolumes[i] / 20 + 0.3,
-    //       EasingFunctions.easeInQuart(THREE.Math.clamp(avgVolumes[i] / 30 + 0.3, 0, 1)),
-    //       THREE.Math.clamp(EasingFunctions.easeInCubic(avgVolumes[i] / 20) + 0.02, 0, 1)
-    //       );
-    //   }
-    //   else {
-    //     var col = HSVtoRGB(1, 0, 1);
-    //   }
-    //   this.cloths[i].setColor(col);
-    // }
   }
   else if (this.colorScheme == "fixed") {
     for (var i = 0; i < this.cloths.length; i++) {
