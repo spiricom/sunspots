@@ -12,7 +12,6 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   var fboHeight = height;
 
   var pinMode = options.pinMode;
-  var pinFreq = options.pinFreq || 1;
 
   // init pos data, w/ pinned bool in alpha channel
   // var side = Math.random() * 100 + 200
@@ -21,18 +20,15 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   var idx = 0;
   for (var x = 0; x < fboWidth; x++) {
     for (var y = 0; y < fboHeight; y++) {
-      posData[idx] = (x / (fboWidth-1) - 0.5) * this.sideLength + Math.random() * this.sideLength * 0.2;
-      // posData[idx] = Math.random() * this.sideLength;
+      posData[idx] = (x / (fboWidth-1) - 0.5) * this.sideLength;
       idx++;
-      posData[idx] = (y / (fboHeight-1) - 0.5) * this.sideLength + Math.random() * this.sideLength * 0.2;
-      // posData[idx] = Math.random() * this.sideLength;
+      posData[idx] = (y / (fboHeight-1) - 0.5) * this.sideLength;
       idx++;
       posData[idx] = 0;
-      // posData[idx] = Math.random() * this.sideLength;
       idx++;
 
       if (pinMode == "random") {
-        posData[idx] = Math.random() < pinFreq;
+        posData[idx] = Math.random() < 0.08; 
       }
       else if (pinMode == "corners") {
         posData[idx] = (x == 0 || x == fboWidth-1) && (y == 0 || y == fboHeight-1);
@@ -151,9 +147,6 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     vertices[j*3 + 0] = (j % fboWidth) / fboWidth ;
     vertices[j*3 + 1] = (j / fboWidth) / fboHeight;
     vertices[j*3 + 2] = 0;
-    // vertices[j*3 + 0] = Math.random();
-    // vertices[j*3 + 1] = Math.random();
-    // vertices[j*3 + 2] = Math.random();
   }
   renderGeom.addAttribute("position", new THREE.BufferAttribute(vertices, 3));
 
