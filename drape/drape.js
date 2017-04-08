@@ -229,7 +229,8 @@ function init() {
 
   // CLOTHS /////////////////////
 
-  var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4559510781_4e94a042b2_o_b.jpg");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4086773135_2dde2925c1_o.jpg");
   clothTex.wrapS = THREE.RepeatWrapping;
