@@ -2,6 +2,8 @@
 
 // MISC VARS
 
+var DEVMODE = true;
+
 var clock = new THREE.Clock();
 var start = Date.now();
 
@@ -24,9 +26,10 @@ var guiParams = {
 
 // CONTROLS VARS
 var moveSpeed = 10;
+var runningEnabled = DEVMODE;
 
 var pointerLocked = false;
-
+var running = false;
 var moveForward = false;
 var moveBackward = false;
 var moveLeft = false;
@@ -162,25 +165,10 @@ function render()
   if ( moveUp ) velocity.y += 400.0 * delta;
   if ( moveDown ) velocity.y -= 400.0 * delta;
 
-  // velocity.y = Math.max( 0, velocity.y );
-  // if ( isOnObject === true ) {
-  //   velocity.y = Math.max( 0, velocity.y );
-
-  //   canJump = true;
-  // }
-
-  controls.getObject().translateX( velocity.x * delta * moveSpeed );
-  controls.getObject().translateY( velocity.y * delta * moveSpeed );
-  controls.getObject().translateZ( velocity.z * delta * moveSpeed );
-
-  // if ( controls.getObject().position.y < 10 ) {
-
-  //   velocity.y = 0;
-  //   controls.getObject().position.y = 10;
-
-  //   canJump = true;
-
-  // }
+  var speed = moveSpeed * (running ? 3 : 1);
+  controls.getObject().translateX( velocity.x * delta * speed );
+  controls.getObject().translateY( velocity.y * delta * speed );
+  controls.getObject().translateZ( velocity.z * delta * speed );
 
   prevTickTime = time;
 
@@ -254,38 +242,24 @@ function initControlElements()
   var onKeyDown = function ( event ) {
 
     switch ( event.keyCode ) {
-
+      case 16: // SHIFT
+        running = runningEnabled; break;
       case 38: // up
       case 87: // w
-        moveForward = true;
-        break;
-
+        moveForward = true; break;
       case 37: // left
       case 65: // a
         moveLeft = true; break;
-
       case 40: // down
       case 83: // s
-        moveBackward = true;
-        break;
-
+        moveBackward = true; break;
       case 39: // right
       case 68: // d
-        moveRight = true;
-        break;
-
+        moveRight = true; break;
       case 69: // e
-        moveUp = true;
-        break;
+        moveUp = true; break;      
       case 67: // c
-        moveDown = true;
-        break;
-
-      // case 32: // space
-      //   if ( canJump === true ) velocity.y += 350;
-      //   canJump = false;
-      //   break;
-
+        moveDown = true; break;
     }
 
   };
@@ -294,33 +268,24 @@ function initControlElements()
 
     switch( event.keyCode ) {
 
+      case 16: // SHIFT
+        running = false; break;
       case 38: // up
       case 87: // w
-        moveForward = false;
-        break;
-
+        moveForward = false; break;
       case 37: // left
       case 65: // a
-        moveLeft = false;
-        break;
-
+        moveLeft = false; break;
       case 40: // down
       case 83: // s
-        moveBackward = false;
-        break;
-
+        moveBackward = false; break;
       case 39: // right
       case 68: // d
-        moveRight = false;
-        break;
-
+        moveRight = false; break;
       case 69: // e
-        moveUp = false;
-        break;
+        moveUp = false; break;      
       case 67: // c
-        moveDown = false;
-        break;
-
+        moveDown = false; break;
     }
 
   };
@@ -361,10 +326,7 @@ function lockChangeAlert() {
 function initVisualElements()
 {
   // SCENE
-  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 2000000 );
-  // var width = 10000;
-  var height = 10000;
-  // camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 10, 2000000 );
+  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
   // camera.position.set( 0, -6000, -20000 );
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
   scene = new THREE.Scene();
@@ -388,32 +350,57 @@ function initVisualElements()
   var viewportHeight = window.innerHeight;
 
   // CLOTHS //////////////////////////
-  var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/gridTex.jpg");
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4559510781_4e94a042b2_o_b.jpg");
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4086773135_2dde2925c1_o.jpg");
-  clothTex.wrapS = THREE.RepeatWrapping;
-  clothTex.wrapT = THREE.RepeatWrapping;
-  clothTex.anisotropy = 16;
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  // // var clothTex = THREE.ImageUtils.loadTexture("textures/gridTex.jpg");
+  // // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4559510781_4e94a042b2_o_b.jpg");
+  // // var clothTex = THREE.ImageUtils.loadTexture("textures/grungy/4086773135_2dde2925c1_o.jpg");
+  // clothTex.wrapS = THREE.RepeatWrapping;
+  // clothTex.wrapT = THREE.RepeatWrapping;
+  // clothTex.anisotropy = 16;
 
   var sideOptions = {
     flatShading: false,
     color: new THREE.Color(0.5, 1, 0.5),
     pinMode: "random",
+    noTex: true,
     noRandomRot: true,
+    backfaceMode: THREE.BackSide,
+    initPosMult: 300,
+    flagss: [
+      [ "integrateVel", ],
+
+      // [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
+      // [ "SHEAR_PASS_2", "SHEAR_CONSTRAINTS_ENABLED", ],
+      // [ "SHEAR_PASS_3", "SHEAR_CONSTRAINTS_ENABLED", ],
+      // [ "SHEAR_PASS_4", "SHEAR_CONSTRAINTS_ENABLED", ],
+
+      [ "BEND_PASS_1", ],
+      [ "BEND_PASS_2", ],
+      [ "STRETCH_PASS_H_1", ],
+      [ "STRETCH_PASS_H_2", ],
+
+      [ "BEND_PASS_3", ],
+      [ "BEND_PASS_4", ],
+      [ "STRETCH_PASS_V_2", ],
+      [ "STRETCH_PASS_V_1", ],
+    ],
   };
 
-  var clothRes = 80;
-  var clothSize = 5000;
-  for (var i = 0; i < NUMBER_OF_WAVES; i++) {
-    var opts = Object.assign({}, sideOptions);
-    // opts.color = HSVtoRGB(0.5, 1, 0.5);
-    opts.color = getRandomThreePaletteColor();
-    var newCloth = new ClothBunch(1, clothRes, clothRes, clothTex, clothSize, opts);
-    newCloth.colorScheme = "fixed";
-    newCloth.rootNode.rotation.x = Math.PI / 2;
-    testCloths[i] = newCloth;
-  }
+  var clothRes = 80 * 3;
+  var clothSize = 50;
+  // for (var x = -3; x <= 3; x++) {
+  //   for (var y = -3; y <= 3; y++) {
+    for (var i = 0; i < NUMBER_OF_WAVES; i++) {
+      var opts = Object.assign({}, sideOptions);
+      // opts.color = HSVtoRGB(0.5, 1, 0.5);
+      opts.color = getRandomThreePaletteColor();
+      var newCloth = new ClothBunch(1, clothRes, clothRes, null, clothSize, opts);
+      newCloth.colorScheme = "fixed";
+      newCloth.rootNode.rotation.x = Math.PI / 2;
+      newCloth.rootNode.rotation.y = Math.PI * 2 * (i / NUMBER_OF_WAVES);
+      testCloths[i] = newCloth;
+    }
+  // }
 
   // POST FX //////////////////////////
   renderScene = new THREE.RenderPass(scene, camera);

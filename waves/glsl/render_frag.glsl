@@ -47,10 +47,10 @@ void main() {
 #ifdef NO_TEXTURE
   float c = (color * light).x;
   // c = c > 0.98 ? 1.0 : 0.0;
-  gl_FragColor = vec4(vec3(0.0), c > 0.95 ? 1.0 : 0.0);
+  // gl_FragColor = vec4(vec3(0.0), c > 0.95 ? 1.0 : 0.0);
 
   // regular textureless shading
-  // gl_FragColor = vec4(color * light, 1.0);
+  gl_FragColor = vec4(color * light, 1.0);
 
   // rainbow flat faces
   // gl_FragColor = vec4(normalize(faceNormal), 1.0);

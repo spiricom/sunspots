@@ -13,6 +13,8 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
 
   var pinMode = options.pinMode;
 
+  var initPosMult = options.initPosMult || 1;
+
   // init pos data, w/ pinned bool in alpha channel
   // var side = Math.random() * 100 + 200
   var len = fboWidth * fboHeight * 4;
@@ -20,9 +22,9 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   var idx = 0;
   for (var x = 0; x < fboWidth; x++) {
     for (var y = 0; y < fboHeight; y++) {
-      posData[idx] = (x / (fboWidth-1) - 0.5) * this.sideLength;
+      posData[idx] = (x / (fboWidth-1) - 0.5) * this.sideLength * initPosMult;
       idx++;
-      posData[idx] = (y / (fboHeight-1) - 0.5) * this.sideLength;
+      posData[idx] = (y / (fboHeight-1) - 0.5) * this.sideLength * initPosMult;
       idx++;
       posData[idx] = 0;
       idx++;
@@ -65,7 +67,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
 
   // update shaders
   var posUpdateShaders = [];
-  var flagss = [
+  var flagss = options.flagss || [
     [ "integrateVel", ],
 
     // [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
@@ -113,7 +115,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     if (options.flatShading) {
       renderDefines.FLAT_SHADING = true;
     }
-    if (options.noTex) {
+    if (!tex || options.noTex) {
       renderDefines.NO_TEXTURE = true;
     }
   }
@@ -128,12 +130,12 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       // color: { type: "3vf", value: HSVtoRGB(Math.random(), Math.random(), Math.random()) },
       texture: { type: "t", value: tex },
     },
+    side: options.backfaceMode || THREE.DoubleSide,
     defines: renderDefines,
     vertexShader: ShaderLoader.get( "render_vert" ),
     fragmentShader: ShaderLoader.get( "render_frag" ),
     transparent: true,
     shading: THREE.SmoothShading,
-    side: THREE.DoubleSide,
   });
   renderShader.extensions.derivatives = true;
 
