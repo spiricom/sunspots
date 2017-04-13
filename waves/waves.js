@@ -389,34 +389,35 @@ function initVisualElements()
   };
 
   var clothRes = 80;
-  var clothSize = 40 * 400;
+  var clothSize = 1600;
   for (var i = 0; i < NUMBER_OF_WAVES; i++) {
     var opts = Object.assign({}, sideOptions);
     opts.renderDefines = {
-      DISCARD_DIST: getDomeRadius(NUMBER_OF_DOMES - 1) + 0.1,
+      // DISCARD_DIST: getDomeRadius(NUMBER_OF_DOMES - 1) + 0.1,
+      DISCARD_DIST: getDomeRadius(0) + 0.1,
     };
     opts.color = getRandomThreePaletteColor();
     var newCloth = new ClothBunch(1, clothRes, clothRes, null, clothSize, opts);
     newCloth.colorScheme = "fixed";
-    newCloth.rootNode.rotation.x = -Math.PI / 2;
+    // newCloth.rootNode.rotation.x = -Math.PI / 2;
     // newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
     newCloth.pos.y = 500;
     
     testCloths.push(newCloth);
   }
 
-  for (var i = 0; i < NUMBER_OF_WAVES; i++) {
-    var opts = Object.assign({}, sideOptions);
-    // opts.color = HSVtoRGB(0.5, 1, 0.5);
-    opts.color = testCloths[i].options.color;
-    var newCloth = new ClothBunch(1, clothRes * 0.75, clothRes * 0.75, null, clothSize * 3, opts);
-    newCloth.colorScheme = "fixed";
-    newCloth.rootNode.rotation.x = -Math.PI / 2;
-    newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
-    newCloth.pos.y = 1200;
+  // for (var i = 0; i < NUMBER_OF_WAVES; i++) {
+  //   var opts = Object.assign({}, sideOptions);
+  //   // opts.color = HSVtoRGB(0.5, 1, 0.5);
+  //   opts.color = testCloths[i].options.color;
+  //   var newCloth = new ClothBunch(1, clothRes * 0.75, clothRes * 0.75, null, clothSize * 3, opts);
+  //   newCloth.colorScheme = "fixed";
+  //   newCloth.rootNode.rotation.x = -Math.PI / 2;
+  //   newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
+  //   newCloth.pos.y = 1200;
 
-    testCloths.push(newCloth);
-  }
+  //   testCloths.push(newCloth);
+  // }
 
   // POST FX //////////////////////////
   renderScene = new THREE.RenderPass(scene, camera);
@@ -473,12 +474,17 @@ function initVisualElements()
       turbulencescalar: {type: "f", value: .5 }
     };
     skyGeo[j] = new THREE.IcosahedronGeometry( getDomeRadius(j), 3 );
-    skyMat[j] = new THREE.ShaderMaterial({ 
-      vertexShader: ShaderLoader.get( "posNoise_vert" ), 
-      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
-      uniforms: uniforms, 
-      side: THREE.BackSide 
-    });
+    // skyGeo[j] = new THREE.SphereGeometry( getDomeRadius(j), 100 );
+    skyMat[j] = new THREE.MeshBasicMaterial( {
+      color: 0x505000,
+      side: THREE.BackSide,
+    } );
+    // skyMat[j] = new THREE.ShaderMaterial({ 
+    //   vertexShader: ShaderLoader.get( "posNoise_vert" ), 
+    //   fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+    //   uniforms: uniforms, 
+    //   side: THREE.BackSide 
+    // });
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
     scene.add( dome[j] );
   }
@@ -551,7 +557,7 @@ function renderVisuals() {
 
   for (var j = 0; j < NUMBER_OF_DOMES; j++)
   {
-    skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
+    // skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
   }
 
   // controls.update(clock.getDelta());

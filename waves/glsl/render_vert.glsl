@@ -37,6 +37,8 @@ void main() {
   myNormal = normalize(myNormal);
 #endif
 
+  poscc = normalize(poscc) * 1000.0;
+
   myPos = vec4( poscc, 1.0 );
 
   gl_Position = projectionMatrix * modelViewMatrix * myPos;
