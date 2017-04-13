@@ -109,8 +109,8 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
     var ps = this.cloths[j].particleSystem;
     var clothMesh = ps.renderMesh;
 
-    var keepClothsCentered = true;
-    if (keepClothsCentered) {
+    var keepCentered = !this.options.keepCentered;
+    if (keepCentered) {
       ps.getAveragePos();
       clothMesh.position.set(-ps.averagePos.x, -ps.averagePos.y, -ps.averagePos.z);
     }

@@ -30,7 +30,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       idx++;
 
       if (pinMode == "random") {
-        posData[idx] = Math.random() < 0.08; 
+        posData[idx] = Math.random() < (options.pinChance || 0.08); 
       }
       else if (pinMode == "corners") {
         posData[idx] = (x == 0 || x == fboWidth-1) && (y == 0 || y == fboHeight-1);
@@ -110,7 +110,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   });
 
   // render shader
-  var renderDefines = {};
+  var renderDefines = options.renderDefines || {};
   if (options) {
     if (options.flatShading) {
       renderDefines.FLAT_SHADING = true;
@@ -160,9 +160,10 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       indices.push( (x+0) + (y+1)*fboWidth );
       indices.push( (x+1) + (y+0)*fboWidth );
 
+      // comment these out for cool triangles
       indices.push( (x+1) + (y+1)*fboWidth );
-      indices.push( (x+0) + (y+1)*fboWidth );
       indices.push( (x+1) + (y+0)*fboWidth );
+      indices.push( (x+0) + (y+1)*fboWidth );
     }
   }
   renderGeom.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1))

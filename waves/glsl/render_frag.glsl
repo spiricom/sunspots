@@ -8,6 +8,12 @@ varying vec2 myUv;
 
 void main() {
 
+#ifdef DISCARD_DIST
+  if (length(myPos.xyz) > DISCARD_DIST) {
+    discard;
+  }
+#endif
+
 #ifdef FLAT_SHADING
   gl_FragColor = vec4(color, 1.0);
   return;
