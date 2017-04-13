@@ -367,7 +367,7 @@ function initVisualElements()
     // backfaceMode: THREE.BackSide,
     initPosMult: 1,
     pinChance: 0.22,
-    keepCentered: false,
+    noAutoCenter: true,
     flagss: [
       [ "integrateVel", ],
 
@@ -488,6 +488,14 @@ function initVisualElements()
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
     scene.add( dome[j] );
   }
+    var geo = new THREE.IcosahedronGeometry( getDomeRadius(0), 3 );
+    // skyGeo[j] = new THREE.SphereGeometry( getDomeRadius(j), 100 );
+    var mat = new THREE.MeshBasicMaterial( {
+      color: 0x509090,
+      side: THREE.BackSide,
+    } );
+    var mesh = new THREE.Mesh( geo, mat );
+    scene.add( mesh );
 
   // WAVES //////////////////////////
   var geometry = [];
@@ -532,10 +540,6 @@ function getDomeRadius(domeIdx) {
 // NOTE: call AFTER renderAudio()
 function renderVisuals() {
 
-  for (var i = 0; i < testCloths.length; i++) {
-    testCloths[i].update(camera, []);
-  }
-
   for (var j = 0; j < NUMBER_OF_WAVES; j++)
   {
     // Update the ceiling visualizers
@@ -559,6 +563,12 @@ function renderVisuals() {
   {
     // skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
   }
+
+
+  for (var i = 0; i < testCloths.length; i++) {
+    testCloths[i].update(camera, []);
+  }
+
 
   // controls.update(clock.getDelta());
 	// renderer.render(scene, camera);

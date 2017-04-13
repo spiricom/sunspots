@@ -37,7 +37,7 @@ void main() {
   myNormal = normalize(myNormal);
 #endif
 
-  poscc = normalize(poscc) * 1000.0;
+  poscc = normalize(poscc) * 2000.0;
 
   myPos = vec4( poscc, 1.0 );
 

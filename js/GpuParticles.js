@@ -130,8 +130,8 @@ function shuffle(a) {
 
 GpuParticleSystem.prototype.update = function(camera) {
   // // make sure camera matrices are updated
-  // camera.updateMatrix();
-  // camera.updateMatrixWorld();
+  camera.updateMatrix();
+  camera.updateMatrixWorld();
   // camera.matrixWorldInverse.getInverse( camera.matrixWorld );
 
   // // if not in view, don't update
