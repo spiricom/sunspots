@@ -537,7 +537,7 @@ function initVisualElements()
   // DOMES //////////////////////////
   var skyGeo = [];
   var dome = [];
-  for (var j = 0; j < NUMBER_OF_DOMES; j++)
+  for (var j = 0; j < NUMBER_OF_DOMES + 1; j++)
   {
     uniforms = {
       topColor:    { value: new THREE.Color( getRandomPaletteColor() ) },
@@ -611,8 +611,35 @@ function initVisualElements()
   }
 }
 
+// returns [
+  // index of smallest dome camera is inside of,
+  // float between 0 and 1 indicated how far through the current shell the camera is
+// ];
+// (innermost dome is index 0)
+function getCurrentDomeAroundCamera() {
+  // HACK need to get position from controls, which camera inherits from
+  var camDist = controls.getObject().position.length();
+  for (var i = 0; i < NUMBER_OF_DOMES; i++) {
+    var radius = getDomeRadius(i);
+    if (radius > camDist) {
+      var prevRadius = getDomeRadius(i-1);
+      var alpha = (camDist - prevRadius) / (radius - prevRadius);
+      return [i, alpha];
+    }
+  }
+  return [NUMBER_OF_DOMES, 0];
+}
+
 function getDomeRadius(domeIdx) {
-  return 2000*(domeIdx+1);
+  if (domeIdx < 0) {
+    return 0;
+  }
+  else if (domeIdx < NUMBER_OF_DOMES) {
+    return 2000*(domeIdx+1);
+  }
+  else {
+    return 10000;
+  }
 }
 
 // NOTE: call AFTER renderAudio()
