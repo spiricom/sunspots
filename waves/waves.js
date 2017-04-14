@@ -2,7 +2,7 @@
 
 // MISC VARS
 
-var DEVMODE = true;
+var DEVMODE = false;
 
 var clock = new THREE.Clock();
 var start = Date.now();
@@ -15,7 +15,7 @@ var waveMagnitudes = [2,5,6,7];
 var skyMat = [];
 var meshes = [];
 var material = [];
-var effectFXAA, bloomPass, renderScene;
+var effectFXAA, bloomPass, renderScene, renderLowLodScene;
 var composer;
 
 var guiParams = {
@@ -236,6 +236,9 @@ function render()
   controls.getObject().translateY( velocity.y * delta * speed );
   controls.getObject().translateZ( velocity.z * delta * speed );
 
+  var pos = controls.getObject().position;
+  pos.y = Math.min(pos.y, 150);
+
   prevTickTime = time;
 
 
@@ -288,19 +291,8 @@ function HSVtoRGB(h, s, v) {
 
 function initControlElements()
 {
-  // controls = new THREE.FirstPersonControls(camera, renderer.domElement);
-  // controls.movementSpeed = 10000;
-  // controls.lookSpeed = 0.1;
-  // // controls.lookSpeed = 0;
-  // controls.noFly = true;
-
-  // controls.lookVertical = false;
-  // controls.activeLook = false;
-  // controls.freeze = true;
-
   controls = new THREE.PointerLockControls(camera);
   scene.add(controls.getObject());
-  // controls.getObject().position.set(0, -10000, 30000);
   controls.enabled = true;
 
   var element = document.body;
@@ -396,9 +388,9 @@ function initVisualElements()
   
   lowLodScene = new THREE.Scene();
   lowLodNode = new THREE.Object3D();
-  lowLodNode.position.y = 400;
-  lowLodNode.scale.x = 3;
-  lowLodNode.scale.z = 3;
+  lowLodNode.position.y = 700;
+  lowLodNode.scale.x = 2.5;
+  lowLodNode.scale.z = 2.5;
   lowLodScene.add(lowLodNode);
 
   // RENDERER //////////////////////////
@@ -453,20 +445,14 @@ function initVisualElements()
     ],
   };
 
-  var clothRes = 80 * 1.3;
-  var clothSize = 16000 * 1.3;
+  var clothRes = Math.floor(80 * 1.3 * 1.8);
+  var clothSize = 16000 * 1.3 * 1.8;
   var clothYPos = 300;
   for (var i = 0; i < NUMBER_OF_WAVES; i++) {
     var opts = Object.assign({}, sideOptions);
 
-    // pythag
-    // var c = getDomeRadius(NUMBER_OF_DOMES - 1) + 0.1;
-    // var b = clothYPos;
-    // var a = Math.sqrt(c*c - b*b);
-
     opts.renderDefines = {
-      DISCARD_DIST: getDomeRadius(NUMBER_OF_DOMES - 1) * 1.2 + 0.1,
-      // DISCARD_INNER: true,
+      DISCARD_DIST: clothSize / 2 + 0.1,
     };
     opts.color = getRandomThreePaletteColor();
     var newCloth = new ClothBunch(1, clothRes, clothRes, null, clothSize, opts);
@@ -480,24 +466,11 @@ function initVisualElements()
     testCloths.push(newCloth);
   }
 
-  // for (var i = 0; i < NUMBER_OF_WAVES; i++) {
-  //   var opts = Object.assign({}, sideOptions);
-  //   // opts.color = HSVtoRGB(0.5, 1, 0.5);
-  //   opts.color = testCloths[i].options.color;
-  //   opts.renderDefines = {
-  //     DISCARD_DIST: getDomeRadius(NUMBER_OF_DOMES - 1) * 2.5 + 0.1,
-  //   };
-  //   var newCloth = new ClothBunch(1, clothRes * 0.75, clothRes * 0.75, null, clothSize * 2.5, opts);
-  //   newCloth.colorScheme = "fixed";
-  //   newCloth.rootNode.rotation.x = -Math.PI / 2;
-  //   newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
-  //   newCloth.rootNode.position.y = 1400;
-
-  //   testCloths.push(newCloth);
-  // }
-
   // POST FX //////////////////////////
   renderScene = new THREE.RenderPass(scene, camera);
+  renderScene.clear = true;
+  renderLowLodScene = new THREE.RenderPass(lowLodScene, camera);
+  renderLowLodScene.clear = false;
 
   effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
   effectFXAA.uniforms['resolution'].value.set(1 / viewportWidth, 1 / viewportHeight );
@@ -508,7 +481,24 @@ function initVisualElements()
   bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(viewportWidth, viewportHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
   composer = new THREE.EffectComposer(renderer);
   composer.setSize(viewportWidth, viewportHeight);
+  composer.addPass({
+    render: function(renderer) {
+      for (var i = 0; i < testCloths.length; i++) {
+        scene.add(testCloths[i].rootNode);
+      }
+    }, 
+    setSize: function() {} 
+  });
   composer.addPass(renderScene);
+  composer.addPass({
+    render: function(renderer) {
+      for (var i = 0; i < testCloths.length; i++) {
+        lowLodNode.add(testCloths[i].rootNode);
+      }
+    }, 
+    setSize: function() {} 
+  });
+  composer.addPass(renderLowLodScene);
   composer.addPass(effectFXAA);
   composer.addPass(bloomPass);
   composer.addPass(copyShader);
@@ -537,12 +527,15 @@ function initVisualElements()
   // DOMES //////////////////////////
   var skyGeo = [];
   var dome = [];
-  for (var j = 0; j < NUMBER_OF_DOMES + 1; j++)
+  for (var j = 0; j <= NUMBER_OF_DOMES; j++)
   {
-    uniforms = {
-      topColor:    { value: new THREE.Color( getRandomPaletteColor() ) },
-      bottomColor: { value: new THREE.Color( getRandomPaletteColor() ) },
+    var topColor = j < NUMBER_OF_WAVES ? testCloths[j].options.color : getRandomThreePaletteColor();
+    var uniforms = {
+      // topColor:    { value: new THREE.Color(1, 1, 1) },
+      topColor:    { value: getRandomThreePaletteColor() },
+      bottomColor: { value: topColor },
       offset:      { value: -33 },
+      scale:      { value: 0.3 },
       exponent:    { value: 0.6 },
       time: {type: "f", value: 0.0 },
       amp: {type: "f", value: 500.0 },
@@ -551,29 +544,17 @@ function initVisualElements()
       turbulencescalar: {type: "f", value: .5 }
     };
     skyGeo[j] = new THREE.IcosahedronGeometry( getDomeRadius(j), 3 );
-    // skyGeo[j] = new THREE.SphereGeometry( getDomeRadius(j), 100 );
-    // skyMat[j] = new THREE.MeshBasicMaterial( {
-    //   color: 0x505000,
-    //   side: THREE.BackSide,
-    // } );
+
     skyMat[j] = new THREE.ShaderMaterial({ 
       vertexShader: ShaderLoader.get( "posNoise_vert" ), 
       fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
       uniforms: uniforms,
-      // clippingPlanes: [ new THREE.Plane( new THREE.Vector3(0, 1, 0), 0 ) ],
-      side: THREE.BackSide 
+      side: THREE.BackSide, 
     });
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
+    dome[j].position.y = -300;
     scene.add( dome[j] );
   }
-    // var geo = new THREE.IcosahedronGeometry( getDomeRadius(0), 3 );
-    // // skyGeo[j] = new THREE.SphereGeometry( getDomeRadius(j), 100 );
-    // var mat = new THREE.MeshBasicMaterial( {
-    //   color: 0x509090,
-    //   side: THREE.BackSide,
-    // } );
-    // var mesh = new THREE.Mesh( geo, mat );
-    // scene.add( mesh );
 
   // WAVES //////////////////////////
   var geometry = [];
@@ -635,10 +616,10 @@ function getDomeRadius(domeIdx) {
     return 0;
   }
   else if (domeIdx < NUMBER_OF_DOMES) {
-    return 2000*(domeIdx+1);
+    return 4000*(domeIdx+1) + 500;
   }
   else {
-    return 10000;
+    return 16000 * 1.3 * 1.6 * 2;
   }
 }
 
@@ -648,54 +629,53 @@ function renderVisuals() {
   for (var j = 0; j < NUMBER_OF_WAVES; j++)
   {
     // Update the ceiling visualizers
-    for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
+    // for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
+    for (var i = 0; i < NUMBER_OF_WAVES; i++)
     {
       // Ensure we don't try use an analyser for a sound not yet loaded
       if (analysers[i] != undefined)
       {
         waveMagnitudes[i] = analysers[i].getAverageFrequency() / ANALYSER_DIVISOR;
       }
+      else {
+        waveMagnitudes[i] = 1;
+      }
     }
 
-    // material[j].uniforms[ 'time' ].value = (Date.now() - start);
-    // material[j].uniforms[ 'bscalar' ].value = 0;
-    material[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
-    // material[j].uniforms[ 'bscalar' ].value = waveMagnitudes[j] * 1 + 50;
-    material[j].uniforms[ 'amp' ].value = (waveMagnitudes[j] * 1 + 50);
+    // material[j].uniforms[ 'amp' ].value = (waveMagnitudes[j] * 1 + 50);
+    var waveMagUnif = testCloths[j].cloths[0].renderUniforms.waveMag;
+    var oldVal = waveMagUnif.value;
+    var targetVal = waveMagnitudes[j] * 0.1 + 0.7;
+    waveMagUnif.value = oldVal * 0.9 + targetVal * (1 - 0.9);
   }
-
-  for (var j = 0; j < NUMBER_OF_DOMES; j++)
-  {
-    // skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
-  }
-
-
+    
   for (var i = 0; i < testCloths.length; i++) {
-    testCloths[i].update(camera, []);
+    for (var j = 0; j < Math.min(3, Math.random() + Math.max(1, waveMagnitudes[i] * 2)); j++) {
+      testCloths[i].update(camera, []);
+    }
   }
 
-  // controls.update(clock.getDelta());
+  for (var j = 0; j < NUMBER_OF_DOMES+1; j++)
+  {
+    skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
+  }
+
 
   // RENDER
-  renderer.clear();
-  
-  // renderer.clearDepth();
+  // renderer.clear();
 
-  for (var i = 0; i < testCloths.length; i++) {
-    scene.add(testCloths[i].rootNode);
-    // testCloths[i].options.renderDefines.DISCARD_INNER = true;
-  }
-  renderer.render(scene, camera);
+  // for (var i = 0; i < testCloths.length; i++) {
+  //   scene.add(testCloths[i].rootNode);
+  // }
+  // renderer.render(scene, camera);
   
-  for (var i = 0; i < testCloths.length; i++) {
-    // console.log(testCloths[i].options);
-    lowLodNode.add(testCloths[i].rootNode);
-    // testCloths[i].options.renderDefines.DISCARD_INNER = false;
-  }
-  renderer.render(lowLodScene, camera);
+  // for (var i = 0; i < testCloths.length; i++) {
+  //   lowLodNode.add(testCloths[i].rootNode);
+  // }
+  // renderer.render(lowLodScene, camera);
 
-  // renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
-  // composer.render();
+  renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
+  composer.render();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

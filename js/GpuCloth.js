@@ -123,16 +123,19 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   }
   this.renderDefines = renderDefines;
 
+  this.renderUniforms = {
+    positions: { type: "t", value: initialPosTex },
+    // pointSize: { type: "f", value: 1 },
+    dataTexDims: { type: "2vf", value: new THREE.Vector2(fboWidth, fboHeight) },
+    waveMag: {type: "f", value: 1},
+    color: { type: "3vf", value: HSVtoRGB(color[0], color[1], color[2]) },
+    // flatShading: { type: "1f", value: 1 },
+    // color: { type: "3vf", value: HSVtoRGB(Math.random(), Math.random(), Math.random()) },
+    texture: { type: "t", value: tex },
+  };
+
   var renderShader = new THREE.ShaderMaterial({
-    uniforms: {
-      positions: { type: "t", value: initialPosTex },
-      // pointSize: { type: "f", value: 1 },
-      dataTexDims: { type: "2vf", value: new THREE.Vector2(fboWidth, fboHeight) },
-      color: { type: "3vf", value: HSVtoRGB(color[0], color[1], color[2]) },
-      // flatShading: { type: "1f", value: 1 },
-      // color: { type: "3vf", value: HSVtoRGB(Math.random(), Math.random(), Math.random()) },
-      texture: { type: "t", value: tex },
-    },
+    uniforms: this.renderUniforms,
     extensions: {
       derivatives: true,
       fragDepth: true,

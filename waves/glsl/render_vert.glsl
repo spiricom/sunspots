@@ -2,6 +2,9 @@
 uniform sampler2D positions;
 uniform vec2 dataTexDims;
 
+
+uniform float waveMag;
+
 varying vec4 myPos;
 varying vec3 myNormal;
 varying vec2 myUv;
@@ -47,7 +50,11 @@ void main() {
   depthBlend /= 6000.0;
   depthBlend = clamp(depthBlend, 0.0, 1.0);
 
-  myPos.z += mix(0.0, 600.0, depthBlend);
+  myPos.z = -abs(myPos.z);
+
+  myPos.z *= waveMag;
+
+  myPos.z += mix(0.0, 1000.0, depthBlend);
 
   gl_Position = projectionMatrix * modelViewMatrix * myPos;
 }
