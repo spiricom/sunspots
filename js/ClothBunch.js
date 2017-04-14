@@ -92,18 +92,20 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
 
 
   // update transform
-  // if (this.options.isBg) {
-  //   this.rootNode.position.copy(camera.position);
+  if (!this.options.manualTransform) {
+    if (this.options.isBg) {
+      this.rootNode.position.copy(camera.position);
 
-  //   var fwd = (new THREE.Vector3()).copy(camera.getWorldDirection());
-  //   fwd.multiplyScalar(8000);
-  //   this.rootNode.position.add(fwd);
+      var fwd = (new THREE.Vector3()).copy(camera.getWorldDirection());
+      fwd.multiplyScalar(8000);
+      this.rootNode.position.add(fwd);
 
-  //   this.rootNode.lookAt(camera.position);
-  // }
-  // else {
-  //   this.rootNode.position.set(this.pos.x, this.pos.y, this.pos.z);
-  // }
+      this.rootNode.lookAt(camera.position);
+    }
+    else {
+      this.rootNode.position.set(this.pos.x, this.pos.y, this.pos.z);
+    }
+  }
 
   for (var j = 0; j < this.numCloths; j++) {
     var ps = this.cloths[j].particleSystem;

@@ -368,6 +368,7 @@ function initVisualElements()
     initPosMult: 1,
     pinChance: 0.22,
     noAutoCenter: true,
+    manualTransform: true,
     flagss: [
       [ "integrateVel", ],
 
@@ -388,36 +389,38 @@ function initVisualElements()
     ],
   };
 
-  var clothRes = 80;
-  var clothSize = 1600;
+  var clothRes = 80 * 1.3;
+  var clothSize = 16000 * 1.3;
   for (var i = 0; i < NUMBER_OF_WAVES; i++) {
     var opts = Object.assign({}, sideOptions);
     opts.renderDefines = {
-      // DISCARD_DIST: getDomeRadius(NUMBER_OF_DOMES - 1) + 0.1,
-      DISCARD_DIST: getDomeRadius(0) + 0.1,
+      DISCARD_DIST: getDomeRadius(NUMBER_OF_DOMES - 1) + 0.1,
     };
     opts.color = getRandomThreePaletteColor();
     var newCloth = new ClothBunch(1, clothRes, clothRes, null, clothSize, opts);
     newCloth.colorScheme = "fixed";
-    // newCloth.rootNode.rotation.x = -Math.PI / 2;
-    // newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
-    newCloth.pos.y = 500;
+    newCloth.rootNode.rotation.x = -Math.PI / 2;
+    newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
+    newCloth.rootNode.position.y = 300;
     
     testCloths.push(newCloth);
   }
 
-  // for (var i = 0; i < NUMBER_OF_WAVES; i++) {
-  //   var opts = Object.assign({}, sideOptions);
-  //   // opts.color = HSVtoRGB(0.5, 1, 0.5);
-  //   opts.color = testCloths[i].options.color;
-  //   var newCloth = new ClothBunch(1, clothRes * 0.75, clothRes * 0.75, null, clothSize * 3, opts);
-  //   newCloth.colorScheme = "fixed";
-  //   newCloth.rootNode.rotation.x = -Math.PI / 2;
-  //   newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
-  //   newCloth.pos.y = 1200;
+  for (var i = 0; i < NUMBER_OF_WAVES; i++) {
+    var opts = Object.assign({}, sideOptions);
+    // opts.color = HSVtoRGB(0.5, 1, 0.5);
+    opts.color = testCloths[i].options.color;
+    opts.renderDefines = {
+      DISCARD_DIST: getDomeRadius(NUMBER_OF_DOMES - 1) * 2.5 + 0.1,
+    };
+    var newCloth = new ClothBunch(1, clothRes * 0.75, clothRes * 0.75, null, clothSize * 2.5, opts);
+    newCloth.colorScheme = "fixed";
+    newCloth.rootNode.rotation.x = -Math.PI / 2;
+    newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
+    newCloth.rootNode.position.y = 1400;
 
-  //   testCloths.push(newCloth);
-  // }
+    testCloths.push(newCloth);
+  }
 
   // POST FX //////////////////////////
   renderScene = new THREE.RenderPass(scene, camera);
@@ -475,27 +478,27 @@ function initVisualElements()
     };
     skyGeo[j] = new THREE.IcosahedronGeometry( getDomeRadius(j), 3 );
     // skyGeo[j] = new THREE.SphereGeometry( getDomeRadius(j), 100 );
-    skyMat[j] = new THREE.MeshBasicMaterial( {
-      color: 0x505000,
-      side: THREE.BackSide,
-    } );
-    // skyMat[j] = new THREE.ShaderMaterial({ 
-    //   vertexShader: ShaderLoader.get( "posNoise_vert" ), 
-    //   fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
-    //   uniforms: uniforms, 
-    //   side: THREE.BackSide 
-    // });
+    // skyMat[j] = new THREE.MeshBasicMaterial( {
+    //   color: 0x505000,
+    //   side: THREE.BackSide,
+    // } );
+    skyMat[j] = new THREE.ShaderMaterial({ 
+      vertexShader: ShaderLoader.get( "posNoise_vert" ), 
+      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+      uniforms: uniforms, 
+      side: THREE.BackSide 
+    });
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
     scene.add( dome[j] );
   }
-    var geo = new THREE.IcosahedronGeometry( getDomeRadius(0), 3 );
-    // skyGeo[j] = new THREE.SphereGeometry( getDomeRadius(j), 100 );
-    var mat = new THREE.MeshBasicMaterial( {
-      color: 0x509090,
-      side: THREE.BackSide,
-    } );
-    var mesh = new THREE.Mesh( geo, mat );
-    scene.add( mesh );
+    // var geo = new THREE.IcosahedronGeometry( getDomeRadius(0), 3 );
+    // // skyGeo[j] = new THREE.SphereGeometry( getDomeRadius(j), 100 );
+    // var mat = new THREE.MeshBasicMaterial( {
+    //   color: 0x509090,
+    //   side: THREE.BackSide,
+    // } );
+    // var mesh = new THREE.Mesh( geo, mat );
+    // scene.add( mesh );
 
   // WAVES //////////////////////////
   var geometry = [];
