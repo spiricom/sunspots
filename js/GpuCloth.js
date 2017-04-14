@@ -29,14 +29,16 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       posData[idx] = 0;
       idx++;
 
-      if (pinMode == "random") {
+      // pinning
+      posData[idx] = 0;
+      if (pinMode === "random" || pinMode === "randomAndEdges") {
         posData[idx] = Math.random() < (options.pinChance || 0.08); 
       }
-      else if (pinMode == "corners") {
-        posData[idx] = (x == 0 || x == fboWidth-1) && (y == 0 || y == fboHeight-1);
+      if (pinMode === "edges" || pinMode === "randomAndEdges") {
+        posData[idx] = posData[idx] || (x === 0) || (x === fboWidth-1) || (y === 0) || (y === fboHeight-1);
       }
-      else {
-        posData[idx] = 0;
+      if (pinMode === "corners") {
+        posData[idx] = (x === 0 || x === fboWidth-1) && (y === 0 || y === fboHeight-1);
       }
       idx++;
     }
@@ -119,6 +121,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       renderDefines.NO_TEXTURE = true;
     }
   }
+  this.renderDefines = renderDefines;
 
   var renderShader = new THREE.ShaderMaterial({
     uniforms: {
@@ -130,6 +133,10 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       // color: { type: "3vf", value: HSVtoRGB(Math.random(), Math.random(), Math.random()) },
       texture: { type: "t", value: tex },
     },
+    extensions: {
+      derivatives: true,
+      fragDepth: true,
+    },
     side: options.backfaceMode || THREE.DoubleSide,
     defines: renderDefines,
     vertexShader: ShaderLoader.get( "render_vert" ),
@@ -137,7 +144,6 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     transparent: true,
     shading: THREE.SmoothShading,
   });
-  renderShader.extensions.derivatives = true;
 
   // render geom
   var renderGeom = new THREE.BufferGeometry();

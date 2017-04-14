@@ -9,9 +9,15 @@ varying vec2 myUv;
 void main() {
 
 #ifdef DISCARD_DIST
+#ifdef DISCARD_INNER
+  if (length(myPos.xyz) < DISCARD_DIST) {
+    discard;
+  }
+#else
   if (length(myPos.xyz) > DISCARD_DIST) {
     discard;
   }
+#endif
 #endif
 
 #ifdef FLAT_SHADING
@@ -50,10 +56,17 @@ void main() {
   // clamp
   light = clamp(light, 0.0, 1.0);
 
-#ifdef NO_TEXTURE
+// #ifdef NO_TEXTURE
   float c = (color * light).x;
   // c = c > 0.98 ? 1.0 : 0.0;
   // gl_FragColor = vec4(vec3(0.0), c > 0.95 ? 1.0 : 0.0);
+
+  // depth blend out
+  // float depthBlend = length(myPos.xyz) - (DISCARD_DIST - 4000.0);
+  // depthBlend /= 4000.0;
+  // depthBlend = clamp(depthBlend, 0.0, 1.0);
+  // gl_FragDepthEXT = gl_FragCoord.z + mix(0.0, 0.001, depthBlend);
+
 
   // regular textureless shading
   gl_FragColor = vec4(color * light, 1.0);
@@ -61,10 +74,12 @@ void main() {
   // rainbow flat faces
   // gl_FragColor = vec4(normalize(faceNormal), 1.0);
 
-#else
-  vec3 texCol = texture2D(texture, myUv * 1.0).rgb;
-  gl_FragColor = vec4(texCol * color * light, 1.0);
-#endif
+
+// #else
+//   vec3 texCol = texture2D(texture, myUv * 1.0).rgb;
+//   float a = 1.0;
+//   gl_FragColor = vec4(texCol * color * light, a);
+// #endif
 
   // debug
   // gl_FragColor = vec4(texCol * light, 1.0);

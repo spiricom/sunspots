@@ -39,7 +39,15 @@ void main() {
 
   // poscc = normalize(poscc) * 2000.0;
 
+
+
   myPos = vec4( poscc, 1.0 );
+
+  float depthBlend = length(myPos.xyz) - (DISCARD_DIST - 6000.0);
+  depthBlend /= 6000.0;
+  depthBlend = clamp(depthBlend, 0.0, 1.0);
+
+  myPos.z += mix(0.0, 600.0, depthBlend);
 
   gl_Position = projectionMatrix * modelViewMatrix * myPos;
 }
