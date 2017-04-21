@@ -380,7 +380,8 @@ function initVisualElements()
 {
   // CAMERA
   camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
-  camera.position.set( 0, -400, 300 );
+  console.log("0,-400,-1000");
+  camera.position.set( 0, -400, -1000 );
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   // SCENES
@@ -735,6 +736,7 @@ function initAudioElements() {
 
   // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
+  console.log("rolloff = 20");
   noiseSound.setRolloffFactor(20);
   noiseMesh.add(noiseSound);
 
