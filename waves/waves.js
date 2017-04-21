@@ -735,7 +735,7 @@ function initAudioElements() {
 
   // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
-  noiseSound.setRolloffFactor(0);
+  noiseSound.setRolloffFactor(20);
   noiseMesh.add(noiseSound);
 
   // Setup each of the sound sources
