@@ -380,8 +380,9 @@ function initVisualElements()
 {
   // CAMERA
   camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
-  console.log("0,-400,10000");
+
   camera.position.set( 0, -400, 10000 );
+  console.log(camera.position);
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   // SCENES
@@ -676,6 +677,8 @@ function renderVisuals() {
   // renderer.render(lowLodScene, camera);
 
   renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
+  //goofing around
+    console.log(camera.position); // comment this out once camera pos is set
   composer.render();
 }
 
