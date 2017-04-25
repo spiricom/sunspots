@@ -469,12 +469,12 @@ var getParticlePos = function(i) {
 
   var extra = 0.2;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
-  // var r = 1.3;
-  var r = 0;
+  var r = 1.3;
+  // var r = 0;
   var xScale = 1.6 * 1.2;
   var yScale = 1.2 * 1.2;
-  var yOff = 0;
-  // var yOff = -0.55;
+  // var yOff = 0;
+  var yOff = -0.55;
   return [
     Math.cos(theta)*r * xScale,
     Math.sin(theta)*r * yScale + yOff,
