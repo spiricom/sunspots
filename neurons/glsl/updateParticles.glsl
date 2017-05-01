@@ -62,21 +62,11 @@ void main() {
     vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
     vec4 rand = texture2D(iChannel1, fragCoord.xy/256.0) - vec4(0.5);
     if (isPos) {
-      // if (isPlayer) {
-        col.rgb = targetPos;
-      // }
-      // else {
-      //   col = rand * 4.0;
-      //   col.z = -1.0;
-      //   col.y -= 0.5;
-      // }
+      col.rgb = targetPos;
     }
     else if (isVel) {
       col = rand * 2.;
     }
-    // else {
-    //   col.rgb = vec3(0.0);
-    // }
   }
   // update
   else {
@@ -98,23 +88,11 @@ void main() {
       float velMult = isPlayer ? 20. : 80.;
       vel.xyz = vel.xyz*.99 + hash33(vel * 2. + time * 1.) * velMult;
 
-      // keep close
-      // if (length(pos) > 1.2 && dot(vel, pos) > 0.0) {
-      //   vel *= 0.99;
-      //   vel += normalize(pos) * -0.3;
-      // }
-
-      // // only for main players
-      // if (particleIdx < NUM_PARTICLES) {
-      // }
-
-      // GO TO TARGET
-      // bool targetSeek = data.y != 0.0;
-
+      // seek/repel to/from target
       vec3 offsetToTarget = targetPos - pos;
       float distToTarget = length(offsetToTarget);
       float maxDist = isPlayer ? 0.05 : 0.1;
-      // float maxDist = isPlayer ? 0.05 : 0.1;
+
       bool repel = data.y < 0.0;
       if (distToTarget > maxDist || (repel && distToTarget < 0.0)) {
         vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));

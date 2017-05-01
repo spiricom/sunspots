@@ -70,13 +70,20 @@ void main() {
       vec3 pos = texture2D(iChannel0, vec2(x * one.x, 0.5*one.y)).rgb;
       vec3 vel = texture2D(iChannel0, one * vec2(x * one.x, 1.5*one.y)).rgb;
 
-      float a = clamp(amp * 4.0, 0.0, 1.0);
-      a = pow(a, 0.3);
+      // float a = 
+      float a = amp;
+      a = clamp(amp, 0.0, 1.0);
+      a = pow(a, 2.0);
+      // a = pow(a, 3.0);
+
+      // note: distMult is inverse of scale
       float distMult = 
-        isPlayer ? mix(1000.0, 50.0, a) * mix(1.0, mix(1.0, 0.95, a), abs(sin(time*12.0)))
+        // isPlayer ? mix(3000.0, 50.0, a) * mix(1.0, mix(1.0, 0.98, a), abs(sin(fragCoord.x+time*12.0)))
+        isPlayer ? mix(1000.0, 10.0, a)
         // isPlayer ? mix(clamp(1.0, 0.0, 1.0), 3000.0, 300.0)
         // isPlayer ? 300.0
         : 400.0;
+
       float falloffImmediate = 
         isPlayer ? mix(0.0030, 0.0030, a)
         // isPlayer ? 0.0030 
@@ -86,7 +93,7 @@ void main() {
         // isPlayer ? 0.7
         : 0.92; // focus
       float mult = 
-        isPlayer ? mix(0.0105, 0.105, a)
+        isPlayer ? mix(0.0105, 0.305, a)
         // isPlayer ? 0.105 
         : 0.0045;
 

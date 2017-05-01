@@ -10,6 +10,12 @@ var numSmallParticles = 720;
 
 // NOTE: disable when live
 var LIVE_UPDATE = true;
+var oscEnabled = true;
+var localTest = false;
+
+var logMessages = true;
+var messageLog = [];
+var initTime = Date.now();
 
 // general stuff
 var gl, scene, camera, renderer;
@@ -28,8 +34,6 @@ var time = 0;
 
 var oscPort;
 
-var oscEnabled = true;
-var localTest = true;
 
 var renderTargetPairs = [];
 var pingPongNeeded = [];
@@ -114,6 +118,16 @@ function getRenderHeight() {
 }
 
 function init() {
+
+  var onKeyDown = function ( event ) {
+    switch ( event.keyCode ) {
+      case 65: // a
+        console.log(JSON.stringify(messageLog));
+        break;
+    }
+  };
+
+  document.addEventListener( 'keydown', onKeyDown, false );
 
   if (oscEnabled) {
     // listening for OSC messages on this port
@@ -469,12 +483,12 @@ var getParticlePos = function(i) {
 
   var extra = 0.2;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
-  var r = 1.3;
+  var r = 1.1;
   // var r = 0;
   var xScale = 1.6 * 1.2;
   var yScale = 1.2 * 1.2;
   // var yOff = 0;
-  var yOff = -0.55;
+  var yOff = -0.5;
   return [
     Math.cos(theta)*r * xScale,
     Math.sin(theta)*r * yScale + yOff,
@@ -486,6 +500,11 @@ var getParticlePos = function(i) {
 function receiveOsc(addressStr, data) {
   var addr = addressStr.split("/").filter(function(el) {return el.length > 0});
 
+  var timestamp = Date.now() - initTime;
+  var log = [addressStr, data, timestamp];
+  if (logMessages) {
+    messageLog.push(log);
+  }
 
   if (addr[1] === "connect") {
     // console.log("OSC RECEIVED: " + addressStr + " :: " + data);
@@ -561,7 +580,7 @@ function breakConnections(idx) {
     attemptedConnections[conn.firstIdx] = -1;
     attemptedConnections[conn.secondIdx] = -1;    
 
-    console.log("CONN-BREAK: " + conn.firstIdx + ", " + conn.secondIdx)
+    // console.log("CONN-BREAK: " + conn.firstIdx + ", " + conn.secondIdx)
   }
 }
 
@@ -582,7 +601,7 @@ function connectParticles(idx0, idx1) {
   //   return;
   // }
 
-  console.log("CONN: " + idx0 + ", " + idx1);
+  // console.log("CONN: " + idx0 + ", " + idx1);
 
   if (idx0 === idx1) return;
 
@@ -597,7 +616,7 @@ function connectParticles(idx0, idx1) {
   if (attemptedConnections[idx1] !== idx0) return;
 
   // CONNECTION ESTABLISHED //
-  console.log("CONN-SUCCESS: " + idx0 + ", " + idx1);
+  // console.log("CONN-SUCCESS: " + idx0 + ", " + idx1);
 
   // make the pulse repeater
   var repeaterFunc = function() {
