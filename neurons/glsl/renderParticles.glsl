@@ -82,7 +82,7 @@ void main() {
         isPlayer ? mix(1000.0, 10.0, a)
         // isPlayer ? mix(clamp(1.0, 0.0, 1.0), 3000.0, 300.0)
         // isPlayer ? 300.0
-        : 400.0;
+        : 200.0;
 
       float falloffImmediate = 
         isPlayer ? mix(0.0030, 0.0030, a)
@@ -95,7 +95,7 @@ void main() {
       float mult = 
         isPlayer ? mix(0.0105, 0.305, a)
         // isPlayer ? 0.105 
-        : 0.0045;
+        : 0.0095;
 
       for (int j = 0; j < stepsPerFrame; j++) {
         vec3 tracePos = pos.xyz * vec3(1., 1., 0.25);
@@ -104,15 +104,16 @@ void main() {
         dist *= distMult;
         float alpha = mult / (pow(dist, falloffLong) + falloffImmediate);
         
-        newCol.rgb += alpha * abs(
-          0.0 + 0.9*sin( 
-            vec3(1.0) * ( 
-              time*0.1 
-            ) 
-          // + vec3(1.0, 0.66, 0.33)*3.14
-          + vec3(float(i)/float(NUM_PARTICLES))*3.14*0.5
-          ) 
-        );
+        newCol.rgb += alpha * 0.8;
+        // newCol.rgb += alpha * abs(
+        //   0.9*sin( 
+        //     vec3(1.0) * ( 
+        //       time*0.1 
+        //     ) 
+        //   // + vec3(1.0, 0.66, 0.33)*3.14
+        //   + vec3(float(i)/float(NUM_PARTICLES))*3.14*0.5
+        //   ) 
+        // );
 
         
         // step through backwards
@@ -124,7 +125,7 @@ void main() {
   
   vec4 col = (newCol + oldCol * (DECAY_RATE 
   // vec4 col = (newCol * (DECAY_RATE 
-    + (sin(time*3.14 * 0.1)*0.5+0.5) * 0.003
+    // + (sin(time*3.14 * 0.1)*0.5+0.5) * 0.003
     // + texture2D(iChannel2, vec2(time/256.0 * 0.1)).x * 0.007) 
   ));
   

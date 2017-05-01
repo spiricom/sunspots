@@ -6,16 +6,21 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 // neuron-specific stuff
 var numParticles = 9;
-var numSmallParticles = 720;
+var numSmallParticles = 600;
 
-// NOTE: disable when live
+// NOTE: DISABLE FLAGS THESE WHEN LIVE:
 var LIVE_UPDATE = true;
-var oscEnabled = true;
-var localTest = false;
+var localTest = true;
+var logMessages = false;
 
-var logMessages = true;
+
+// logging stuff
 var messageLog = [];
 var initTime = Date.now();
+
+// osc
+var oscEnabled = true;
+var oscPort;
 
 // general stuff
 var gl, scene, camera, renderer;
@@ -32,7 +37,6 @@ var noiseTex;
 
 var time = 0;
 
-var oscPort;
 
 
 var renderTargetPairs = [];
@@ -72,6 +76,14 @@ var shaderDefs = [
     outBufferIdx: -1,
   },
 ];
+
+var bufferDefs = [
+  // {
+  //   w: (numParticles + numSmallParticles),
+  //   h: 5,
+  // },
+];
+
 // outBufferIdx == -1 -> screen
 
 // HACK buffer idxs must be contiguous
@@ -309,12 +321,25 @@ var renderTargetOptions = {
 };
 
 function refreshRenderTargets() {
-  var w = getRenderWidth();
-  var h = getRenderHeight();
 
   renderTargetPairs = [];
 
   for (var i = 0; i < numRenderTargets; i++) {
+    var def = bufferDefs[i];
+
+    var w, h;
+    if (def && def.w) 
+      w = def.w;
+    else 
+      w = getRenderWidth();
+    
+    if (def && def.h) 
+      h = def.h;
+    else 
+      h = getRenderHeight();
+
+    console.log("" + w + ", " + h);
+
     var target = new THREE.WebGLRenderTarget(w, h, renderTargetOptions);
     var targets = [ target, target ];
     
@@ -334,7 +359,7 @@ function refreshMeshes() {
   var planeGeom = new THREE.PlaneBufferGeometry(getRenderWidth(), getRenderHeight(), 1);
   var planeGeomWindow = customDims ? new THREE.PlaneBufferGeometry(window.innerWidth, window.innerHeight, 1) : planeGeom;
   for (var i = 0; i < shaderDefs.length; i++) {
-    var mesh = new THREE.Mesh( shaderDefs[i].outBufferIdx===-1 ? planeGeomWindow : planeGeom );
+    var mesh = new THREE.Mesh( shaderDefs[i].outBufferIdx === -1 ? planeGeomWindow : planeGeom );
     scene.add(mesh);
     meshes[i] = mesh;
   }
@@ -481,14 +506,14 @@ var getParticlePos = function(i) {
   // var yOff = -0.7;
   // var xScale = 1.1;
 
-  var extra = 0.2;
+  var extra = 0.5;
   var theta = i / (numParticles-1) * (3.14+extra*2) - extra;
-  var r = 1.1;
+  var r = 1.0;
   // var r = 0;
   var xScale = 1.6 * 1.2;
   var yScale = 1.2 * 1.2;
   // var yOff = 0;
-  var yOff = -0.5;
+  var yOff = -0.3;
   return [
     Math.cos(theta)*r * xScale,
     Math.sin(theta)*r * yScale + yOff,
@@ -551,7 +576,8 @@ function sendPulse(idx0, idx1) {
 
     var idx = disabledParticlesList.pop();
     partEnabled[idx] = 1.0;
-    posToSet[idx] = getParticlePos(idx0);
+    posToSet[idx] = idx0;
+    // posToSet[idx] = getParticlePos(idx0);
     partTargetPoss[idx] = idx1;
     // partTargetPoss[idx] = getParticlePos(idx1);
   }
@@ -580,7 +606,7 @@ function breakConnections(idx) {
     attemptedConnections[conn.firstIdx] = -1;
     attemptedConnections[conn.secondIdx] = -1;    
 
-    // console.log("CONN-BREAK: " + conn.firstIdx + ", " + conn.secondIdx)
+    console.log("CONN-BREAK: " + conn.firstIdx + ", " + conn.secondIdx)
   }
 }
 
@@ -616,7 +642,7 @@ function connectParticles(idx0, idx1) {
   if (attemptedConnections[idx1] !== idx0) return;
 
   // CONNECTION ESTABLISHED //
-  // console.log("CONN-SUCCESS: " + idx0 + ", " + idx1);
+  console.log("CONN-SUCCESS: " + idx0 + ", " + idx1);
 
   // make the pulse repeater
   var repeaterFunc = function() {
@@ -671,15 +697,16 @@ function getRandomIntInclusive(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-var lastSendTime = 1;
+var lastSendTime = -99;
 function updateNeurons() {
 
   // DEBUG TEST
-  if (localTest && time - lastSendTime > 1.2) {
+  if (localTest && time - lastSendTime > 10.0) {
     lastSendTime = time;
     var idx0 = getRandomIntInclusive(0, numParticles-1);
     var idx1 = getRandomIntInclusive(0, numParticles-1);
     sendOsc("/" + idx0 + "/" + "connect", idx1);
+    sendOsc("/" + idx1 + "/" + "connect", idx0);
   }
 
   // for (var i = 0; i < numParticles + numSmallParticles; i++) {
@@ -714,7 +741,7 @@ function updateNeurons() {
 
     var isPlayer = i < numParticles;
 
-    // targetPos
+    // update targetPos
     var partX = (i + 1) / getRenderWidth() * 2 - 1;
     position[posIdx++] = partX;
     position[posIdx++] = (2 + 1) / getRenderHeight() * 2 - 1;
@@ -733,37 +760,48 @@ function updateNeurons() {
       val[valIdx++] = 0;
     }
 
-    // data flags
+    // update misc particle data
     position[posIdx++] = partX;
     position[posIdx++] = (3 + 1) / getRenderHeight() * 2 - 1;
     position[posIdx++] = 0;
+
+
+    // disable small particles randomly
+    if (!isPlayer && Math.random() < 1 / 10 / 60) {
+      partEnabled[i] = false;
+    }
 
     // enabled
     val[valIdx++] = partEnabled[i];
     // val[valIdx++] = i < numParticles*6 ? 1.0 : 0.0;
 
     // seek target
-    val[valIdx++] = 1.0;
+    // val[valIdx++] = 1.0;
     // val[valIdx++] = i < numParticles ? 1.0 : -1.0;
+
+
+    // position
+    var newPartPosIdx = posToSet[i];
+    if (newPartPosIdx !== false) {
+      posToSet[i] = false;
+
+      val[valIdx++] = newPartPosIdx;
+
+      // position[posIdx++] = partX;
+      // position[posIdx++] = (0 + 1) / getRenderHeight() * 2 - 1;
+      // position[posIdx++] = 0;
+      // val[valIdx++] = newPartPos[0];
+      // val[valIdx++] = newPartPos[1];
+      // val[valIdx++] = newPartPos[2];
+    }
+    else {
+      val[valIdx++] = -1;
+    }
+
 
     // amp
     val[valIdx++] = amps[i];
     // val[valIdx++] = 1.0;
-
-
-    // position
-    var newPartPos = posToSet[i];
-    if (newPartPos) {
-      posToSet[i] = false;
-
-      position[posIdx++] = partX;
-      position[posIdx++] = (0 + 1) / getRenderHeight() * 2 - 1;
-      position[posIdx++] = 0;
-
-      val[valIdx++] = newPartPos[0];
-      val[valIdx++] = newPartPos[1];
-      val[valIdx++] = newPartPos[2];
-    }
 
   }
 

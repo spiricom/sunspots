@@ -57,6 +57,10 @@ void main() {
   // bool targetSeek = data.y > 0.0;
   // enabled = true;
 
+  if (fragCoord.y > 4.5 || particleIdx > NUM_PARTICLES + NUM_SMALL_PARTICLES) {
+    return;
+  }
+
   // init
   if (iFrame < 20) {
     vec3 targetPos = texture2D(iChannel0, vec2(uv.x, 2.5 * one.y)).xyz;
@@ -71,9 +75,13 @@ void main() {
   // update
   else {
 
-    if (particleIdx < NUM_PARTICLES + NUM_SMALL_PARTICLES && enabled) {
+    if (enabled) {
       vec3 pos = texture2D(iChannel0, vec2(uv.x, 0.5 * one.y)).xyz;
       vec3 vel = texture2D(iChannel0, vec2(uv.x, 1.5 * one.y)).xyz;
+
+      if (data.y >= 0.0) {
+        pos = texture2D(iChannel0, vec2((data.y + 0.5) * one.x, 0.5 * one.y)).xyz;
+      }
 
       vec3 targetPos;
       if (isPlayer) {
@@ -93,11 +101,12 @@ void main() {
       float distToTarget = length(offsetToTarget);
       float maxDist = isPlayer ? 0.05 : 0.1;
 
-      bool repel = data.y < 0.0;
+      // bool repel = data.y < 0.0;
+      bool repel = false;
       if (distToTarget > maxDist || (repel && distToTarget < 0.0)) {
         vec3 inPos = pos + (normalize(offsetToTarget) * (distToTarget - maxDist));
         vec3 targetVel = (inPos - pos) / INTEGRATE_STEP;
-        targetVel *= sign(data.y); // data.y == -1 -> seek away
+        // targetVel *= sign(data.y); // data.y == -1 -> seek away
 
         float a = isPlayer ? 0.0001 : 0.0026 + sin(float(particleIdx)) * 0.0005;
         vel = vel * (1.0-a) + targetVel * a;
@@ -128,6 +137,5 @@ void main() {
     }
   }
   
-
   fragColor = col;
 }
