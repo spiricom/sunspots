@@ -380,7 +380,9 @@ function initVisualElements()
 {
   // CAMERA
   camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
-  camera.position.set( 0, -400, 300 );
+
+  camera.position.set( 0, -400, 10000 );
+  console.log(camera.position);
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   // SCENES
@@ -675,6 +677,8 @@ function renderVisuals() {
   // renderer.render(lowLodScene, camera);
 
   renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
+  //goofing around
+    console.log(camera.position); // comment this out once camera pos is set
   composer.render();
 }
 
@@ -735,7 +739,8 @@ function initAudioElements() {
 
   // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
-  noiseSound.setRolloffFactor(0);
+  console.log("rolloff = 20");
+  noiseSound.setRolloffFactor(20);
   noiseMesh.add(noiseSound);
 
   // Setup each of the sound sources
