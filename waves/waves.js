@@ -20,9 +20,9 @@ var composer;
 
 var guiParams = {
   exposure: 1.0,
-  bloomThreshold: 0.38,
-  bloomStrength: 0.2,
-  bloomRadius: 0.63,
+  bloomThreshold: 0.59,
+  bloomStrength: 0.26,
+  bloomRadius: 0.9,
 };
 
 // CONTROLS VARS
@@ -143,6 +143,7 @@ function getRandomPaletteColor() {
 function getRandomThreePaletteColor() {
   var myIndex = (Math.round(Math.random() * (PALETTES.length - 1)));
   var col = PALETTES[myIndex];
+  console.log("color = ", myIndex);
   // return new THREE.Vector3(col[0], col[1], col[2]);
   return new THREE.Color(col[0]/255, col[1]/255, col[2]/255);
 }
@@ -160,13 +161,13 @@ const NUMBER_OF_SOUND_SOURCES = 4;
 const SOUND_POSITIONS = [[-10000,30,0], [10000,80,0], [0,0,-10000],[0,-50,10000], [-5000,30,5000], [5000,80,5000],[-5000, 0, -5000], [5000, -50, -5000]];
 
 const REVERB_GAIN = 1.0;
-const REF_DIST = 10000;
+const REF_DIST = 5000;
 
 const WAIT_MAX = 20;
 const WAIT_OFFSET = 4;
 const RANDOM_VOLUME = true;
-const MAX_VOLUME = 5.0;
-const ANALYSER_DIVISOR = 16;
+const MAX_VOLUME = 1.0;
+const ANALYSER_DIVISOR = 8;
 
 const AUDIO_ENABLED = true;
 
@@ -204,7 +205,7 @@ function init()
   initControlElements();
   // Listen for window resizing
   window.addEventListener('resize', onWindowResize, false);
-
+  console.log("equalpower");
   render();
 }
 
@@ -418,7 +419,7 @@ function initVisualElements()
   // CLOTHS //////////////////////////
 
   var sideOptions = {
-    flatShading: false,
+    flatShading: true,
     color: new THREE.Color(0.5, 1, 0.5),
     pinMode: "randomAndEdges",
     noTex: true,
@@ -447,9 +448,12 @@ function initVisualElements()
     ],
   };
 
-  var clothRes = Math.floor(80 * 1.3 * 1.8);
+  //var clothRes = Math.floor(80 * 1.3 * 1.8);
+  //var clothSize = 16000 * 1.3 * 1.8;
+  var clothRes = Math.floor(15 * 1.3 * 1.8);
   var clothSize = 16000 * 1.3 * 1.8;
-  var clothYPos = 300;
+
+  var clothYPos = 1600;
   for (var i = 0; i < NUMBER_OF_WAVES; i++) {
     var opts = Object.assign({}, sideOptions);
 
@@ -481,6 +485,9 @@ function initVisualElements()
   copyShader.renderToScreen = true;
 
   bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(viewportWidth, viewportHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
+  bloomPass.radius = 0.9;
+  bloomPass.threshold = 0.59;
+  bloomPass.strength = 0.26;
   composer = new THREE.EffectComposer(renderer);
   composer.setSize(viewportWidth, viewportHeight);
   composer.addPass({
@@ -524,7 +531,7 @@ function initVisualElements()
   }
 
   // LIGHTS //////////////////////////
-  scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.0001 );
+  scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.001 );
 
   // DOMES //////////////////////////
   var skyGeo = [];
@@ -644,7 +651,7 @@ function renderVisuals() {
       }
     }
 
-    // material[j].uniforms[ 'amp' ].value = (waveMagnitudes[j] * 1 + 50);
+     material[j].uniforms[ 'amp' ].value = (waveMagnitudes[j] * 1 + 50);
     var waveMagUnif = testCloths[j].cloths[0].renderUniforms.waveMag;
     var oldVal = waveMagUnif.value;
     var targetVal = waveMagnitudes[j] * 0.1 + 0.7;
@@ -678,7 +685,7 @@ function renderVisuals() {
 
   renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
   //goofing around
-    console.log(camera.position); // comment this out once camera pos is set
+    //console.log(camera.position); // comment this out once camera pos is set
   composer.render();
 }
 
@@ -689,7 +696,7 @@ function renderVisuals() {
 // Initialize the (all important) audio elements of the piece
 function initAudioElements() {
   // Create invisible spheres to attach the audio to (convenience)
-  var sphere = new THREE.SphereGeometry(100, 3, 2);
+  var sphere = new THREE.SphereGeometry(10, 3, 3);
   var material_spheres = [];
   for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
   {
@@ -739,8 +746,8 @@ function initAudioElements() {
 
   // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
-  console.log("rolloff = 20");
-  noiseSound.setRolloffFactor(20);
+  console.log("rolloff = 7");
+  noiseSound.setRolloffFactor(7);
   noiseMesh.add(noiseSound);
 
   // Setup each of the sound sources
@@ -788,6 +795,7 @@ function playRandomSound(soundSourceIndex) {
   // Set this as a global so it is accessible by the bufferloader
   // Probably can just add a param to bufferLoader but I'll test that later
   // I'm not 100% on how THREE.js loaders work
+  console.log("inside playRandomSound");
   curSoundSource = soundSourceIndex;
   var now = audioContext.currentTime;
 
@@ -850,6 +858,7 @@ function bufferLoader(buffer)
   // Add the sound to the object map
   loadedSounds[curSoundFile] = sounds[index];
   sounds[index].play();
+  console.log("bufferLoader done");
 }
 
 // Loader function for THREE.js to load audio, specifically for the noise source
