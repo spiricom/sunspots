@@ -72,8 +72,8 @@ void main() {
 
       // float a = 
       float a = amp;
-      a = clamp(amp, 0.0, 1.0);
-      a = pow(a, 2.0);
+      a = clamp(amp * 9.0, 0.0, 1.0);
+      a = pow(a, 0.5);
       // a = pow(a, 3.0);
 
       // note: distMult is inverse of scale

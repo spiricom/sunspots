@@ -9,8 +9,8 @@ var numParticles = 9;
 var numSmallParticles = 600;
 
 // NOTE: DISABLE FLAGS THESE WHEN LIVE:
-var LIVE_UPDATE = true;
-var localTest = true;
+var LIVE_UPDATE = false;
+var localTest = false;
 var logMessages = false;
 
 
@@ -132,10 +132,13 @@ function getRenderHeight() {
 function init() {
 
   var onKeyDown = function ( event ) {
-    switch ( event.keyCode ) {
-      case 65: // a
-        console.log(JSON.stringify(messageLog));
-        break;
+    
+    if (logMessages) {
+      switch ( event.keyCode ) {
+        case 65: // a
+          console.log(JSON.stringify(messageLog));
+          break;
+      }
     }
   };
 
@@ -299,7 +302,7 @@ function onResize() {
   // fragUniforms.iResolution.value.x = getRenderWidth();
   // fragUniforms.iResolution.value.y = getRenderHeight();
 
-  console.log("dims: " + window.innerWidth + ", " + window.innerHeight);
+  // console.log("dims: " + window.innerWidth + ", " + window.innerHeight);
 
   fragUniforms.iFrame.value = 0;
   fragUniforms.iGlobalTime.value = 0;
@@ -338,7 +341,7 @@ function refreshRenderTargets() {
     else 
       h = getRenderHeight();
 
-    console.log("" + w + ", " + h);
+    // console.log("" + w + ", " + h);
 
     var target = new THREE.WebGLRenderTarget(w, h, renderTargetOptions);
     var targets = [ target, target ];
@@ -495,10 +498,17 @@ function updateFragDefines() {
   defs.INTEGRATE_STEP = 0.0001;
 }
 
+// var playerIdxToPlayerPosIdx = [
+  
+// ];
+
 var getParticlePos = function(i) {
   if (i < numParticles) {
     // i = particleArrIdxToPlayerIdx[i];
   }
+
+  // i = playerIdxToPlayerPosIdx[i];
+
   i = (numParticles-1) - (i % numParticles);
 
   // var extra = 0.1;
@@ -553,6 +563,7 @@ function receiveAmplitude(idx, amp) {
   amp = parseFloat(amp);
   // amps[idx] = Math.max(amps[idx], amp);
   var a = 0.3;
+  console.log(amp);
   amps[idx] = amp * a + amps[idx] * (1-a);
 }
 
@@ -627,7 +638,7 @@ function connectParticles(idx0, idx1) {
   //   return;
   // }
 
-  // console.log("CONN: " + idx0 + ", " + idx1);
+  console.log("CONN: " + idx0 + ", " + idx1);
 
   if (idx0 === idx1) return;
 
@@ -701,7 +712,7 @@ var lastSendTime = -99;
 function updateNeurons() {
 
   // DEBUG TEST
-  if (localTest && time - lastSendTime > 10.0) {
+  if (localTest && time - lastSendTime > 0.0) {
     lastSendTime = time;
     var idx0 = getRandomIntInclusive(0, numParticles-1);
     var idx1 = getRandomIntInclusive(0, numParticles-1);
