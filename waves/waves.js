@@ -4,8 +4,11 @@
 
 var DEVMODE = false;
 
+var screenshotDims = [12 * 600, 12 * 600];
+
 var clock = new THREE.Clock();
 var start = Date.now();
+var paused = false;
 
 // VISUALS VARS
 
@@ -214,6 +217,8 @@ function render()
 {
   requestAnimationFrame(render);
 
+  if (paused) return;
+
   var time = performance.now();
   var delta = ( time - prevTickTime ) / 1000;
 
@@ -249,14 +254,28 @@ function render()
   renderVisuals();
 }
 
-// Properly handle window resizing
-function onWindowResize()
-{
-  camera.aspect = window.innerWidth / window.innerHeight;
+function resizeWindow(w, h) {
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
   // renderer.setClearColor(BACKGROUND_COLOR);
   // renderer.setPixelRatio( window.devicePixelRatio );
-  renderer.setSize( window.innerWidth, window.innerHeight );
+  renderer.setSize( w, h );
+
+  // HACK: need to refresh bloom pass
+  for (var i = 0; i < composer.passes.length; i++) {
+    if (composer.passes[i] === bloomPass) {
+      bloomPass = makeBloomPass(w, h);
+      composer.passes[i] = bloomPass;
+    }
+  }
+  effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h );
+  composer.setSize( w, h );
+}
+
+// Properly handle window resizing
+function onWindowResize()
+{
+  resizeWindow(window.innerWidth, window.innerHeight);
 }
 
 function HSVtoRGB(h, s, v) {
@@ -318,6 +337,18 @@ function initControlElements()
         moveUp = true; break;      
       case 67: // c
         moveDown = true; break;
+      case 80: // p
+        var w = screenshotDims ? screenshotDims[0] : window.innerWidth;
+        var h = screenshotDims ? screenshotDims[1] : window.innerHeight;
+        resizeWindow(w, h);
+        renderVisuals();
+        // paused = true;
+        // setTimeout(function() {
+          // paused = false;
+          window.open( renderer.domElement.toDataURL( 'image/png' ), 'screenshot' );
+          resizeWindow(window.innerWidth, window.innerHeight);
+        // }, 0);
+        break;
     }
   };
 
@@ -377,6 +408,15 @@ function lockChangeAlert() {
   controls.enabled = pointerLocked;
 }
 
+function makeBloomPass(w, h) {
+  var bloom = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
+  bloom.radius = 0.9;
+  bloom.threshold = 0.59;
+  bloom.strength = 0.26;
+
+  return bloom;
+}
+
 function initVisualElements()
 {
   // CAMERA
@@ -399,7 +439,7 @@ function initVisualElements()
   // RENDERER //////////////////////////
   renderer = new THREE.WebGLRenderer({ 
     // antialias: true,
-    // preserveDrawingBuffer: true,
+    preserveDrawingBuffer: true,
     gammaInput: true,
     gammaOutput: true,
   });
@@ -484,10 +524,8 @@ function initVisualElements()
   var copyShader = new THREE.ShaderPass(THREE.CopyShader);
   copyShader.renderToScreen = true;
 
-  bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(viewportWidth, viewportHeight), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
-  bloomPass.radius = 0.9;
-  bloomPass.threshold = 0.59;
-  bloomPass.strength = 0.26;
+  bloomPass = makeBloomPass(viewportWidth, viewportHeight);
+
   composer = new THREE.EffectComposer(renderer);
   composer.setSize(viewportWidth, viewportHeight);
   composer.addPass({
@@ -651,7 +689,7 @@ function renderVisuals() {
       }
     }
 
-     material[j].uniforms[ 'amp' ].value = (waveMagnitudes[j] * 1 + 50);
+    material[j].uniforms[ 'amp' ].value = (waveMagnitudes[j] * 1 + 50);
     var waveMagUnif = testCloths[j].cloths[0].renderUniforms.waveMag;
     var oldVal = waveMagUnif.value;
     var targetVal = waveMagnitudes[j] * 0.1 + 0.7;
