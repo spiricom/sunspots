@@ -4,7 +4,7 @@
 
 var DEVMODE = false;
 
-var screenshotDims = [12 * 600, 12 * 600];
+var screenshotDims = [12 * 300, 12 * 300];
 
 var clock = new THREE.Clock();
 var start = Date.now();
@@ -410,7 +410,7 @@ function lockChangeAlert() {
 
 function makeBloomPass(w, h) {
   var bloom = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
-  bloom.radius = 0.9;
+  bloom.radius = 0.9 * w / window.innerWidth;
   bloom.threshold = 0.59;
   bloom.strength = 0.26;
 
