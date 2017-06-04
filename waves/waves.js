@@ -422,7 +422,7 @@ function initVisualElements()
   // CAMERA
   camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
 
-  camera.position.set( 0, -400, 10000 );
+  camera.position.set( 0, -400, 20000 );
   console.log(camera.position);
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
