@@ -260,7 +260,7 @@ function resizeWindow(w, h) {
   // renderer.setClearColor(BACKGROUND_COLOR);
   // renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( w, h );
-
+/*
   // HACK: need to refresh bloom pass
   for (var i = 0; i < composer.passes.length; i++) {
     if (composer.passes[i] === bloomPass) {
@@ -268,6 +268,7 @@ function resizeWindow(w, h) {
       composer.passes[i] = bloomPass;
     }
   }
+  */
   effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h );
   composer.setSize( w, h );
 }
