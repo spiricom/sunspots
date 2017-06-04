@@ -4,7 +4,7 @@
 
 var DEVMODE = false;
 
-var screenshotDims = [12 * 300, 12 * 300];
+var screenshotDims = [20 * 300, 20 * 300];
 
 var clock = new THREE.Clock();
 var start = Date.now();
@@ -24,8 +24,8 @@ var composer;
 var guiParams = {
   exposure: 1.0,
   bloomThreshold: 0.59,
-  bloomStrength: 0.26,
-  bloomRadius: 0.9,
+  bloomStrength: 0.01,
+  bloomRadius: 0.1,
 };
 
 // CONTROLS VARS
