@@ -22,10 +22,10 @@ var effectFXAA, bloomPass, renderScene, renderLowLodScene;
 var composer;
 
 var guiParams = {
-  exposure: 1.0,
+  exposure: 0.0,
   bloomThreshold: 0.59,
-  bloomStrength: 0.01,
-  bloomRadius: 0.1,
+  bloomStrength: 0.00,
+  bloomRadius: 0.0,
 };
 
 // CONTROLS VARS
