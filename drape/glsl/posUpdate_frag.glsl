@@ -1,19 +1,24 @@
 uniform sampler2D initPositions;
 uniform sampler2D positions;
+uniform sampler2D prevPositions;
 uniform sampler2D velocities;
 
 uniform float particlesPerSide;
 uniform float FABRIC_SIDE_LENGTH;
 
+uniform float time;
+
 varying vec2 vUv;
 varying vec2 vOne;
 
 // constants /////////////////////////////////////
-// comment out these lines to disable
-// #define BENDING_CONSTRAINTS_ENABLED
-#define BEND_POINT_OFFSET 2.0
 
-// #define FABRIC_SIDE_LENGTH 250.0
+#ifndef BEND_POINT_OFFSET
+#define BEND_POINT_OFFSET 2.0
+#endif
+
+#define DAMPING 0.0
+
 #define REST_DIST (FABRIC_SIDE_LENGTH / particlesPerSide) // between neighboring particles
 
 #define REST_DIST_BEND (REST_DIST * BEND_POINT_OFFSET)
@@ -80,7 +85,7 @@ void main() {
   vec2 uvlc = uvcc + vOne * vec2(-1.0, 0.0);
   vec2 uvcb = uvcc + vOne * vec2(0.0, -1.0);
   
-#if defined(STRETCH_PASS_H_1) || defined(STRETCH_PASS_H_2)
+#if defined(STRETCH_PASS_H_1) || defined(STRETCH_PASS_H_2) || defined(INTEGRATE_VEL_PASS)
   // off by 1 (cardinal)
   posPinned = texture2D( positions, uvrc );
   vec3 posrc = posPinned.rgb;
@@ -91,7 +96,7 @@ void main() {
   bool pinlc = posPinned.a > 0.5;
 #endif
 
-#if defined(STRETCH_PASS_V_1) || defined(STRETCH_PASS_V_2)
+#if defined(STRETCH_PASS_V_1) || defined(STRETCH_PASS_V_2) || defined(INTEGRATE_VEL_PASS)
   // off by 1 (cardinal)
   posPinned = texture2D( positions, uvct );
   vec3 posct = posPinned.rgb;
@@ -148,10 +153,61 @@ void main() {
   bool pincb2 = posPinned.a > 0.5;
 #endif
 
-  // integrate vel
-#ifdef integrateVel
-  vec3 velcc = texture2D( velocities, uvcc ).rgb;
-  poscc += velcc;
+// update + integrate vel
+#ifdef INTEGRATE_VEL_PASS
+
+  vec3 prevPoscc = texture2D( prevPositions, uvcc ).rgb;
+  vec3 vel = poscc - prevPoscc;
+
+  // wind
+  float windStrength = cos(time / 7000.0) * 20.0 + 40.0;
+  windStrength = windStrength / 60.0 / 60.0 * 2.0 * 100.0;
+
+  vec3 windDir = vec3(
+    sin((time+100.0) / 2.6),
+    cos((time+32.0) / 3.3),
+    sin(time / 3.7)
+  );
+  windDir = normalize(windDir);
+
+  if (!IS_EDGE_R(uvcc) && !IS_EDGE_T(uvcc)) {
+    vec3 normal = cross(poscc - posrc, poscc - posct);
+    normal = normalize(normal);
+
+    vec3 windEffect = normal * dot(normal, windDir) * windStrength;
+    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    vel += windEffect;
+  }
+  if (!IS_EDGE_L(uvcc) && !IS_EDGE_T(uvcc)) {
+    vec3 normal = -cross(poscc - poslc, poscc - posct);
+    normal = normalize(normal);
+
+    vec3 windEffect = normal * dot(normal, windDir) * windStrength;
+    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    vel += windEffect;
+  }
+  if (!IS_EDGE_L(uvcc) && !IS_EDGE_B(uvcc)) {
+    vec3 normal = cross(poscc - poslc, poscc - poscb);
+    normal = normalize(normal);
+
+    vec3 windEffect = normal * dot(normal, windDir) * windStrength;
+    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    vel += windEffect;
+  }
+  if (!IS_EDGE_R(uvcc) && !IS_EDGE_B(uvcc)) {
+    vec3 normal = -cross(poscc - posrc, poscc - poscb);
+    normal = normalize(normal);
+
+    vec3 windEffect = normal * dot(normal, windDir) * windStrength;
+    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    vel += windEffect;
+  }
+
+  // damping
+  vel *= (1.0 - DAMPING);
+
+  // update pos
+  poscc += vel;
 #endif
 
   // corner? -> just pin it

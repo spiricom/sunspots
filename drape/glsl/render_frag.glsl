@@ -15,15 +15,6 @@ void main() {
 #else
   vec3 normal = myNormal;
 
-  // // grab screenspace normal
-  // vec3 fdx = dFdx(myPos.xyz);
-  // vec3 fdy = dFdy(myPos.xyz);
-  // vec3 faceNormal = cross(fdx,fdy);
-
-  // // invert normal in case of backface
-  // if (dot(faceNormal, myNormal) < 0.0) {
-  //   normal = -normal;
-  // }
 
   // directional light
   vec3 dirLightColor = vec3(255.0, 255.0, 255.0) / 255.0;
@@ -52,13 +43,22 @@ void main() {
   // regular textureless shading
   // gl_FragColor = vec4(color * light, 1.0);
 
-  // rainbow flat faces
-  // gl_FragColor = vec4(normalize(faceNormal), 1.0);
-
 #else
   vec3 texCol = texture2D(texture, myUv * 1.0).rgb;
   gl_FragColor = vec4(texCol * color * light, 1.0);
 #endif
+
+  // rainbow flat faces
+  // // grab screenspace normal
+  // vec3 fdx = dFdx(myPos.xyz);
+  // vec3 fdy = dFdy(myPos.xyz);
+  // vec3 faceNormal = cross(fdx,fdy);
+
+  // // invert normal in case of backface
+  // if (dot(faceNormal, myNormal) < 0.0) {
+  //   normal = -normal;
+  // }
+  // gl_FragColor = vec4(normalize(faceNormal), 1.0);
 
   // debug
   // gl_FragColor = vec4(texCol * light, 1.0);

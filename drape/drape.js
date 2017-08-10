@@ -4,10 +4,9 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 
 // CONFIG
-var fboWidth  = 30;
-var fboHeight = 30;
-var clothsPerGroup = 4;
-var audioEnabled = true;
+var fboWidth  = 60;
+var fboHeight = 60;
+var audioEnabled = false;
 var keepClothsCentered = true;
 
 var guiEnabled = false;
@@ -223,7 +222,9 @@ function init() {
   var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
 
   // MAIN CLOTHS
-  var group = new ClothBunch(clothsPerGroup, fboWidth, fboHeight, clothTex, 256);
+  var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, 256, {
+    // pinMode: "corners",
+  });
   group.colorScheme = "main";
   allClothGroups.push(group);
 
@@ -262,16 +263,16 @@ function init() {
 
   // BG CLOTHS
   for (var j = 0; j < 3; j++) {
-    var group = new ClothBunch(1, 40, 40, clothTex, 250, {
-      // flatShading: true,
-      noTex: true,
-      noRandomRot: true,
-      scale: 100,
-      isBg: true,
-      color: new THREE.Color(1, 1, 1),
-    });
-    group.colorScheme = "fixed";
-    allClothGroups.push(group);
+    // var group = new ClothBunch(1, 40, 40, clothTex, 250, {
+    //   // flatShading: true,
+    //   noTex: true,
+    //   noRandomRot: true,
+    //   scale: 100,
+    //   isBg: true,
+    //   color: new THREE.Color(1, 1, 1),
+    // });
+    // group.colorScheme = "fixed";
+    // allClothGroups.push(group);
   }
 
   // AUDIO STUFF //////////////////

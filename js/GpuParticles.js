@@ -9,6 +9,7 @@ function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterial
 
   // set to true for randomized order each frame
   this.shufflePasses = false;
+  this.verletIntegration = true;
 
   renderMesh.frustumCulled = false;
 
@@ -53,8 +54,14 @@ function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterial
 
   this.posRenderTex_target = new THREE.WebGLRenderTarget(width, height, options);
   this.posRenderTex_source = new THREE.WebGLRenderTarget(width, height, options);
-  this.velRenderTex_target = new THREE.WebGLRenderTarget(width, height, options);
-  this.velRenderTex_source = new THREE.WebGLRenderTarget(width, height, options);
+
+  if (this.verletIntegration) {
+    this.posRenderTex_prevSource = new THREE.WebGLRenderTarget(width, height, options);
+  }
+  else {
+    this.velRenderTex_target = new THREE.WebGLRenderTarget(width, height, options);
+    this.velRenderTex_source = new THREE.WebGLRenderTarget(width, height, options);
+  }
 
   // used for rendering attribute textures
   var simGeom = new THREE.BufferGeometry();
@@ -129,10 +136,9 @@ function shuffle(a) {
 }
 
 GpuParticleSystem.prototype.update = function(camera) {
-  // // make sure camera matrices are updated
+  // make sure camera matrices are updated
   camera.updateMatrix();
   camera.updateMatrixWorld();
-  // camera.matrixWorldInverse.getInverse( camera.matrixWorld );
 
   // // if not in view, don't update
   // var frustum = new THREE.Frustum;
@@ -150,8 +156,8 @@ GpuParticleSystem.prototype.update = function(camera) {
     this.velUpdateMeshes[i].visible = false;
   }
 
-  // update pos, then vel
-  for (var posVel = 0; posVel <= 1; posVel++) {
+  // update vel (if not verlet mode), then pos
+  for (var posVel = (this.verletIntegration ? 1 : 0); posVel <= 1; posVel++) {
     var isVelPass = posVel === 0;
 
     var curMeshArr = isVelPass ? this.velUpdateMeshes : this.posUpdateMeshes;
@@ -173,14 +179,25 @@ GpuParticleSystem.prototype.update = function(camera) {
       // use just the shader for this pass
       curMesh.visible = true;
 
-      // read pos/vel from source textures
+      // bind correct pos/vel source textures
       if (!this.isFirstPass[posVel]) {
         curMesh.material.uniforms.positions.value = this.posRenderTex_source.texture;
-        curMesh.material.uniforms.velocities.value = this.velRenderTex_source.texture;
+        if (this.verletIntegration) {
+          curMesh.material.uniforms.prevPositions.value = this.posRenderTex_prevSource.texture;
+        }
+        else {
+          curMesh.material.uniforms.velocities.value = this.velRenderTex_source.texture;
+        }
       }
       else {
+        // bind init values
         curMesh.material.uniforms.positions.value = this.initPosTex;
-        curMesh.material.uniforms.velocities.value = this.initVelTex;
+        if (this.verletIntegration) {
+          curMesh.material.uniforms.prevPositions.value = this.initPosTex;
+        }
+        else {
+          curMesh.material.uniforms.velocities.value = this.initVelTex;
+        }
       }
       this.isFirstPass[posVel] = false;
 
@@ -192,15 +209,26 @@ GpuParticleSystem.prototype.update = function(camera) {
       curMesh.visible = false;
 
       // flip source/target tex
-      if (isVelPass) { // vel pass
+      if (isVelPass) { // flip vel textures
         var justWrittenTo = this.velRenderTex_target;
         this.velRenderTex_target = this.velRenderTex_source;
         this.velRenderTex_source = justWrittenTo;
       }
-      else {// pos pass
-        var justWrittenTo = this.posRenderTex_target;
-        this.posRenderTex_target = this.posRenderTex_source;
-        this.posRenderTex_source = justWrittenTo;
+      else { // flip pos textures
+        if (this.verletIntegration) {
+          var prevPrevSource = this.posRenderTex_prevSource;
+          var justWrittenTo = this.posRenderTex_target;
+          var prevSource = this.posRenderTex_source;
+          
+          this.posRenderTex_target = prevPrevSource;
+          this.posRenderTex_source = justWrittenTo;
+          this.posRenderTex_prevSource = prevSource;
+        }
+        else {
+          var justWrittenTo = this.posRenderTex_target;
+          this.posRenderTex_target = this.posRenderTex_source;
+          this.posRenderTex_source = justWrittenTo;
+        }
       }
     }
   }

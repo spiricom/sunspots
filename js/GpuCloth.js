@@ -58,6 +58,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   // update shader uniforms
   var updateUniforms = {
     positions: { type: "t", value: null },
+    prevPositions: { type: "t", value: null },
     initPositions: { type: "t", value: initialPosTex },
     velocities: { type: "t", value: null },
     dims: { type: "2fv", value: new THREE.Vector2(fboWidth, fboHeight) },
@@ -70,22 +71,40 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   // update shaders
   var posUpdateShaders = [];
   var flagss = options.flagss || [
-    [ "integrateVel", ],
+    [ 
+    "INTEGRATE_VEL_PASS", 
+    
+    // "BEND_PASS_1",
+    // "BEND_PASS_2",
+    // "BEND_PASS_3",
+    // "BEND_PASS_4",
+
+    "STRETCH_PASS_H_1",
+    "STRETCH_PASS_H_2",
+    "STRETCH_PASS_V_2",
+    "STRETCH_PASS_V_1",
+    
+    // "SHEAR_CONSTRAINTS_ENABLED",
+    // "SHEAR_PASS_1",
+    // "SHEAR_PASS_2",
+    // "SHEAR_PASS_3",
+    // "SHEAR_PASS_4",
+    ],
 
     // [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
     // [ "SHEAR_PASS_2", "SHEAR_CONSTRAINTS_ENABLED", ],
     // [ "SHEAR_PASS_3", "SHEAR_CONSTRAINTS_ENABLED", ],
     // [ "SHEAR_PASS_4", "SHEAR_CONSTRAINTS_ENABLED", ],
 
-    [ "BEND_PASS_1", ],
-    [ "BEND_PASS_2", ],
-    [ "STRETCH_PASS_H_1", ],
-    [ "STRETCH_PASS_H_2", ],
+    // [ "BEND_PASS_1", ],
+    // [ "BEND_PASS_2", ],
+    // [ "STRETCH_PASS_H_1", ],
+    // [ "STRETCH_PASS_H_2", ],
 
-    [ "BEND_PASS_3", ],
-    [ "BEND_PASS_4", ],
-    [ "STRETCH_PASS_V_2", ],
-    [ "STRETCH_PASS_V_1", ],
+    // [ "BEND_PASS_3", ],
+    // [ "BEND_PASS_4", ],
+    // [ "STRETCH_PASS_V_2", ],
+    // [ "STRETCH_PASS_V_1", ],
   ];
   for (var k = 0; k < flagss.length; k++) {
     var posFragShader = "";
@@ -125,6 +144,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
 
   this.renderUniforms = {
     positions: { type: "t", value: initialPosTex },
+    prevPositions: { type: "t", value: initialPosTex },
     // pointSize: { type: "f", value: 1 },
     dataTexDims: { type: "2vf", value: new THREE.Vector2(fboWidth, fboHeight) },
     waveMag: {type: "f", value: 1},

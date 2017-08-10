@@ -1,5 +1,15 @@
 "use strict";
 
+// waves fixes
+
+// Once I got the gain of the audio back under control, I narrowed down the source of the audio glitches. The random clicks are happening because of some processing when rendering the wave cloths. Commenting out 
+// var waveMagUnif = testCloths[j].cloths[0].renderUniforms.waveMag;
+// makes the clicks go away (but also ruins the cloth effect, of course). 
+
+// I tried lowering the resolution of the cloths (I think it actually looks really nice with a lower cloth resolution and flat shading turned on, check out the version I pushed), but the clicks are still there, even with very low resolution cloths. Any ideas what the issue might be? Is there anything in your code that could be really heavy and interrupt the audio? 
+
+// When you get a chance to check it out, let me know what you find. 
+
 // MISC VARS
 
 var DEVMODE = false;
