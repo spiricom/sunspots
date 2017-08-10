@@ -14,6 +14,14 @@
 
 var DEVMODE = false;
 
+var debugAudioMode = false;
+function debugAudioLog(val) {
+  if (debugAudioMode) {
+    console.log(val);
+  }
+}
+
+
 var screenshotDims = [12 * 300, 12 * 300];
 
 var clock = new THREE.Clock();
@@ -156,7 +164,7 @@ function getRandomPaletteColor() {
 function getRandomThreePaletteColor() {
   var myIndex = (Math.round(Math.random() * (PALETTES.length - 1)));
   var col = PALETTES[myIndex];
-  console.log("color = ", myIndex);
+  debugAudioLog("color = ", myIndex);
   // return new THREE.Vector3(col[0], col[1], col[2]);
   return new THREE.Color(col[0]/255, col[1]/255, col[2]/255);
 }
@@ -206,7 +214,7 @@ window.onload = function() {
 
     render_vert : "",
     render_frag : "",
-  }, "./glsl/", init );
+  }, "../glsl/", init );
 };
 
 function init()
@@ -218,7 +226,7 @@ function init()
   initControlElements();
   // Listen for window resizing
   window.addEventListener('resize', onWindowResize, false);
-  console.log("equalpower");
+  debugAudioLog("equalpower");
   render();
 }
 
@@ -433,7 +441,7 @@ function initVisualElements()
   camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
 
   camera.position.set( 0, -400, 10000 );
-  console.log(camera.position);
+  debugAudioLog(camera.position);
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   // SCENES
@@ -472,35 +480,15 @@ function initVisualElements()
     flatShading: true,
     color: new THREE.Color(0.5, 1, 0.5),
     pinMode: "randomAndEdges",
+    pinChance: 0.0,
     noTex: true,
     noRandomRot: true,
     initPosMult: 1,
-    pinChance: 0.22,
     noAutoCenter: true,
     manualTransform: true,
-    flagss: [
-      [ "integrateVel", ],
-
-      // [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
-      // [ "SHEAR_PASS_2", "SHEAR_CONSTRAINTS_ENABLED", ],
-      // [ "SHEAR_PASS_3", "SHEAR_CONSTRAINTS_ENABLED", ],
-      // [ "SHEAR_PASS_4", "SHEAR_CONSTRAINTS_ENABLED", ],
-
-      [ "BEND_PASS_1", ],
-      [ "BEND_PASS_2", ],
-      [ "STRETCH_PASS_H_1", ],
-      [ "STRETCH_PASS_H_2", ],
-
-      [ "BEND_PASS_3", ],
-      [ "BEND_PASS_4", ],
-      [ "STRETCH_PASS_V_2", ],
-      [ "STRETCH_PASS_V_1", ],
-    ],
   };
 
-  //var clothRes = Math.floor(80 * 1.3 * 1.8);
-  //var clothSize = 16000 * 1.3 * 1.8;
-  var clothRes = Math.floor(15 * 1.3 * 1.8);
+  var clothRes = Math.floor(200);
   var clothSize = 16000 * 1.3 * 1.8;
 
   var clothYPos = 1600;
@@ -511,6 +499,7 @@ function initVisualElements()
       DISCARD_DIST: clothSize / 2 + 0.1,
     };
     opts.color = getRandomThreePaletteColor();
+    
     var newCloth = new ClothBunch(1, clothRes, clothRes, null, clothSize, opts);
     newCloth.colorScheme = "fixed";
     newCloth.rootNode.rotation.x = -Math.PI / 2;
@@ -547,15 +536,17 @@ function initVisualElements()
     setSize: function() {} 
   });
   composer.addPass(renderScene);
-  composer.addPass({
-    render: function(renderer) {
-      for (var i = 0; i < testCloths.length; i++) {
-        lowLodNode.add(testCloths[i].rootNode);
-      }
-    }, 
-    setSize: function() {} 
-  });
-  composer.addPass(renderLowLodScene);
+  
+  // composer.addPass({
+  //   render: function(renderer) {
+  //     for (var i = 0; i < testCloths.length; i++) {
+  //       lowLodNode.add(testCloths[i].rootNode);
+  //     }
+  //   }, 
+  //   setSize: function() {} 
+  // });
+  // composer.addPass(renderLowLodScene);
+
   composer.addPass(effectFXAA);
   composer.addPass(bloomPass);
   composer.addPass(copyShader);
@@ -733,7 +724,7 @@ function renderVisuals() {
 
   renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
   //goofing around
-    //console.log(camera.position); // comment this out once camera pos is set
+    //debugAudioLog(camera.position); // comment this out once camera pos is set
   composer.render();
 }
 
@@ -794,7 +785,7 @@ function initAudioElements() {
 
   // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
-  console.log("rolloff = 7");
+  debugAudioLog("rolloff = 7");
   noiseSound.setRolloffFactor(7);
   noiseMesh.add(noiseSound);
 
@@ -843,7 +834,7 @@ function playRandomSound(soundSourceIndex) {
   // Set this as a global so it is accessible by the bufferloader
   // Probably can just add a param to bufferLoader but I'll test that later
   // I'm not 100% on how THREE.js loaders work
-  console.log("inside playRandomSound");
+  debugAudioLog("inside playRandomSound");
   curSoundSource = soundSourceIndex;
   var now = audioContext.currentTime;
 
@@ -906,7 +897,7 @@ function bufferLoader(buffer)
   // Add the sound to the object map
   loadedSounds[curSoundFile] = sounds[index];
   sounds[index].play();
-  console.log("bufferLoader done");
+  debugAudioLog("bufferLoader done");
 }
 
 // Loader function for THREE.js to load audio, specifically for the noise source

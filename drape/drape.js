@@ -106,7 +106,7 @@ window.onload = function() {
 
     render_vert : "",
     render_frag : "",
-  }, "./glsl/", init );
+  }, "../glsl/", init );
 };
 
 var fixedRes = false;

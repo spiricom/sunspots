@@ -52,7 +52,7 @@ void main() {
 
   myPos.z = -abs(myPos.z);
 
-  myPos.z *= waveMag;
+  // myPos.z *= waveMag;
 
   myPos.z += mix(0.0, 1000.0, depthBlend);
 
