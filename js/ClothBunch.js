@@ -3,6 +3,8 @@
 var drifterSpeed = 1;
 
 function ClothBunch( numCloths, fboWidth, fboHeight, tex, sideLength, options ) {
+  fboWidth = Math.floor(fboWidth);
+  fboHeight = Math.floor(fboHeight);
   this.options = options || {};
   this.sideLength = sideLength || 256;
 
@@ -79,7 +81,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
         easings.outQuad(v) * 0.9 + 0.2
       ));
 
-      
+
     }
   }
   else if (this.colorScheme == "fixed") {

@@ -23,14 +23,21 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   for (var x = 0; x < fboWidth; x++) {
     for (var y = 0; y < fboHeight; y++) {
       posData[idx] = (x / (fboWidth-1) - 0.5) * this.sideLength * initPosMult;
+      // if (y == 0) {
+      //   console.log("x" + x + ": " + posData[idx]);
+      // }
       idx++;
       posData[idx] = (y / (fboHeight-1) - 0.5) * this.sideLength * initPosMult;
+      // if (x == 0) {
+      //   console.log("y" + y + ": " + posData[idx]);
+      // }
       idx++;
       if (options.randomInitialZ) {
         posData[idx] = (Math.random()*2-1) * this.sideLength * 0.5;
       }
       else {
         posData[idx] = 0;
+        // posData[idx] = idx / len * this.sideLength;
       }
       idx++;
 
@@ -117,7 +124,10 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   var velUpdateShader = new THREE.ShaderMaterial({
     uniforms: updateUniforms,
     vertexShader: ShaderLoader.get( "velUpdate_vert" ),
-    fragmentShader:  ShaderLoader.get( "velUpdate_frag" )
+    fragmentShader:  ShaderLoader.get( "velUpdate_frag" ),
+    defines: {
+      maxDist: options.maxDist,
+    },
   });
 
   // render shader
@@ -164,11 +174,22 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   // vertex buffer
   var l = (fboWidth * fboHeight);
   var vertices = new Float32Array(l * 3);
-  for (var j = 0; j < l; j++) {
-    vertices[j*3 + 0] = (j % fboWidth) / fboWidth ;
-    vertices[j*3 + 1] = (j / fboWidth) / fboHeight;
-    vertices[j*3 + 2] = 0;
+  var idx = 0;
+  for (var x = 0; x < fboWidth; x++) {
+    for (var y = 0; y < fboHeight; y++) {
+      vertices[idx] = x / (fboWidth-1);
+      idx++;
+      vertices[idx] = y / (fboHeight-1);
+      idx++;
+      vertices[idx] = 0;
+      idx++;
+    }
   }
+  // for (var j = 0; j < l; j++) {
+    // vertices[j*3 + 0] = (j % fboWidth) / fboWidth;
+    // vertices[j*3 + 1] = (j / fboWidth) / fboHeight;
+    // vertices[j*3 + 2] = 0;
+  // }
   renderGeom.addAttribute("position", new THREE.BufferAttribute(vertices, 3));
 
   // index buffer
@@ -185,7 +206,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       indices.push( (x+0) + (y+1)*fboWidth );
     }
   }
-  renderGeom.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1))
+  renderGeom.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1))
 
   // renderMesh
   var renderMesh = new THREE.Mesh( renderGeom, renderShader );

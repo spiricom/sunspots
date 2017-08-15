@@ -40,10 +40,10 @@ function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterial
 
   var options = {
     // use bilinear with non-pixel-snapped sampling to smooth the cloth
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    // magFilter: THREE.NearestFilter,
-    // minFilter: THREE.NearestFilter,
+    // minFilter: THREE.LinearFilter,
+    // magFilter: THREE.LinearFilter,
+    magFilter: THREE.NearestFilter,
+    minFilter: THREE.NearestFilter,
 
     wrapS: THREE.ClampToEdgeWrapping,
     wrapT: THREE.ClampToEdgeWrapping,

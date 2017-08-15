@@ -75,7 +75,8 @@ void main() {
 
   // read pos/vel of this and adjacent particles
   // c/r/l/t/b: center, right, left, top, bottom
-  vec2 uvcc = vUv;
+  vec2 uvcc = floor(vUv / vOne) * vOne + vec2(0.5) * vOne;
+  // vec2 uvcc = vUv;
   posPinned = texture2D( positions, uvcc );
   vec3 poscc = posPinned.rgb;
   bool pincc = posPinned.a > 0.5;
@@ -209,11 +210,11 @@ void main() {
   // update pos
   poscc += vel;
 
-#define MAX_DIST (FABRIC_SIDE_LENGTH * 0.5)
-
+#ifdef MAX_DIST
   if (length(poscc) > MAX_DIST) {
     poscc = poscc * (1.0-0.05) + normalize(poscc) * MAX_DIST * 0.05;
   }
+#endif
 
 #endif
 
@@ -378,4 +379,7 @@ void main() {
 
   // output updated pos
   gl_FragColor = vec4( poscc, pincc );
+
+  // uncomment to disable update
+  // gl_FragColor = vec4( texture2D( positions, uvcc ) );
 }

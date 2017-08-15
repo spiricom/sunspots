@@ -10,11 +10,9 @@ void main() {
 
 #ifdef FLAT_SHADING
   gl_FragColor = vec4(color, 1.0);
-  return;
 
 #else
   vec3 normal = myNormal;
-
 
 
 #ifdef NO_TEXTURE
@@ -36,7 +34,7 @@ void main() {
 
   // clamp
   light = clamp(light, 0.0, 1.0);
-  
+
   float c = (color * light).x;
   // c = c > 0.98 ? 1.0 : 0.0;
   gl_FragColor = vec4(vec3(0.0), c > 0.95 ? 1.0 : 0.0);
@@ -48,7 +46,6 @@ void main() {
   vec3 texCol = texture2D(texture, myUv * 1.0).rgb;
   // gl_FragColor = vec4(texCol * color * light, 1.0);
 
-  // rainbow flat faces
   // grab screenspace normal
   vec3 fdx = dFdx(myPos.xyz);
   vec3 fdy = dFdy(myPos.xyz);
@@ -59,14 +56,22 @@ void main() {
   //   normal = -normal;
   // }
   // vec3 normalColor = normalize(faceNormal) * 0.5 + vec3(0.5);
+
   vec3 normalColor = abs(normalize(faceNormal)) * 0.3 + 0.7;
   gl_FragColor = vec4(color * texCol * normalColor, 1.0);
 #endif
+#endif
 
+
+// rainbow flat faces
+// vec3 fdx = dFdx(myPos.xyz);
+// vec3 fdy = dFdy(myPos.xyz);
+// vec3 faceNormal = cross(fdx,fdy);
+
+// vec3 normalColor = abs(normalize(faceNormal));
+// gl_FragColor = vec4(normalColor, 1.0);
 
   // debug
   // gl_FragColor = vec4(texCol * light, 1.0);
   // gl_FragColor = vec4(light, 1.0);
-
-#endif
 }

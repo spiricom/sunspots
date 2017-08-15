@@ -243,10 +243,12 @@ function init() {
   // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
 
   // MAIN CLOTHS
-  var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, 256, {
+  var mainClothSize = 256;
+  var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
     // pinMode: "random",
     // pinChance: 0.003,
     // noRandomRot: true,
+    maxDist: (mainClothSize * 0.5)
   });
   group.colorScheme = "main";
   allClothGroups.push(group);
@@ -254,16 +256,17 @@ function init() {
 
   // ORBITER CLOTHS
   var MakeOrbiter = function(x, y, z) {
-    var sideOptions = {
-      flatShading: true,
-      color: new THREE.Color(0.9, 0.9, 0.9),
-      // pinMode: "random",
-      // pinChance: 0.01,
-    };
-
     const sideClothRes = 24;
     const sideClothSize = 300;
     const orbiterDist = 5000;
+
+    var sideOptions = {
+      flatShading: true,
+      color: new THREE.Color(0.9, 0.9, 0.9),
+      maxDist: (sideClothSize * 0.5)
+      // pinMode: "random",
+      // pinChance: 0.01,
+    };
 
     var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
     group.colorScheme = "fixed";

@@ -12,7 +12,7 @@
 
 // MISC VARS
 
-var DEVMODE = false;
+var DEVMODE = true;
 
 var debugAudioMode = false;
 function debugAudioLog(val) {
@@ -31,7 +31,7 @@ var paused = false;
 // VISUALS VARS
 
 var camera, controls, scene, renderer, uniforms;
-var lowLodScene, lowLodNode;
+// var lowLodScene, lowLodNode;
 var waveMagnitudes = [2,5,6,7];
 var skyMat = [];
 var meshes = [];
@@ -47,7 +47,7 @@ var guiParams = {
 };
 
 // CONTROLS VARS
-var moveSpeed = 10;
+var moveSpeed = 50;
 var runningEnabled = DEVMODE;
 
 var pointerLocked = false;
@@ -230,21 +230,20 @@ function init()
   render();
 }
 
-// Renders a frame
+// updates and renders
 function render()
 {
   requestAnimationFrame(render);
 
   if (paused) return;
 
+  // controls
   var time = performance.now();
   var delta = ( time - prevTickTime ) / 1000;
 
   velocity.x -= velocity.x * 10.0 * delta;
   velocity.y -= velocity.y * 10.0 * delta;
   velocity.z -= velocity.z * 10.0 * delta;
-
-  // velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
 
   if ( moveForward ) velocity.z -= 400.0 * delta;
   if ( moveBackward ) velocity.z += 400.0 * delta;
@@ -265,18 +264,18 @@ function render()
 
   prevTickTime = time;
 
-
+  // audio
   if (AUDIO_ENABLED) {
     renderAudio();
   }
+
+  // visuals
   renderVisuals();
 }
 
 function resizeWindow(w, h) {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  // renderer.setClearColor(BACKGROUND_COLOR);
-  // renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( w, h );
 
   // HACK: need to refresh bloom pass
@@ -331,7 +330,7 @@ function initControlElements()
 {
   controls = new THREE.PointerLockControls(camera);
   scene.add(controls.getObject());
-  controls.enabled = true;
+  controls.enabled = false;
 
   var element = document.body;
 
@@ -397,34 +396,34 @@ function initControlElements()
   document.addEventListener( 'keydown', onKeyDown, false );
   document.addEventListener( 'keyup', onKeyUp, false );
 
-  // pointer lock
-  var canvas = document.querySelector('canvas');
-  var ctx = canvas.getContext('2d');
+  // // pointer lock
+  // var canvas = document.querySelector('canvas');
+  // var ctx = canvas.getContext('2d');
 
-  canvas.requestPointerLock = canvas.requestPointerLock ||
-                              canvas.mozRequestPointerLock;
+  // canvas.requestPointerLock = canvas.requestPointerLock ||
+  //                             canvas.mozRequestPointerLock;
 
-  document.exitPointerLock = document.exitPointerLock ||
-                             document.mozExitPointerLock;
+  // document.exitPointerLock = document.exitPointerLock ||
+  //                            document.mozExitPointerLock;
 
-  canvas.onclick = function() {
-    canvas.requestPointerLock();
-  };
+  // canvas.onclick = function() {
+  //   canvas.requestPointerLock();
+  // };
 
-  document.addEventListener('pointerlockchange', lockChangeAlert, false);
-  document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+  // document.addEventListener('pointerlockchange', lockChangeAlert, false);
+  // document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
 
-  controls.enabled = pointerLocked;
+  // controls.enabled = pointerLocked;
 }
 
 
-function lockChangeAlert() {
-  var canvas = document.querySelector('canvas');
+// function lockChangeAlert() {
+//   var canvas = document.querySelector('canvas');
 
-  pointerLocked = document.pointerLockElement === canvas || document.mozPointerLockElement === canvas;
+//   pointerLocked = document.pointerLockElement === canvas || document.mozPointerLockElement === canvas;
 
-  controls.enabled = pointerLocked;
-}
+//   controls.enabled = pointerLocked;
+// }
 
 function makeBloomPass(w, h) {
   var bloom = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
@@ -447,12 +446,12 @@ function initVisualElements()
   // SCENES
   scene = new THREE.Scene();
   
-  lowLodScene = new THREE.Scene();
-  lowLodNode = new THREE.Object3D();
-  lowLodNode.position.y = 700;
-  lowLodNode.scale.x = 2.5;
-  lowLodNode.scale.z = 2.5;
-  lowLodScene.add(lowLodNode);
+  // lowLodScene = new THREE.Scene();
+  // lowLodNode = new THREE.Object3D();
+  // lowLodNode.position.y = 700;
+  // lowLodNode.scale.x = 2.5;
+  // lowLodNode.scale.z = 2.5;
+  // lowLodScene.add(lowLodNode);
 
   // RENDERER //////////////////////////
   renderer = new THREE.WebGLRenderer({ 
@@ -476,27 +475,30 @@ function initVisualElements()
 
   // CLOTHS //////////////////////////
 
-  var sideOptions = {
+  var clothOpts = {
     flatShading: true,
     color: new THREE.Color(0.5, 1, 0.5),
     pinMode: "randomAndEdges",
-    pinChance: 0.0,
+    // pinMode: "corners",
+    // pinChance: 0.08,
     noTex: true,
     noRandomRot: true,
-    initPosMult: 1,
+    initPosMult: 1.02,
     noAutoCenter: true,
     manualTransform: true,
   };
 
-  var clothRes = Math.floor(200);
-  var clothSize = 16000 * 1.3 * 1.8;
+  // var clothRes = 1000;
+  // var clothSize = 10000;
+  var clothRes = 200;
+  var clothSize = 37440;
 
   var clothYPos = 1600;
   for (var i = 0; i < NUMBER_OF_WAVES; i++) {
-    var opts = Object.assign({}, sideOptions);
+    var opts = Object.assign({}, clothOpts);
 
     opts.renderDefines = {
-      DISCARD_DIST: clothSize / 2 + 0.1,
+      // DISCARD_DIST: clothSize / 2 + 0.1,
     };
     opts.color = getRandomThreePaletteColor();
     
@@ -506,16 +508,16 @@ function initVisualElements()
     newCloth.rootNode.rotation.z = Math.PI * 2 * (i / NUMBER_OF_WAVES);
     newCloth.rootNode.position.y = clothYPos;
     
-    lowLodNode.add(newCloth.rootNode);
+    // lowLodNode.add(newCloth.rootNode);
 
     testCloths.push(newCloth);
   }
 
   // POST FX //////////////////////////
   renderScene = new THREE.RenderPass(scene, camera);
-  renderScene.clear = true;
-  renderLowLodScene = new THREE.RenderPass(lowLodScene, camera);
-  renderLowLodScene.clear = false;
+  // renderScene.clear = true;
+  // renderLowLodScene = new THREE.RenderPass(lowLodScene, camera);
+  // renderLowLodScene.clear = false;
 
   effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
   effectFXAA.uniforms['resolution'].value.set(1 / viewportWidth, 1 / viewportHeight );
@@ -527,14 +529,14 @@ function initVisualElements()
 
   composer = new THREE.EffectComposer(renderer);
   composer.setSize(viewportWidth, viewportHeight);
-  composer.addPass({
-    render: function(renderer) {
-      for (var i = 0; i < testCloths.length; i++) {
-        scene.add(testCloths[i].rootNode);
-      }
-    }, 
-    setSize: function() {} 
-  });
+  // composer.addPass({
+  //   render: function(renderer) {
+  //     for (var i = 0; i < testCloths.length; i++) {
+  //       scene.add(testCloths[i].rootNode);
+  //     }
+  //   }, 
+  //   setSize: function() {} 
+  // });
   composer.addPass(renderScene);
   
   // composer.addPass({
@@ -640,11 +642,9 @@ function initVisualElements()
   }
 }
 
-// returns [
-  // index of smallest dome camera is inside of,
-  // float between 0 and 1 indicated how far through the current shell the camera is
-// ];
-// (innermost dome is index 0)
+// returns 2-element array containing:
+//   index of smallest dome camera is inside of (starting at 0)
+//   float between 0 and 1 indicated how far through the current shell the camera is
 function getCurrentDomeAroundCamera() {
   // HACK need to get position from controls, which camera inherits from
   var camDist = controls.getObject().position.length();
@@ -656,7 +656,7 @@ function getCurrentDomeAroundCamera() {
       return [i, alpha];
     }
   }
-  return [NUMBER_OF_DOMES, 0];
+  return [NUMBER_OF_DOMES, 0]; // outside of outermost dome
 }
 
 function getDomeRadius(domeIdx) {
