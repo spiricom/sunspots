@@ -126,7 +126,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     vertexShader: ShaderLoader.get( "velUpdate_vert" ),
     fragmentShader:  ShaderLoader.get( "velUpdate_frag" ),
     defines: {
-      maxDist: options.maxDist,
+      MAX_DIST: options.maxDist,
     },
   });
 

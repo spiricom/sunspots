@@ -241,6 +241,8 @@ function init() {
 
   var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
+  clothTex.magFilter = THREE.NearestFilter;
+  clothTex.minFilter = THREE.NearestFilter;
 
   // MAIN CLOTHS
   var mainClothSize = 256;
