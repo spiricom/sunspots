@@ -16,6 +16,8 @@ void main() {
   vec3 normal = myNormal;
 
 
+
+#ifdef NO_TEXTURE
   // directional light
   vec3 dirLightColor = vec3(255.0, 255.0, 255.0) / 255.0;
   vec3 dirToLight = vec3(0.0, 0.0, 1.0);
@@ -34,8 +36,7 @@ void main() {
 
   // clamp
   light = clamp(light, 0.0, 1.0);
-
-#ifdef NO_TEXTURE
+  
   float c = (color * light).x;
   // c = c > 0.98 ? 1.0 : 0.0;
   gl_FragColor = vec4(vec3(0.0), c > 0.95 ? 1.0 : 0.0);
@@ -45,20 +46,23 @@ void main() {
 
 #else
   vec3 texCol = texture2D(texture, myUv * 1.0).rgb;
-  gl_FragColor = vec4(texCol * color * light, 1.0);
-#endif
+  // gl_FragColor = vec4(texCol * color * light, 1.0);
 
   // rainbow flat faces
-  // // grab screenspace normal
-  // vec3 fdx = dFdx(myPos.xyz);
-  // vec3 fdy = dFdy(myPos.xyz);
-  // vec3 faceNormal = cross(fdx,fdy);
+  // grab screenspace normal
+  vec3 fdx = dFdx(myPos.xyz);
+  vec3 fdy = dFdy(myPos.xyz);
+  vec3 faceNormal = cross(fdx,fdy);
 
   // // invert normal in case of backface
   // if (dot(faceNormal, myNormal) < 0.0) {
   //   normal = -normal;
   // }
-  // gl_FragColor = vec4(normalize(faceNormal), 1.0);
+  // vec3 normalColor = normalize(faceNormal) * 0.5 + vec3(0.5);
+  vec3 normalColor = abs(normalize(faceNormal)) * 0.3 + 0.7;
+  gl_FragColor = vec4(color * texCol * normalColor, 1.0);
+#endif
+
 
   // debug
   // gl_FragColor = vec4(texCol * light, 1.0);

@@ -12,6 +12,9 @@ var keepClothsCentered = true;
 
 var initCameraDist = 500;
 
+// var baseBgColor = new THREE.Color(0x333530);
+var baseBgColor = new THREE.Color(0x000000);
+
 var guiEnabled = false;
 var controlsEnabled = true;
 
@@ -71,7 +74,7 @@ var EasingFunctions = {
   easeInQuint: function (t) { return t*t*t*t*t },
   easeOutQuint: function (t) { return 1+(--t)*t*t*t*t },
   easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
-}
+};
 
 function HSVtoRGB(h, s, v) {
   h = h % 1;
@@ -175,7 +178,24 @@ function init() {
   gl = renderer.getContext();  
   THREEx.Screenshot.bindKey(renderer);
 
-  // POST FX
+  // // COLOR LUT /////////////
+  // var lutColors = [];
+  // lut = new THREE.Lut( colorMap, numberOfColors );
+  // lut.setMax( 2000 );
+  // lut.setMin( 0 );
+  // for ( var i = 0; i < geometry.attributes.pressure.array.length; i++ ) {
+  //   var colorValue = geometry.attributes.pressure.array[ i ];
+  //   var color = lut.getColor( colorValue );
+  //   if ( color == undefined ) {
+  //     console.log( "ERROR: " + colorValue );
+  //   } else {
+  //     lutColors[ 3 * i     ] = color.r;
+  //     lutColors[ 3 * i + 1 ] = color.g;
+  //     lutColors[ 3 * i + 2 ] = color.b;
+  //   }
+  // }
+
+  // POST FX /////////
   renderScenePass = new THREE.RenderPass(scene, camera);
 
   effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
@@ -191,7 +211,6 @@ function init() {
   composer.addPass(effectFXAA);
   composer.addPass(bloomPass);
   composer.addPass(copyShader);
-  //renderer.toneMapping = THREE.ReinhardToneMapping;
   renderer.gammaInput = true;
 
   // TUNING GUI
@@ -220,8 +239,8 @@ function init() {
 
   // CLOTHS /////////////////////
 
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
-  var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
+  var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
 
   // MAIN CLOTHS
   var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, 256, {
@@ -364,11 +383,13 @@ function update() {
     if (flasher == 1) {
       analyser[4].getByteFrequencyData(freqDataArray);
       var average = getAverage(freqDataArray);
-      renderer.setClearColor(HSVtoRGB(0, 0, average / 20));
+      // renderer.setClearColor(HSVtoRGB(84/255, 9.5/255, 21/255 + average / 20));
+      renderer.setClearColor(HSVtoRGB(0, 0, 21/255 + average / 20));
     }
     else {
-      // renderer.setClearColor(HSVtoRGB(0, 0, 1));
-      renderer.setClearColor(0x000000);
+      // renderer.setClearColor(HSVtoRGB(0, 0, baseBgValue));
+      // renderer.setClearColor(0x000000);
+      renderer.setClearColor(baseBgColor);
     }
 
     // update cloth audio reactivity

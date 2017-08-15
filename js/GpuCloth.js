@@ -95,21 +95,6 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     "SHEAR_PASS_3",
     "SHEAR_PASS_4",
     ],
-
-    // [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
-    // [ "SHEAR_PASS_2", "SHEAR_CONSTRAINTS_ENABLED", ],
-    // [ "SHEAR_PASS_3", "SHEAR_CONSTRAINTS_ENABLED", ],
-    // [ "SHEAR_PASS_4", "SHEAR_CONSTRAINTS_ENABLED", ],
-
-    // [ "BEND_PASS_1", ],
-    // [ "BEND_PASS_2", ],
-    // [ "STRETCH_PASS_H_1", ],
-    // [ "STRETCH_PASS_H_2", ],
-
-    // [ "BEND_PASS_3", ],
-    // [ "BEND_PASS_4", ],
-    // [ "STRETCH_PASS_V_2", ],
-    // [ "STRETCH_PASS_V_1", ],
   ];
   for (var k = 0; k < flagss.length; k++) {
     var posFragShader = "";
@@ -206,16 +191,18 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   var renderMesh = new THREE.Mesh( renderGeom, renderShader );
 
   // random orientation
-  // renderMesh.rotation.x = Math.PI * 2 * Math.random();
-  // renderMesh.rotation.y = Math.PI * 2 * Math.random();
   // HACK: just store the rotation here, apply it in scenegraph setup later
   renderMesh.rotx = Math.PI * 2 * Math.random();
   renderMesh.roty = Math.PI * 2 * Math.random();
 
   // CREATE CLOTH
-  this.particleSystem = new GpuParticleSystem( fboWidth, fboHeight, posUpdateShaders, [velUpdateShader], renderMesh, initialPosTex, initialVelTex );
-  // this.particleSystem.shufflePasses = true;
-  // scene.add( this.particleSystem.renderMesh );
+  this.particleSystem = new GpuParticleSystem( 
+    fboWidth, fboHeight, 
+    posUpdateShaders, [velUpdateShader], 
+    renderMesh, 
+    initialPosTex, initialVelTex, {
+    verletIntegration: true,
+  } );
 
 }
 

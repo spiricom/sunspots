@@ -3,13 +3,13 @@
 // uses multiple render passes since threejs doesn't support mrt
 
 
-function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterials, renderMesh, initPosTex, initVelTex ){
+function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterials, renderMesh, initPosTex, initVelTex, options ){
 
   var gl = renderer.getContext();
 
   // set to true for randomized order each frame
   this.shufflePasses = false;
-  this.verletIntegration = true;
+  this.verletIntegration = options.verletIntegration;
 
   renderMesh.frustumCulled = false;
 
