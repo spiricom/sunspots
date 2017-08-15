@@ -4,10 +4,13 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 
 // CONFIG
+var audioEnabled = true;
+
 var fboWidth  = 60;
 var fboHeight = 60;
-var audioEnabled = false;
 var keepClothsCentered = true;
+
+var initCameraDist = 500;
 
 var guiEnabled = false;
 var controlsEnabled = true;
@@ -149,10 +152,9 @@ function init() {
 
   // CAMERA
   camera = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 50000);
-  camera.position.x = 2500 * scene.scale.x;
-  camera.position.y = 2500 * scene.scale.x;
-  camera.position.z = 2500 * scene.scale.x;
-  // cameraFixed = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 50000);
+  camera.position.x = initCameraDist * scene.scale.x;
+  camera.position.y = initCameraDist * scene.scale.x;
+  camera.position.z = initCameraDist * scene.scale.x;
 
   // RENDERER
   renderer = new THREE.WebGLRenderer({ 
@@ -223,7 +225,9 @@ function init() {
 
   // MAIN CLOTHS
   var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, 256, {
-    // pinMode: "corners",
+    // pinMode: "random",
+    // pinChance: 0.003,
+    // noRandomRot: true,
   });
   group.colorScheme = "main";
   allClothGroups.push(group);
@@ -234,6 +238,8 @@ function init() {
     var sideOptions = {
       flatShading: true,
       color: new THREE.Color(0.9, 0.9, 0.9),
+      // pinMode: "random",
+      // pinChance: 0.01,
     };
 
     const sideClothRes = 24;
@@ -263,16 +269,16 @@ function init() {
 
   // BG CLOTHS
   for (var j = 0; j < 3; j++) {
-    // var group = new ClothBunch(1, 40, 40, clothTex, 250, {
-    //   // flatShading: true,
-    //   noTex: true,
-    //   noRandomRot: true,
-    //   scale: 100,
-    //   isBg: true,
-    //   color: new THREE.Color(1, 1, 1),
-    // });
-    // group.colorScheme = "fixed";
-    // allClothGroups.push(group);
+    var group = new ClothBunch(1, 40, 40, clothTex, 250, {
+      // flatShading: true,
+      noTex: true,
+      noRandomRot: true,
+      scale: 100,
+      isBg: true,
+      color: new THREE.Color(1, 1, 1),
+    });
+    group.colorScheme = "fixed";
+    allClothGroups.push(group);
   }
 
   // AUDIO STUFF //////////////////
@@ -387,6 +393,7 @@ function update() {
     }
   }
 
+  // update cloths
   for (var groupIdx = 0; groupIdx < allClothGroups.length; groupIdx++) {
     allClothGroups[groupIdx].update(camera, avgVolumes);
   }

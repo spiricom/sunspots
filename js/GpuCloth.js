@@ -26,7 +26,12 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       idx++;
       posData[idx] = (y / (fboHeight-1) - 0.5) * this.sideLength * initPosMult;
       idx++;
-      posData[idx] = 0;
+      if (options.randomInitialZ) {
+        posData[idx] = (Math.random()*2-1) * this.sideLength * 0.5;
+      }
+      else {
+        posData[idx] = 0;
+      }
       idx++;
 
       // pinning
@@ -74,21 +79,21 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     [ 
     "INTEGRATE_VEL_PASS", 
     
-    // "BEND_PASS_1",
-    // "BEND_PASS_2",
-    // "BEND_PASS_3",
-    // "BEND_PASS_4",
+    "BEND_PASS_1",
+    "BEND_PASS_2",
+    "BEND_PASS_3",
+    "BEND_PASS_4",
 
     "STRETCH_PASS_H_1",
     "STRETCH_PASS_H_2",
     "STRETCH_PASS_V_2",
     "STRETCH_PASS_V_1",
     
-    // "SHEAR_CONSTRAINTS_ENABLED",
-    // "SHEAR_PASS_1",
-    // "SHEAR_PASS_2",
-    // "SHEAR_PASS_3",
-    // "SHEAR_PASS_4",
+    "SHEAR_CONSTRAINTS_ENABLED",
+    "SHEAR_PASS_1",
+    "SHEAR_PASS_2",
+    "SHEAR_PASS_3",
+    "SHEAR_PASS_4",
     ],
 
     // [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],

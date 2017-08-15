@@ -1,3 +1,6 @@
+
+// NO LONGER USED (switched to single-pass verlet)
+
 uniform sampler2D positions;
 uniform sampler2D velocities;
 

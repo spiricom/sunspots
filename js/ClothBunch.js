@@ -97,7 +97,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
       this.rootNode.position.copy(camera.position);
 
       var fwd = (new THREE.Vector3()).copy(camera.getWorldDirection());
-      fwd.multiplyScalar(8000);
+      fwd.multiplyScalar(12000);
       this.rootNode.position.add(fwd);
 
       this.rootNode.lookAt(camera.position);
@@ -107,6 +107,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
     }
   }
 
+  // auto-centering
   for (var j = 0; j < this.numCloths; j++) {
     var ps = this.cloths[j].particleSystem;
     var clothMesh = ps.renderMesh;

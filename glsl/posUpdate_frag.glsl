@@ -160,13 +160,13 @@ void main() {
   vec3 vel = poscc - prevPoscc;
 
   // wind
-  float windStrength = cos(time / 7000.0) * 20.0 + 40.0;
-  windStrength = windStrength / 60.0 / 60.0 * 2.0 * 100.0;
+  float windStrength = cos(time / 1.0) * 20.0 + 40.0;
+  windStrength = windStrength * 0.01;
 
   vec3 windDir = vec3(
-    sin((time+100.0) / 2.6),
+    sin((time+100.0) / 4.5),
     cos((time+32.0) / 3.3),
-    sin(time / 3.7)
+    sin(time / 2.7)
   );
   windDir = normalize(windDir);
 
@@ -175,7 +175,7 @@ void main() {
     normal = normalize(normal);
 
     vec3 windEffect = normal * dot(normal, windDir) * windStrength;
-    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    if (dot(windEffect, windDir) < 0.0) windEffect *= -1.0;
     vel += windEffect;
   }
   if (!IS_EDGE_L(uvcc) && !IS_EDGE_T(uvcc)) {
@@ -183,7 +183,7 @@ void main() {
     normal = normalize(normal);
 
     vec3 windEffect = normal * dot(normal, windDir) * windStrength;
-    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    if (dot(windEffect, windDir) < 0.0) windEffect *= -1.0;
     vel += windEffect;
   }
   if (!IS_EDGE_L(uvcc) && !IS_EDGE_B(uvcc)) {
@@ -191,7 +191,7 @@ void main() {
     normal = normalize(normal);
 
     vec3 windEffect = normal * dot(normal, windDir) * windStrength;
-    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    if (dot(windEffect, windDir) < 0.0) windEffect *= -1.0;
     vel += windEffect;
   }
   if (!IS_EDGE_R(uvcc) && !IS_EDGE_B(uvcc)) {
@@ -199,7 +199,7 @@ void main() {
     normal = normalize(normal);
 
     vec3 windEffect = normal * dot(normal, windDir) * windStrength;
-    if (dot(normal, windDir) < 0.0) windEffect *= -1.0;
+    if (dot(windEffect, windDir) < 0.0) windEffect *= -1.0;
     vel += windEffect;
   }
 
@@ -208,6 +208,13 @@ void main() {
 
   // update pos
   poscc += vel;
+
+#define MAX_DIST (FABRIC_SIDE_LENGTH * 0.5)
+
+  if (length(poscc) > MAX_DIST) {
+    poscc = poscc * (1.0-0.05) + normalize(poscc) * MAX_DIST * 0.05;
+  }
+
 #endif
 
   // corner? -> just pin it

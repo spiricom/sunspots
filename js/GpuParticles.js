@@ -97,29 +97,50 @@ function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterial
   this.isFirstPass = [true, true];
 };
 
+// NOTE: stores in this.averagePos (for no clear reason)
 GpuParticleSystem.prototype.getAveragePos = function() {
   var w = this.posRenderTex_source.width;
   var h = this.posRenderTex_source.height;
 
-  if (!this.pixelBuffer) {
-    this.pixelBuffer = new Float32Array(w * h * 4);
+  if (!this.pixelBuffer) { // avoid allocating new buffer every call
+    this.pixelBuffer = new Float32Array(4);
     this.averagePos = [];
   }
 
-  renderer.readRenderTargetPixels(this.posRenderTex_source, 0, 0, w, h, this.pixelBuffer);
   var x = 0;
   var y = 0;
   var z = 0;
   var count = 0;
-  for (var i = 0; i < w * h; i+= 10) {
-    x += this.pixelBuffer[i*4 + 0];
-    y += this.pixelBuffer[i*4 + 1];
-    z += this.pixelBuffer[i*4 + 2];
-    count++;
-  }
-  x /= count;
-  y /= count;
-  z /= count;
+
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, 0, 0, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, w, 0, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, w, h, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, 0, h, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, w/2, h/2, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+
+  // x /= count;
+  // y /= count;
+  // z /= count;
 
   this.averagePos.x = x;
   this.averagePos.y = y;
