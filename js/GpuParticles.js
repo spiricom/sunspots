@@ -198,16 +198,16 @@ GpuParticleSystem.prototype.update = function(camera) {
     var curMeshArr = isVelPass ? this.velUpdateMeshes : this.posUpdateMeshes;
 
     // for each pass on this attribute (pos/vel)
-    var idxs = [];
+    var passIdxs = [];
     for (var i = 0; i < curMeshArr.length; i++) {
-      idxs.push(i);
+      passIdxs.push(i);
     }
     if (this.shufflePasses) {
-      shuffle(idxs);
+      shuffle(passIdxs);
     }
 
-    for (var idxIdx = 0; idxIdx < idxs.length; idxIdx++) {
-      var i = idxs[idxIdx];
+    for (var passNum = 0; passNum < passIdxs.length; passNum++) {
+      var i = passIdxs[passNum];
 
       var curMesh = curMeshArr[i];
 
@@ -250,7 +250,7 @@ GpuParticleSystem.prototype.update = function(camera) {
         this.velRenderTex_source = justWrittenTo;
       }
       else { // flip pos textures
-        if (this.verletIntegration) {
+        if (this.verletIntegration && passNum == passIdxs.length - 1) {
           var prevPrevSource = this.posRenderTex_prevSource;
           var justWrittenTo = this.posRenderTex_target;
           var prevSource = this.posRenderTex_source;

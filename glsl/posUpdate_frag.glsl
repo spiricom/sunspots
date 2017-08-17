@@ -13,14 +13,14 @@ varying vec2 vOne;
 
 // constants /////////////////////////////////////
 
-#define STRETCH_POINT_OFFSET 1.0
+#define STRETCH_POINT_OFFSET 1.33
 
 #ifndef BEND_POINT_OFFSET
 // use fractional offset for average of 2-away and 3-away
-#define BEND_POINT_OFFSET 2.0
+#define BEND_POINT_OFFSET 3.33
 #endif
 
-#define DAMPING 0.3
+#define DAMPING 0.5
 
 // #define SHEAR_CONSTRAINTS_ENABLED
 
@@ -142,7 +142,7 @@ void main() {
   bool pinrb = posPinned.a > 0.5;
 #endif
   
-#if defined(BEND_PASS_1) || defined(BEND_PASS_2) || defined(BEND_PASS_3) || defined(BEND_PASS_4)
+#if defined(BEND_PASS_H_1) || defined(BEND_PASS_H_2) || defined(BEND_PASS_V_1) || defined(BEND_PASS_V_2)
   // off by 2 (cardinal)
   vec2 uvrc2 = uvcc + vOne * vec2(BEND_POINT_OFFSET, 0.0);
   posPinned = texture2D( positions, uvrc2 );
@@ -351,7 +351,7 @@ void main() {
 #endif
 
 // BENDING
-#ifdef BEND_PASS_1
+#ifdef BEND_PASS_H_1
     if (xmod4 == 0.0 || xmod4 == 1.0) {
       if (!IS_EDGE_R(uvrc)) poscc = SatisfyConstraint(poscc, posrc2, pinrc2, REST_DIST_BEND);
     } 
@@ -360,7 +360,7 @@ void main() {
     }
 #endif
 
-#ifdef BEND_PASS_2
+#ifdef BEND_PASS_H_2
     if (xmod4 == 0.0 || xmod4 == 1.0) {
       if (!IS_EDGE_L(uvlc)) poscc = SatisfyConstraint(poscc, poslc2, pinlc2, REST_DIST_BEND);
     } 
@@ -369,7 +369,7 @@ void main() {
     }
 #endif
 
-#ifdef BEND_PASS_3
+#ifdef BEND_PASS_V_1
     if (ymod4 == 0.0 || ymod4 == 1.0) {
       if (!IS_EDGE_T(uvct)) poscc = SatisfyConstraint(poscc, posct2, pinct2, REST_DIST_BEND);
     } 
@@ -378,7 +378,7 @@ void main() {
     }
 #endif
 
-#ifdef BEND_PASS_4
+#ifdef BEND_PASS_V_2
     if (ymod4 == 0.0 || ymod4 == 1.0) {
       if (!IS_EDGE_B(uvcb)) poscc = SatisfyConstraint(poscc, poscb2, pincb2, REST_DIST_BEND);
     } 

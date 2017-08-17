@@ -83,32 +83,65 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   // update shaders
   var posUpdateShaders = [];
   var flagss = options.flagss || [
-    [ 
-    "INTEGRATE_VEL_PASS", 
-    
-    "BEND_PASS_1",
-    "BEND_PASS_2",
-    "BEND_PASS_3",
-    "BEND_PASS_4",
-    ],
-    
-    [ 
-    "INTEGRATE_VEL_PASS", 
-    
-    "STRETCH_PASS_H_1",
-    "STRETCH_PASS_H_2",
-    "STRETCH_PASS_V_2",
-    "STRETCH_PASS_V_1",
-    ],
-    // [ 
-    // "INTEGRATE_VEL_PASS", 
-    
+    // [     
+    // "BEND_PASS_H_1",
+    // "BEND_PASS_H_2",
+    // "BEND_PASS_V_1",
+    // "BEND_PASS_V_2",
+
+    // "STRETCH_PASS_H_1",
+    // "STRETCH_PASS_H_2",
+    // "STRETCH_PASS_V_2",
+    // "STRETCH_PASS_V_1",
+
     // "SHEAR_CONSTRAINTS_ENABLED",
     // "SHEAR_PASS_1",
     // "SHEAR_PASS_2",
     // "SHEAR_PASS_3",
     // "SHEAR_PASS_4",
     // ],
+
+    // [     
+    // "BEND_PASS_H_1",
+    // "BEND_PASS_H_2",
+    // "BEND_PASS_V_1",
+    // "BEND_PASS_V_2",
+    // ],
+
+    // [ 
+    // "INTEGRATE_VEL_PASS", 
+    
+    // "STRETCH_PASS_H_1",
+    // "STRETCH_PASS_H_2",
+    // "STRETCH_PASS_V_2",
+    // "STRETCH_PASS_V_1",
+    // ],
+
+    // [     
+    // "SHEAR_CONSTRAINTS_ENABLED",
+    // "SHEAR_PASS_1",
+    // "SHEAR_PASS_2",
+    // "SHEAR_PASS_3",
+    // "SHEAR_PASS_4",
+    // ],
+
+    [ "INTEGRATE_VEL_PASS", ],
+
+    [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
+    [ "SHEAR_PASS_2", "SHEAR_CONSTRAINTS_ENABLED", ],
+    [ "SHEAR_PASS_3", "SHEAR_CONSTRAINTS_ENABLED", ],
+    [ "SHEAR_PASS_4", "SHEAR_CONSTRAINTS_ENABLED", ],
+
+    [ "BEND_PASS_H_1", ],
+    [ "BEND_PASS_H_2", ],
+    [ "BEND_PASS_V_1", ],
+    [ "BEND_PASS_V_2", ],
+
+    [ "STRETCH_PASS_H_1", ],
+    [ "STRETCH_PASS_H_2", ],
+
+    [ "STRETCH_PASS_V_2", ],
+    [ "STRETCH_PASS_V_1", ],
   ];
 
   var updateDefines = {};

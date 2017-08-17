@@ -58,7 +58,15 @@ void main() {
     //   normal = -normal;
     // }
     // vec3 normalColor = normalize(faceNormal) * 0.5 + vec3(0.5);
-
+    
+    // float Falloff = 10.25;
+    // // float aspect = iResolution.x/iResolution.y;
+    // float aspect = 1.0;
+    // vec2 coord = (myUv - 0.5) * aspect * 2.0;
+    // float rf = pow(dot(coord, coord), 2.0) * Falloff;
+    // float rf2_1 = rf * rf + 1.0;
+    // float e = 1.0 / (rf2_1 * rf2_1);
+    
     vec3 normalColor = abs(normalize(normal)) * 0.3 + 0.7;
     gl_FragColor = vec4(color * texCol * normalColor, 1.0);
   #endif

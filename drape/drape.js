@@ -6,8 +6,8 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // CONFIG
 var audioEnabled = false;
 
-var fboWidth  = 200;
-var fboHeight = 200;
+var fboWidth  = 128;
+var fboHeight = 128;
 var keepClothsCentered = true;
 
 var initCameraDist = 500;
@@ -180,6 +180,8 @@ function init() {
   gl = renderer.getContext();  
   THREEx.Screenshot.bindKey(renderer);
 
+  // gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+
   // // COLOR LUT /////////////
   // var lutColors = [];
   // lut = new THREE.Lut( colorMap, numberOfColors );
@@ -243,8 +245,8 @@ function init() {
 
   var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
-  // clothTex.magFilter = THREE.NearestFilter;
-  // clothTex.minFilter = THREE.NearestFilter;
+  clothTex.magFilter = THREE.LinearFilter;
+  clothTex.minFilter = THREE.LinearFilter;
 
   // MAIN CLOTHS
   var mainClothSize = 256;
