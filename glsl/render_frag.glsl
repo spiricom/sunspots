@@ -48,10 +48,10 @@ void main() {
     vec3 texCol = texture2D(texture, myUv * 1.0).rgb;
     // gl_FragColor = vec4(texCol * color * light, 1.0);
 
-    // grab screenspace normal
-    vec3 fdx = dFdx(myPos.xyz);
-    vec3 fdy = dFdy(myPos.xyz);
-    vec3 faceNormal = cross(fdx,fdy);
+    // // grab screenspace normal
+    // vec3 fdx = dFdx(myPos.xyz);
+    // vec3 fdy = dFdy(myPos.xyz);
+    // vec3 faceNormal = cross(fdx,fdy);
 
     // // invert normal in case of backface
     // if (dot(faceNormal, myNormal) < 0.0) {
@@ -59,7 +59,7 @@ void main() {
     // }
     // vec3 normalColor = normalize(faceNormal) * 0.5 + vec3(0.5);
 
-    vec3 normalColor = abs(normalize(faceNormal)) * 0.3 + 0.7;
+    vec3 normalColor = abs(normalize(normal)) * 0.3 + 0.7;
     gl_FragColor = vec4(color * texCol * normalColor, 1.0);
   #endif
 #endif

@@ -9,13 +9,11 @@ varying vec2 myUv;
 void main() {
   vec2 one = vec2(1.0, 1.0) / dataTexDims;
 
-  // mesh is a nomrliazed square so uvs to sample pos data texture are the xy positions of the vertices
-  myUv = position.xy;
+  // mesh is a normalized square so uvs are the xy positions of the vertices
+  myUv = (floor(position.xy / one) - 0.5) * one;
   vec2 uvcc = myUv;
   vec3 poscc = texture2D( positions, uvcc ).rgb;
   
-#ifndef FLAT_SHADING
-#ifdef NO_TEXTURE 
   // normal required for drape bg depth hack
   vec2 uvrc = uvcc + one * vec2(1.0, 0.0);
   vec3 posrc = texture2D( positions, uvrc ).rgb;
@@ -36,8 +34,10 @@ void main() {
     - cross(poscb - poscc, poslc - poscc)
     ;
   myNormal = normalize(myNormal);
-#endif
-#endif
+// #ifndef FLAT_SHADING
+// #ifdef NO_TEXTURE 
+// #endif
+// #endif
 
   myPos = vec4( poscc, 1.0 );
 

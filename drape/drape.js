@@ -4,10 +4,10 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 
 // CONFIG
-var audioEnabled = true;
+var audioEnabled = false;
 
-var fboWidth  = 30;
-var fboHeight = 30;
+var fboWidth  = 200;
+var fboHeight = 200;
 var keepClothsCentered = true;
 
 var initCameraDist = 500;
@@ -243,8 +243,8 @@ function init() {
 
   var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
-  clothTex.magFilter = THREE.NearestFilter;
-  clothTex.minFilter = THREE.NearestFilter;
+  // clothTex.magFilter = THREE.NearestFilter;
+  // clothTex.minFilter = THREE.NearestFilter;
 
   // MAIN CLOTHS
   var mainClothSize = 256;
@@ -386,6 +386,13 @@ var avgVolumes = [];
 function update() {
   requestAnimationFrame(update);
 
+  // update controls and camera and audioListener
+  if (controlsEnabled) {
+    controls.update();
+  }
+  camera.lookAt( scene.position );
+  audioListener.setOrientation(camera.position.x, camera.position.y, camera.position.z, 0,1,0);
+
   if (audioEnabled) {
     // update bg flasher
     if (flasher == 1) {
@@ -424,13 +431,6 @@ function update() {
   for (var groupIdx = 0; groupIdx < allClothGroups.length; groupIdx++) {
     allClothGroups[groupIdx].update(camera, avgVolumes);
   }
-
-  // update controls and camera and audioListener
-  if (controlsEnabled) {
-    controls.update();
-  }
-  camera.lookAt( scene.position );
-  audioListener.setOrientation(camera.position.x, camera.position.y, camera.position.z, 0,1,0);
 
   // render
   // renderer.render(scene, camera, null, true);

@@ -90,18 +90,25 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     "BEND_PASS_2",
     "BEND_PASS_3",
     "BEND_PASS_4",
-
+    ],
+    
+    [ 
+    "INTEGRATE_VEL_PASS", 
+    
     "STRETCH_PASS_H_1",
     "STRETCH_PASS_H_2",
     "STRETCH_PASS_V_2",
     "STRETCH_PASS_V_1",
-    
-    "SHEAR_CONSTRAINTS_ENABLED",
-    "SHEAR_PASS_1",
-    "SHEAR_PASS_2",
-    "SHEAR_PASS_3",
-    "SHEAR_PASS_4",
     ],
+    // [ 
+    // "INTEGRATE_VEL_PASS", 
+    
+    // "SHEAR_CONSTRAINTS_ENABLED",
+    // "SHEAR_PASS_1",
+    // "SHEAR_PASS_2",
+    // "SHEAR_PASS_3",
+    // "SHEAR_PASS_4",
+    // ],
   ];
 
   var updateDefines = {};
