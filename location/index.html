@@ -1,52 +1,96 @@
+
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <title>three.js misc - sound</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <style>
-      body {
-        background-color: #000000;
-        margin: 0px;
-        overflow: hidden;
-        font-family:Monospace;
-        font-size:13px;
-        text-align:center;
-        font-weight: bold;
-        text-align:center;
-      }
+	<head>
+		<title>Sunspots - 3</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
-      a {
-        color:#0078ff;
-      }
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #000;
+				color: #000;
+				margin: 0px;
+				overflow: hidden;
+			}
 
-      #info {
-        color:#fff;
-        position: absolute;
-        top: 0px; left: 0px; width: 50%;
-        padding: 5px;
-        z-index:100;
-      }
-    </style>
-  </head>
-  <body>
+			#info {
+				position: absolute;
+				padding: 10px;
+				width: 100%;
+				text-align: center;
+			}
 
-    <div id="info">
-
-    </div>
+			#corner {
+				position: absolute;
+				padding: 10px;
+				bottom: 0;
+				right: 0;
+				width: 100%;
+				text-align: right;
+			}
 
 
-    <div id="container"></div>
+			a {
+				text-decoration: underline;
+				cursor: pointer;
+			}
+		</style>
 
-    <script src="libraries/three.js"></script>
+		
+		<!-- LIBRARIES -->
+		<!-- needs a different version of three for sound.setPanningModel -->
+		<script src="libraries/three.js"></script><!--  -->
+		<!-- <script src="../libs/three.js"></script> -->
+		<script src="../libs/THREEx.screenshot.js"></script>
+		<script src="../libs/Detector.js"></script>
+		<script src="../libs/FirstPersonControls.js"></script>
+		<script src="../libs/TrackballControls.js"></script>
+		<script src="../libs/dat.gui.min.js"></script>
+		<script src="../libs/PerlinNoiseSimplex.js"></script>
+		<script src="../libs/Lut.js"></script>
+		<script src="../libs/ShaderLoader.js"></script>
+		
+		<!-- postprocessing -->
+		<script src="../libs/EffectComposer.js"></script>
+		<script src="../libs/RenderPass.js"></script>
+		<script src="../libs/MaskPass.js"></script>
+		<script src="../libs/ShaderPass.js"></script>
+		<script src="../libs/CopyShader.js"></script>
+		<script src="../libs/FXAAShader.js"></script>
+		<script src="../libs/ConvolutionShader.js"></script>
+		<script src="../libs/LuminosityHighPassShader.js"></script>
+		<script src="../libs/UnrealBloomPass.js"></script>
+		
 
-    <script src="../libs/FirstPersonControls.js"></script>
+		<!-- cloth -->
+		<script src="../js/GpuParticles.js"></script>
+		<script src="../js/GpuCloth.js"></script>
+		<script src="../js/ClothBunch.js"></script>
 
-    <script src="../libs/Detector.js"></script>
+		<!-- PROJECT-SPECIFIC STUFF -->
+		<script src="location.js"></script>
 
-    <script src="../libs/dat.gui.min.js"></script>
+		<script type="text/javascript">
+			(function() {
+				var script=document.createElement('script');
+				script.onload=function(){
+					var stats=new Stats();
+					// stats.showPanel(1);
+					document.body.appendChild(stats.dom);
+					requestAnimationFrame(function loop(){
+						stats.update();
+						requestAnimationFrame(loop)
+					});
+				};
+				script.src='//rawgit.com/mrdoob/stats.js/master/build/stats.min.js';
+				document.head.appendChild(script);
+			})();
 
-    <script src="sketch.js"></script>
+		</script>
+	</head>
 
-  </body>
+	<body>
+	</body>
 </html>

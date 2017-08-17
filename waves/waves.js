@@ -459,6 +459,7 @@ function initVisualElements()
     preserveDrawingBuffer: true,
     gammaInput: true,
     gammaOutput: true,
+    // logarithmicDepthBuffer: true,
   });
   renderer.setClearColor( getRandomPaletteColor() );
   renderer.autoClear = false;

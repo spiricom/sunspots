@@ -103,9 +103,12 @@ GpuParticleSystem.prototype.getAveragePos = function() {
   var h = this.posRenderTex_source.height;
 
   if (!this.pixelBuffer) { // avoid allocating new buffer every call
-    this.pixelBuffer = new Float32Array(4);
+    this.pixelBuffer = new Float32Array(w * h * 4);
+    // this.pixelBuffer = new Float32Array(4);
     this.averagePos = [];
   }
+
+  renderer.readRenderTargetPixels(this.posRenderTex_source, 0, 0, w, h, this.pixelBuffer);
 
   var x = 0;
   var y = 0;
@@ -142,9 +145,20 @@ GpuParticleSystem.prototype.getAveragePos = function() {
   // y /= count;
   // z /= count;
 
+  for (var i = 0; i < w * h; i+= 10) {
+    x += this.pixelBuffer[i*4 + 0];
+    y += this.pixelBuffer[i*4 + 1];
+    z += this.pixelBuffer[i*4 + 2];
+    count++;
+  }
+  x /= count;
+  y /= count;
+  z /= count;
+
   this.averagePos.x = x;
   this.averagePos.y = y;
   this.averagePos.z = z;
+
   // return [x, y, z];
 }
 

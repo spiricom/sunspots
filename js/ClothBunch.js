@@ -23,13 +23,8 @@ function ClothBunch( numCloths, fboWidth, fboHeight, tex, sideLength, options ) 
   }
 
   this.rootNode = new THREE.Object3D();
-  // if (this.options.isBg) {
-  //   camera.add(this.rootNode);
-  // }
-  // else {
-    scene.add(this.rootNode);
-  // }
-    
+  scene.add(this.rootNode);
+
   this.cloths = [];
   this.clothRootNodes = [];
   for (var i = 0; i < this.numCloths; i++) {
@@ -75,12 +70,12 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
 
       var v = avgVolumes[i] / 30;
       // this.cloths[i].setColor(HSVtoRGB(v, v, v));
+
       this.cloths[i].setColor(HSVtoRGB(
         easings.inQuart(v * 0.8) * -0.2 + 0.6, 
         v * 0.5 + 0.2, 
         easings.outQuad(v) * 0.9 + 0.2
       ));
-
 
     }
   }
@@ -136,7 +131,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
     var ps = this.cloths[j].particleSystem;
     var clothMesh = ps.renderMesh;
 
-    var keepCentered = !this.options.noAutoCenter;
+    var keepCentered = this.options.keepCentered;
     if (keepCentered) {
       ps.getAveragePos();
       clothMesh.position.set(-ps.averagePos.x, -ps.averagePos.y, -ps.averagePos.z);

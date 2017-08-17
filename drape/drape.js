@@ -55,6 +55,8 @@ var counterMax = 300;
 var flasher = 0;
 var clothRootNode;
 
+var numClothSounds = 4;
+
 // bloom source: 
 // https://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
 var effectFXAA, bloomPass, renderScenePass, composer;
@@ -154,7 +156,7 @@ function init() {
   }
 
   // CAMERA
-  camera = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 50000);
+  camera = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 20000);
   camera.position.x = initCameraDist * scene.scale.x;
   camera.position.y = initCameraDist * scene.scale.x;
   camera.position.z = initCameraDist * scene.scale.x;
@@ -246,7 +248,7 @@ function init() {
 
   // MAIN CLOTHS
   var mainClothSize = 256;
-  var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
+  var group = new ClothBunch(numClothSounds, fboWidth, fboHeight, clothTex, mainClothSize, {
     // pinMode: "random",
     // pinChance: 0.003,
     // noRandomRot: true,
@@ -293,23 +295,25 @@ function init() {
 
   // BG CLOTHS
   for (var j = 0; j < 3; j++) {
-    var group = new ClothBunch(1, 40, 40, clothTex, 250, {
-      // flatShading: true,
+    var bgClothSize = 250;
+    var group = new ClothBunch(1, 40, 40, clothTex, bgClothSize, {
       noTex: true,
       noRandomRot: true,
       scale: 100,
       isBg: true,
+      maxDist: bgClothSize * 0.5,
       color: new THREE.Color(1, 1, 1),
+      // keepCentered: true,
     });
     group.colorScheme = "fixed";
     allClothGroups.push(group);
   }
 
   // AUDIO STUFF //////////////////
+  if (audioEnabled) {
 
-  // PER-CLOTH SOUNDS
-  for (var i = 0; i < 4; i++) {
-    if (audioEnabled) {
+    // PER-CLOTH SOUNDS
+    for (var i = 0; i < numClothSounds; i++) {
       var panner = audioContext.createPanner();
       panner.panningModel = 'equalpower';
       panner.distanceModel = 'exponential';
@@ -336,10 +340,8 @@ function init() {
       loadSound(i);
       sourceNode.push(sn);
     }
-  }
 
-  // BG AUDIO
-  if (audioEnabled) {
+    // BG AUDIO
     var an = audioContext.createAnalyser();
     an.smoothingTimeConstant = 0.2;
     an.fftSize = 1024;
@@ -355,6 +357,7 @@ function init() {
     sn.connect(bgGainNode);
     loadSound(4);
     sourceNode.push(sn);
+
   }
 
   // SETUP VIEWPORT DIMS
@@ -392,8 +395,6 @@ function update() {
       renderer.setClearColor(HSVtoRGB(0, 0, 21/255 + average / 20));
     }
     else {
-      // renderer.setClearColor(HSVtoRGB(0, 0, baseBgValue));
-      // renderer.setClearColor(0x000000);
       renderer.setClearColor(baseBgColor);
     }
 

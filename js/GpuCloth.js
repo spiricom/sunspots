@@ -103,6 +103,12 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     "SHEAR_PASS_4",
     ],
   ];
+
+  var updateDefines = {};
+  if (typeof options.maxDist === "number") {
+    updateDefines.MAX_DIST = "float(" + options.maxDist + ")";
+  }
+
   for (var k = 0; k < flagss.length; k++) {
     var posFragShader = "";
 
@@ -116,6 +122,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       uniforms: updateUniforms,
       vertexShader: ShaderLoader.get( "posUpdate_vert" ),
       fragmentShader: posFragShader,
+      defines: updateDefines,
     });
 
     posUpdateShaders.push(posUpdateShader);
@@ -125,9 +132,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     uniforms: updateUniforms,
     vertexShader: ShaderLoader.get( "velUpdate_vert" ),
     fragmentShader:  ShaderLoader.get( "velUpdate_frag" ),
-    defines: {
-      MAX_DIST: options.maxDist,
-    },
+    defines: updateDefines,
   });
 
   // render shader
