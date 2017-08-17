@@ -455,14 +455,14 @@ function initVisualElements()
 
   // RENDERER //////////////////////////
   renderer = new THREE.WebGLRenderer({ 
-    // antialias: true,
+    antialias: true,
     preserveDrawingBuffer: true,
     gammaInput: true,
     gammaOutput: true,
     // logarithmicDepthBuffer: true,
   });
   renderer.setClearColor( getRandomPaletteColor() );
-  renderer.autoClear = false;
+  // renderer.autoClear = false;
   renderer.localClippingEnabled = true;
 
   renderer.setPixelRatio( window.devicePixelRatio );
@@ -711,22 +711,22 @@ function renderVisuals() {
 
 
   // RENDER
-  // renderer.clear();
+  renderer.clear();
 
   // for (var i = 0; i < testCloths.length; i++) {
   //   scene.add(testCloths[i].rootNode);
   // }
-  // renderer.render(scene, camera);
+  renderer.render(scene, camera);
   
   // for (var i = 0; i < testCloths.length; i++) {
   //   lowLodNode.add(testCloths[i].rootNode);
   // }
   // renderer.render(lowLodScene, camera);
 
-  renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
   //goofing around
     //debugAudioLog(camera.position); // comment this out once camera pos is set
-  composer.render();
+  // renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
+  // composer.render();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////

@@ -74,7 +74,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
       this.cloths[i].setColor(HSVtoRGB(
         easings.inQuart(v * 0.8) * -0.2 + 0.6, 
         v * 0.5 + 0.2, 
-        easings.outQuad(v) * 0.9 + 0.2
+        easings.inQuad(v) * 0.9 + 0.05
       ));
 
     }

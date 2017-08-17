@@ -6,8 +6,8 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // CONFIG
 var audioEnabled = true;
 
-var fboWidth  = 60;
-var fboHeight = 60;
+var fboWidth  = 30;
+var fboHeight = 30;
 var keepClothsCentered = true;
 
 var initCameraDist = 500;
@@ -299,7 +299,7 @@ function init() {
     var group = new ClothBunch(1, 40, 40, clothTex, bgClothSize, {
       noTex: true,
       noRandomRot: true,
-      scale: 100,
+      scale: 50,
       isBg: true,
       maxDist: bgClothSize * 0.5,
       color: new THREE.Color(1, 1, 1),
