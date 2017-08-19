@@ -64,14 +64,13 @@ var particles;
 var particleSystem;
 var pMaterial;
 var material_sphere = [];
+
 var numSounds = 4;
 var numBuffers = 2;
 
 var soundPositions = [[-350,30,0], [350,80,0], [0,0,-350],[0,-50,350], [-125,30,125], [125,80,125],[-125, 0, -125], [125, -50, -125]];
 var ratios = [.5,.875,1.0, 1.14285714, 1.125, 1.11111111111,1.25,1.5, 1.375,2.6,1.6,2.0];
 //var ratios = [0.5,0.75,1.0,1.125];
-var analyser = [];
-var mesh = [];
 var sound = [];
 var soundGain = [];
 var waitMax = 13;
@@ -81,29 +80,25 @@ var waitOffset = 4;
 var soundFiles = ['./sounds/sunspots_lonely_knocks.mp3', './sounds/sunspots_wood_groan.mp3','./sounds/sunspotsmetal_harmonics.mp3','./sounds/sunspotsmetal1.mp3','./sounds/sunspotsnoiseTone1.mp3','./sounds/sunspotstimp3_1.mp3','./sounds/sunspotstimp4_1.mp3','./sounds/sunspotsuglydrone1.mp3','./sounds/sunspots_arpeg_slow1.mp3','./sounds/sunspots_arpeg.mp3'];
 
 var reverbSoundFile = './reverbs/BX20E103.wav';
-var material_sphere = [];
 var valScalar = .01;
 var panModel = 'equalpower';
 //var panModel = 'HRTF';
+
 var particleCount = 500;
 var particles;
 var particleSystem;
 var pMaterial;
 
-
 var loopCount = 0;
 var volRandom = 1;
-
 var analyzerDivisor = 64;
-
-var i = 0, j = 0;
-var numSounds = 4;
-var numBuffers = 2;
 var whichFile = [5,0];
 
 var myReverbGain = 0.16;
 var clock = new THREE.Clock();
 var refDist = 150;
+
+var crystalRadius = 100;
 
 var soundsLoaded = 0;
 var convolver;
@@ -197,15 +192,6 @@ function init() {
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
   camera.position.set( 0, 25, 0 );
 
-  // SCENE
-  scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0025 );
-
-  // scale down to make better use of z buffer precision
-  // scene.scale.x = 0.01;
-  // scene.scale.y = 0.01;
-  // scene.scale.z = 0.01;
-
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
   if (fixedRes) {
@@ -213,18 +199,24 @@ function init() {
     viewportHeight = fixedRes.height;
   }
 
+  // SCENE
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0025 );
 
   // RENDERER
   renderer = new THREE.WebGLRenderer({ 
-    antialias: false, // must disable for deferred stuff
-    devicePixelRatio: 1,
-    preserveDrawingBuffer: true, // enable this for canvas image output
+    antialias: true,
+    logarithmicDepthBuffer: true,
+    devicePixelRatio: window.devicePixelRatio,
+    // preserveDrawingBuffer: true,
     gammaInput: true,
     gammaOutput: true,
+    // localClippingEnabled: true,
   });
+  renderer.localClippingEnabled = true;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.renderReverseSided = false;
-  renderer.toneMapping = THREE.LinearToneMapping;
+  // renderer.toneMapping = THREE.LinearToneMapping;
 
   renderer.setSize(viewportWidth, viewportHeight);
   document.body.appendChild(renderer.domElement);
@@ -282,10 +274,12 @@ function init() {
   scene.add( light );
 
   //clipping planes
-  localPlane[0] = new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 );
-  localPlane[1] = new THREE.Plane( new THREE.Vector3( .5, - 1, .6), 0.8 );
-  localPlane[2] = new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 );
-  localPlane[3] = new THREE.Plane( new THREE.Vector3( 0, -.6, 0 ), 0.7 );
+  localPlane = [
+    new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
+    new THREE.Plane( new THREE.Vector3( .5, - 1, .6), 0.8 ),
+    new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
+    new THREE.Plane( new THREE.Vector3( 0, -.6, 0 ), 0.7 ),
+  ];
 
   // sky mesh
   var geoSky = new THREE.SphereGeometry( 1000, 32, 32 );
@@ -297,7 +291,6 @@ function init() {
   // sky light
   var hemiLight = new THREE.HemisphereLight( getPaletteColor());
   scene.add( hemiLight );
-  
 
   // particles
   particles = new THREE.Geometry();
@@ -337,6 +330,9 @@ function init() {
   // add it to the scene
   scene.add(particleSystem);
   
+  // crystal sphere geom
+  var sphere = new THREE.SphereGeometry( crystalRadius, 3, 2 );
+  sphere.computeFaceNormals();
 
   // crystal displacement map
   var mapHeight = new THREE.TextureLoader().load( "images/Infinite-Level_02_Disp_NoSmoothUV-4096.jpg" );
@@ -347,7 +343,7 @@ function init() {
   mapHeight.format = THREE.RGBFormat;
 
   // crystal materials
-  for (i = 0; i < numSounds; i++) {
+  for (var i = 0; i < numSounds; i++) {
     material_sphere[i] = new THREE.MeshPhongMaterial( { 
       color: 0xffffff, 
       shininess: 10, 
@@ -355,43 +351,39 @@ function init() {
       displacementScale: 5,
       displacementBias: 2,
       side: THREE.DoubleSide,
-      clippingPlanes: [ localPlane[i%4] ],
+      opacity: 0.8,
+
+      clippingPlanes: [ localPlane[i % numSounds] ],
       clipShadows: true,
-      opacity: 0.8
     } );
     material_sphere[i].castShadow = true;
     material_sphere[i].receiveShadow = true; 
   }
 
-  // crystal sphere geom
-  var sphere = new THREE.SphereGeometry( 100, 3, 2 );
-  sphere.phiStart = 0.5;
-  sphere.phiLength = 0.5;
-
   // crystal meshes
-  for (i = 0; i < numSounds; i++) {
+  for (var i = 0; i < numSounds; i++) {
     mesh[i] = new THREE.Mesh( sphere, material_sphere[i] );
     mesh[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
     scene.add( mesh[i] );
   }
 
-  // CLOTHS 
+  // // CLOTHS 
 
-  var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
-  clothTex.magFilter = THREE.NearestFilter;
-  clothTex.minFilter = THREE.NearestFilter;
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  // // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
+  // clothTex.magFilter = THREE.LinearFilter;
+  // clothTex.minFilter = THREE.LinearFilter;
 
-  // MAIN CLOTHS
-  var mainClothSize = 256;
-  var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
-    // pinMode: "random",
-    // pinChance: 0.003,
-    // noRandomRot: true,
-    maxDist: (mainClothSize * 0.25)
-  });
-  group.colorScheme = "main";
-  allClothGroups.push(group);
+  // // MAIN CLOTHS
+  // var mainClothSize = 256;
+  // var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
+  //   // pinMode: "random",
+  //   // pinChance: 0.003,
+  //   // noRandomRot: true,
+  //   maxDist: (mainClothSize * 0.25)
+  // });
+  // group.colorScheme = "main";
+  // allClothGroups.push(group);
 
   // AUDIO ////////////////////////
 
@@ -430,7 +422,7 @@ function init() {
   // load crystal sounds
   var audioLoader = new THREE.AudioLoader();
 
-  for (i = 0; i < numSounds; i++) {
+  for (var i = 0; i < numSounds; i++) {
     soundGain[i] = audioContext.createGain();
     
     sound[i] = new THREE.PositionalAudio( listener );
@@ -444,7 +436,7 @@ function init() {
     
     analyser[i] = new THREE.AudioAnalyser( sound[i], 32 );
   }
-  for (i = 0; i < numBuffers; i++) {
+  for (var i = 0; i < numBuffers; i++) {
     audioLoader.load(soundFiles[whichFile[i]], bufferLoader);
   }
 
@@ -469,11 +461,95 @@ function onResize() {
   }
 }
 
+function getNearestCrystalIdx() {
+  var nearestIdx = -1;
+  var nearestDist = Infinity;
+  
+  for (var i = 0; i < numSounds; i++) {
+    var dist = mesh[i].position.distanceTo(camera.position);
+    if (dist <= nearestDist) {
+      nearestDist = dist;
+      nearestIdx = i;
+    }
+  }
+
+  return nearestIdx;
+}
+
+// returns distance from camera to surface of nearest crystal (including clipping plane)
+// negative distance means inside crystal
+// relies on correct face normals
+function getSignedDistanceToNearestCrystal() {
+  
+  var idx = getNearestCrystalIdx();
+  
+  var geom = mesh[idx].geometry;
+  var crystalPos = mesh[idx].position;
+  var clipPlane = localPlane[idx];
+
+  var leastSignedDist = Infinity;
+
+  var cameraPos = camera.position;
+  var cameraPosArr = [cameraPos.x, cameraPos.y, cameraPos.z];
+
+  // get signed dist to mesh (ignoring clipping plane)
+  for (var faceIdx = 0; faceIdx < geom.faces.length; faceIdx++) {
+    var face = geom.faces[faceIdx];
+    
+    var v0 = geom.vertices[face.a].clone().add(crystalPos);
+    var v0Arr = [v0.x, v0.y, v0.z];
+    
+    var v1 = geom.vertices[face.b].clone().add(crystalPos);
+    var v1Arr = [v1.x, v1.y, v1.z];
+
+    var v2 = geom.vertices[face.c].clone().add(crystalPos);
+    var v2Arr = [v2.x, v2.y, v2.z];
+    
+    var closestPt = [];
+
+    var unsignedDist2 = ClosestPointOnTriangle(v0Arr, v1Arr, v2Arr, cameraPosArr, closestPt);
+    var unsignedDist = Math.sqrt(unsignedDist2);
+
+    if (unsignedDist < Math.abs(leastSignedDist)) {
+      var closestPtVec = new THREE.Vector3(closestPt[0], closestPt[1], closestPt[2]);
+      var vecToCamera = cameraPos.clone().sub(closestPtVec);
+      var signedDist = unsignedDist * (face.normal.dot(vecToCamera) > 0 ? 1 : -1);
+
+      leastSignedDist = signedDist;
+    }
+  }
+
+  // if inside mesh, check against clipping plane
+  if (leastSignedDist <= 0) {
+    // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
+    var unsignedDist = abs(clipPlane.distanceToPoint(cameraPos));
+
+    var vecCrystalToCamera = camera.position.clone().suv(mesh[idx].position);
+
+    var outwardClipNormal = 
+
+    var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
+    var signedDist = unsignedDist * (outsideClip ? 1 : -1);
+
+    if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
+      leastSignedDist = signedDist
+    }
+  }
+
+  return leastSignedDist;
+}
+
 var avgVolumes = [];
 
 function update() {
   requestAnimationFrame(update);
   
+  var idx = getNearestCrystalIdx();
+  
+  var dist = mesh[idx].position.distanceTo(camera.position) - crystalRadius;
+
+  console.log("" + getSignedDistanceToNearestCrystal() + ", " + dist);
+
   // update audio  ///////////////
   var now = audioContext.currentTime;
 
@@ -481,7 +557,7 @@ function update() {
   {
     if ((loopCount % 100) === 0)
     {
-      for (i = 0; i < numSounds; i++)
+      for (var i = 0; i < numSounds; i++)
       {
 
         //console.log("check");
@@ -518,7 +594,7 @@ function update() {
         }
       }
     }
-    for (i = 0; i < numSounds; i++)
+    for (var i = 0; i < numSounds; i++)
     {
       var val = analyser[i].getAverageFrequency() / analyzerDivisor;
       material_sphere[i].emissive.r = val;
@@ -584,7 +660,6 @@ function update() {
   // composer.render();
 }
 
-
 function whenLoaded()
 {
   soundsLoaded++;
@@ -596,7 +671,7 @@ function whenLoaded()
   {
     soundsLoaded = 0;
     
-    for (i = 0; i < numSounds; i++)
+    for (var i = 0; i < numSounds; i++)
     {
       soundGain[i].gain.setValueAtTime(0,now);
       
@@ -625,7 +700,7 @@ function whenLoaded()
 
 function bufferLoader(buffer) 
 {
-  for (j = 0; j < (numSounds/numBuffers); j++)
+  for (var j = 0; j < (numSounds/numBuffers); j++)
   {
     var thisSound = bufferCounter;
     //console.log(thisSound);
