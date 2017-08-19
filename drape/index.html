@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>Sunspots</title>
+		<title>Sunspots - 1</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
@@ -43,11 +43,12 @@
 		<script src="../libs/THREEx.screenshot.js"></script>
 		<script src="../libs/Detector.js"></script>
 		<script src="../libs/TrackballControls.js"></script>
-		<script src="../libs/stats.min.js"></script>
 		<script src="../libs/dat.gui.min.js"></script>
 		<script src="../libs/PerlinNoiseSimplex.js"></script>
+		<script src="../libs/Lut.js"></script>
+		<script src="../libs/ShaderLoader.js"></script>
 		
-		<!-- IMPORTED CODE -->
+		<!-- postprocessing -->
 		<script src="../libs/EffectComposer.js"></script>
 		<script src="../libs/RenderPass.js"></script>
 		<script src="../libs/MaskPass.js"></script>
@@ -58,13 +59,32 @@
 		<script src="../libs/LuminosityHighPassShader.js"></script>
 		<script src="../libs/UnrealBloomPass.js"></script>
 		
-		<script src="../libs/ShaderLoader.js"></script>
 
-		<!-- PROJECT-SPECIFIC STUFF -->
+		<!-- cloth -->
 		<script src="../js/GpuParticles.js"></script>
 		<script src="../js/GpuCloth.js"></script>
 		<script src="../js/ClothBunch.js"></script>
+
+		<!-- PROJECT-SPECIFIC STUFF -->
 		<script src="drape.js"></script>
+
+		<script type="text/javascript">
+			(function() {
+				var script=document.createElement('script');
+				script.onload=function(){
+					var stats=new Stats();
+					// stats.showPanel(1);
+					document.body.appendChild(stats.dom);
+					requestAnimationFrame(function loop(){
+						stats.update();
+						requestAnimationFrame(loop)
+					});
+				};
+				script.src='//rawgit.com/mrdoob/stats.js/master/build/stats.min.js';
+				document.head.appendChild(script);
+			})();
+
+		</script>
 	</head>
 
 	<body>

@@ -3,6 +3,8 @@
 var drifterSpeed = 1;
 
 function ClothBunch( numCloths, fboWidth, fboHeight, tex, sideLength, options ) {
+  fboWidth = Math.floor(fboWidth);
+  fboHeight = Math.floor(fboHeight);
   this.options = options || {};
   this.sideLength = sideLength || 256;
 
@@ -21,13 +23,8 @@ function ClothBunch( numCloths, fboWidth, fboHeight, tex, sideLength, options ) 
   }
 
   this.rootNode = new THREE.Object3D();
-  // if (this.options.isBg) {
-  //   camera.add(this.rootNode);
-  // }
-  // else {
-    scene.add(this.rootNode);
-  // }
-    
+  scene.add(this.rootNode);
+
   this.cloths = [];
   this.clothRootNodes = [];
   for (var i = 0; i < this.numCloths; i++) {
@@ -40,6 +37,22 @@ function ClothBunch( numCloths, fboWidth, fboHeight, tex, sideLength, options ) 
     this.clothRootNodes[i] = node;
   }
 }
+
+var easings = {
+  linear: function (t) { return t },
+  inQuad: function (t) { return t*t },
+  outQuad: function (t) { return t*(2-t) },
+  inOutQuad: function (t) { return t<.5 ? 2*t*t : -1+(4-2*t)*t },
+  inCubic: function (t) { return t*t*t },
+  outCubic: function (t) { return (--t)*t*t+1 },
+  inOutCubic: function (t) { return t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1 },
+  inQuart: function (t) { return t*t*t*t },
+  outQuart: function (t) { return 1-(--t)*t*t*t },
+  inOutQuart: function (t) { return t<.5 ? 8*t*t*t*t : 1-8*(--t)*t*t*t },
+  inQuint: function (t) { return t*t*t*t*t },
+  outQuint: function (t) { return 1+(--t)*t*t*t*t },
+  inOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
+};
 
 ClothBunch.prototype.update = function(camera, avgVolumes) {
 
@@ -56,12 +69,18 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
       // this.cloths[i].setColor(HSVtoRGB(cols[i][0], cols[i][1], cols[i][2]));
 
       var v = avgVolumes[i] / 30;
-      this.cloths[i].setColor(HSVtoRGB(v, v, v));
+      // this.cloths[i].setColor(HSVtoRGB(v, v, v));
+
+      this.cloths[i].setColor(HSVtoRGB(
+        easings.inQuart(v * 0.8) * -0.2 + 0.6, 
+        v * 0.5 + 0.2, 
+        easings.inQuad(v) * 0.9 + 0.05
+      ));
+
     }
   }
   else if (this.colorScheme == "fixed") {
     for (var i = 0; i < this.cloths.length; i++) {
-      // this.cloths[i].setColor(renderer.getClearColor().multiply(10));
       this.cloths[i].setColor(this.options.color);
     }
   }
@@ -97,7 +116,7 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
       this.rootNode.position.copy(camera.position);
 
       var fwd = (new THREE.Vector3()).copy(camera.getWorldDirection());
-      fwd.multiplyScalar(8000);
+      fwd.multiplyScalar(12000);
       this.rootNode.position.add(fwd);
 
       this.rootNode.lookAt(camera.position);
@@ -107,11 +126,12 @@ ClothBunch.prototype.update = function(camera, avgVolumes) {
     }
   }
 
+  // auto-centering
   for (var j = 0; j < this.numCloths; j++) {
     var ps = this.cloths[j].particleSystem;
     var clothMesh = ps.renderMesh;
 
-    var keepCentered = !this.options.noAutoCenter;
+    var keepCentered = this.options.keepCentered;
     if (keepCentered) {
       ps.getAveragePos();
       clothMesh.position.set(-ps.averagePos.x, -ps.averagePos.y, -ps.averagePos.z);

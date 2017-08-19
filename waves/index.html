@@ -2,9 +2,10 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>waves_test</title>
+    <title>Sunspots - 2</title>
     <div id="container"></div>
 
+    <!-- general libs -->
     <script src="../libs/three.js"></script>
     <script src="../libs/TrackballControls.js"></script>
     <script src="../libs/FirstPersonControls.js"></script>
@@ -36,6 +37,25 @@
 
     <!-- main -->
     <script src="waves.js"></script>
+
+
+    <script type="text/javascript">
+        (function() {
+            var script=document.createElement('script');
+            script.onload=function(){
+                var stats=new Stats();
+                // stats.showPanel(1);
+                document.body.appendChild(stats.dom);
+                requestAnimationFrame(function loop(){
+                    stats.update();
+                    requestAnimationFrame(loop)
+                });
+            };
+            script.src='//rawgit.com/mrdoob/stats.js/master/build/stats.min.js';
+            document.head.appendChild(script);
+        })();
+
+    </script>
 
     <style> 
       body {padding: 0; margin: 0;} 

@@ -4,11 +4,16 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 
 // CONFIG
-var fboWidth  = 30;
-var fboHeight = 30;
-var clothsPerGroup = 4;
-var audioEnabled = true;
+var audioEnabled = false;
+
+var fboWidth  = 128;
+var fboHeight = 128;
 var keepClothsCentered = true;
+
+var initCameraDist = 500;
+
+// var baseBgColor = new THREE.Color(0x333530);
+var baseBgColor = new THREE.Color(0x000000);
 
 var guiEnabled = false;
 var controlsEnabled = true;
@@ -50,6 +55,8 @@ var counterMax = 300;
 var flasher = 0;
 var clothRootNode;
 
+var numClothSounds = 4;
+
 // bloom source: 
 // https://threejs.org/examples/webgl_postprocessing_unreal_bloom.html
 var effectFXAA, bloomPass, renderScenePass, composer;
@@ -69,7 +76,7 @@ var EasingFunctions = {
   easeInQuint: function (t) { return t*t*t*t*t },
   easeOutQuint: function (t) { return 1+(--t)*t*t*t*t },
   easeInOutQuint: function (t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t }
-}
+};
 
 function HSVtoRGB(h, s, v) {
   h = h % 1;
@@ -107,7 +114,7 @@ window.onload = function() {
 
     render_vert : "",
     render_frag : "",
-  }, "./glsl/", init );
+  }, "../glsl/", init );
 };
 
 var fixedRes = false;
@@ -149,11 +156,10 @@ function init() {
   }
 
   // CAMERA
-  camera = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 50000);
-  camera.position.x = 2500 * scene.scale.x;
-  camera.position.y = 2500 * scene.scale.x;
-  camera.position.z = 2500 * scene.scale.x;
-  // cameraFixed = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 50000);
+  camera = new THREE.PerspectiveCamera(10, viewportWidth / viewportHeight, 1, 20000);
+  camera.position.x = initCameraDist * scene.scale.x;
+  camera.position.y = initCameraDist * scene.scale.x;
+  camera.position.z = initCameraDist * scene.scale.x;
 
   // RENDERER
   renderer = new THREE.WebGLRenderer({ 
@@ -174,7 +180,26 @@ function init() {
   gl = renderer.getContext();  
   THREEx.Screenshot.bindKey(renderer);
 
-  // POST FX
+  // gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+
+  // // COLOR LUT /////////////
+  // var lutColors = [];
+  // lut = new THREE.Lut( colorMap, numberOfColors );
+  // lut.setMax( 2000 );
+  // lut.setMin( 0 );
+  // for ( var i = 0; i < geometry.attributes.pressure.array.length; i++ ) {
+  //   var colorValue = geometry.attributes.pressure.array[ i ];
+  //   var color = lut.getColor( colorValue );
+  //   if ( color == undefined ) {
+  //     console.log( "ERROR: " + colorValue );
+  //   } else {
+  //     lutColors[ 3 * i     ] = color.r;
+  //     lutColors[ 3 * i + 1 ] = color.g;
+  //     lutColors[ 3 * i + 2 ] = color.b;
+  //   }
+  // }
+
+  // POST FX /////////
   renderScenePass = new THREE.RenderPass(scene, camera);
 
   effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
@@ -190,7 +215,6 @@ function init() {
   composer.addPass(effectFXAA);
   composer.addPass(bloomPass);
   composer.addPass(copyShader);
-  //renderer.toneMapping = THREE.ReinhardToneMapping;
   renderer.gammaInput = true;
 
   // TUNING GUI
@@ -219,25 +243,36 @@ function init() {
 
   // CLOTHS /////////////////////
 
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
-  var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
+  var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
+  clothTex.magFilter = THREE.LinearFilter;
+  clothTex.minFilter = THREE.LinearFilter;
 
   // MAIN CLOTHS
-  var group = new ClothBunch(clothsPerGroup, fboWidth, fboHeight, clothTex, 256);
+  var mainClothSize = 256;
+  var group = new ClothBunch(numClothSounds, fboWidth, fboHeight, clothTex, mainClothSize, {
+    // pinMode: "random",
+    // pinChance: 0.003,
+    // noRandomRot: true,
+    maxDist: (mainClothSize * 0.5)
+  });
   group.colorScheme = "main";
   allClothGroups.push(group);
 
 
   // ORBITER CLOTHS
   var MakeOrbiter = function(x, y, z) {
-    var sideOptions = {
-      flatShading: true,
-      color: new THREE.Color(0.9, 0.9, 0.9),
-    };
-
     const sideClothRes = 24;
     const sideClothSize = 300;
     const orbiterDist = 5000;
+
+    var sideOptions = {
+      flatShading: true,
+      color: new THREE.Color(0.9, 0.9, 0.9),
+      maxDist: (sideClothSize * 0.5)
+      // pinMode: "random",
+      // pinChance: 0.01,
+    };
 
     var group = new ClothBunch(1, sideClothRes, sideClothRes, clothTex, sideClothSize, sideOptions);
     group.colorScheme = "fixed";
@@ -262,23 +297,25 @@ function init() {
 
   // BG CLOTHS
   for (var j = 0; j < 3; j++) {
-    var group = new ClothBunch(1, 40, 40, clothTex, 250, {
-      // flatShading: true,
+    var bgClothSize = 250;
+    var group = new ClothBunch(1, 40, 40, clothTex, bgClothSize, {
       noTex: true,
       noRandomRot: true,
-      scale: 100,
+      scale: 50,
       isBg: true,
+      maxDist: bgClothSize * 0.5,
       color: new THREE.Color(1, 1, 1),
+      // keepCentered: true,
     });
     group.colorScheme = "fixed";
     allClothGroups.push(group);
   }
 
   // AUDIO STUFF //////////////////
+  if (audioEnabled) {
 
-  // PER-CLOTH SOUNDS
-  for (var i = 0; i < 4; i++) {
-    if (audioEnabled) {
+    // PER-CLOTH SOUNDS
+    for (var i = 0; i < numClothSounds; i++) {
       var panner = audioContext.createPanner();
       panner.panningModel = 'equalpower';
       panner.distanceModel = 'exponential';
@@ -305,10 +342,8 @@ function init() {
       loadSound(i);
       sourceNode.push(sn);
     }
-  }
 
-  // BG AUDIO
-  if (audioEnabled) {
+    // BG AUDIO
     var an = audioContext.createAnalyser();
     an.smoothingTimeConstant = 0.2;
     an.fftSize = 1024;
@@ -324,6 +359,7 @@ function init() {
     sn.connect(bgGainNode);
     loadSound(4);
     sourceNode.push(sn);
+
   }
 
   // SETUP VIEWPORT DIMS
@@ -352,16 +388,23 @@ var avgVolumes = [];
 function update() {
   requestAnimationFrame(update);
 
+  // update controls and camera and audioListener
+  if (controlsEnabled) {
+    controls.update();
+  }
+  camera.lookAt( scene.position );
+  audioListener.setOrientation(camera.position.x, camera.position.y, camera.position.z, 0,1,0);
+
   if (audioEnabled) {
     // update bg flasher
     if (flasher == 1) {
       analyser[4].getByteFrequencyData(freqDataArray);
       var average = getAverage(freqDataArray);
-      renderer.setClearColor(HSVtoRGB(0, 0, average / 20));
+      // renderer.setClearColor(HSVtoRGB(84/255, 9.5/255, 21/255 + average / 20));
+      renderer.setClearColor(HSVtoRGB(0, 0, 21/255 + average / 20));
     }
     else {
-      // renderer.setClearColor(HSVtoRGB(0, 0, 1));
-      renderer.setClearColor(0x000000);
+      renderer.setClearColor(baseBgColor);
     }
 
     // update cloth audio reactivity
@@ -386,16 +429,10 @@ function update() {
     }
   }
 
+  // update cloths
   for (var groupIdx = 0; groupIdx < allClothGroups.length; groupIdx++) {
     allClothGroups[groupIdx].update(camera, avgVolumes);
   }
-
-  // update controls and camera and audioListener
-  if (controlsEnabled) {
-    controls.update();
-  }
-  camera.lookAt( scene.position );
-  audioListener.setOrientation(camera.position.x, camera.position.y, camera.position.z, 0,1,0);
 
   // render
   // renderer.render(scene, camera, null, true);
