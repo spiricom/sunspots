@@ -171,7 +171,7 @@ function getRandomThreePaletteColor() {
   return new THREE.Color(col[0]/255, col[1]/255, col[2]/255);
 }
 
-const WORLD_WIDTH = 40, WORLD_DEPTH = 40;
+const WORLD_WIDTH = 30, WORLD_DEPTH = 30;
 
 // AUDIO CONSTANTS
 
@@ -296,16 +296,6 @@ function resizeWindow(w, h) {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize( w, h );
-
-  // HACK: need to refresh bloom pass
-  for (var i = 0; i < composer.passes.length; i++) {
-    if (composer.passes[i] === bloomPass) {
-      bloomPass = makeBloomPass(w, h);
-      composer.passes[i] = bloomPass;
-    }
-  }
-  effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h );
-  composer.setSize( w, h );
 }
 
 // Properly handle window resizing
@@ -436,22 +426,6 @@ function initControlElements()
 }
 
 
-// function lockChangeAlert() {
-//   var canvas = document.querySelector('canvas');
-
-//   pointerLocked = document.pointerLockElement === canvas || document.mozPointerLockElement === canvas;
-
-//   controls.enabled = pointerLocked;
-// }
-
-function makeBloomPass(w, h) {
-  var bloom = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
-  bloom.radius = 0.9 * w / window.innerWidth;
-  bloom.threshold = 0.59;
-  bloom.strength = 0.26;
-
-  return bloom;
-}
 
 function initVisualElements()
 {
@@ -493,64 +467,7 @@ function initVisualElements()
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
 
-  // POST FX //////////////////////////
-  renderScene = new THREE.RenderPass(scene, camera);
-  // renderScene.clear = true;
-  // renderLowLodScene = new THREE.RenderPass(lowLodScene, camera);
-  // renderLowLodScene.clear = false;
-
-  effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
-  effectFXAA.uniforms['resolution'].value.set(1 / viewportWidth, 1 / viewportHeight );
-
-  var copyShader = new THREE.ShaderPass(THREE.CopyShader);
-  copyShader.renderToScreen = true;
-
-  bloomPass = makeBloomPass(viewportWidth, viewportHeight);
-
-  composer = new THREE.EffectComposer(renderer);
-  composer.setSize(viewportWidth, viewportHeight);
-  // composer.addPass({
-  //   render: function(renderer) {
-  //     for (var i = 0; i < testCloths.length; i++) {
-  //       scene.add(testCloths[i].rootNode);
-  //     }
-  //   }, 
-  //   setSize: function() {} 
-  // });
-  composer.addPass(renderScene);
-  
-  // composer.addPass({
-  //   render: function(renderer) {
-  //     for (var i = 0; i < testCloths.length; i++) {
-  //       lowLodNode.add(testCloths[i].rootNode);
-  //     }
-  //   }, 
-  //   setSize: function() {} 
-  // });
-  // composer.addPass(renderLowLodScene);
-
-  composer.addPass(effectFXAA);
-  composer.addPass(bloomPass);
-  composer.addPass(copyShader);
-  //renderer.toneMapping = THREE.ReinhardToneMapping;
-
-  // GUI (FX TUNING) //////////////////////////
-  if (GUI_ENABLED) {
-    var gui = new dat.GUI();
-
-    gui.add( guiParams, 'exposure', 0.1, 2 );
-    gui.add( guiParams, 'bloomThreshold', 0.0, 1.0 ).onChange( function(value) {
-        bloomPass.threshold = Number(value);
-    });
-    gui.add( guiParams, 'bloomStrength', 0.0, 3.0 ).onChange( function(value) {
-        bloomPass.strength = Number(value);
-    });
-    gui.add( guiParams, 'bloomRadius', 0.0, 1.0 ).onChange( function(value) {
-        bloomPass.radius = Number(value);
-    });
-    gui.open();
-  }
-
+ 
   // LIGHTS //////////////////////////
   scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.001 );
 
@@ -717,7 +634,18 @@ function renderVisuals() {
 // Initialize the (all important) audio elements of the piece
 function initAudioElements() {
   // Create invisible spheres to attach the audio to (convenience)
+var sphere = new THREE.SphereGeometry(500, 10, 10);
 
+var material_spheres;
+
+    //bumpMap: mapHeight, bumpScale: 10
+    material_spheres = new THREE.MeshPhongMaterial( { color: 0xffffff,
+                                                        shininess: 10,
+                                                        side: THREE.DoubleSide,
+                                                        opacity:.8} );
+    material_spheres.castShadow = false;
+    material_spheres.receiveShadow = false;
+    material_spheres.visible = true;
   // Init audio context
   listener = new THREE.AudioListener();
   audioContext = THREE.AudioContext;
@@ -726,7 +654,7 @@ function initAudioElements() {
 
 
 
-  /*
+  
   convolver = audioContext.createConvolver();
   var reverbGain = audioContext.createGain();
   // grab audio track via XHR for convolver node
@@ -749,12 +677,12 @@ function initAudioElements() {
       }, function(e) {"Error with decoding audio data" + e.err;});
   }
   ajaxRequest.send();
-*/
-/*
+
+
   // Create central noise sound and add it to the scene via noiseMesh
   var noiseMesh = new THREE.Mesh(sphere, material_spheres[0]);
   noiseMesh.position.set(0, 0, 0);
-  //scene.add(noiseMesh);
+  scene.add(noiseMesh);
   noiseSound = new THREE.PositionalAudio(listener);
 
   // noiseSound.setPanningModel(PAN_MODEL);
@@ -762,20 +690,20 @@ function initAudioElements() {
   debugAudioLog("rolloff = 7");
   noiseSound.setRolloffFactor(7);
   noiseMesh.add(noiseSound);
-*/
+
   // Setup each of the sound sources
 
 
   // Create an audio loader for the piece and load the noise sound into it
   audioLoader = new THREE.AudioLoader();
 
-  /*
+  
   audioLoader.load(NOISE_SOUND_FILE, noiseLoader);
-*/
+
   curSoundSource = 0;
   for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
   {
-    audioLoader.load("sounds/noise_burst.mp3", testAudioLoader);
+    audioLoader.load(mySounds[i], testAudioLoader);
     
   }
 
@@ -909,7 +837,7 @@ function testAudioLoader(buffer)
     sounds[index].setLoop(true);
     sounds[index].startTime = (Math.random()*((buffer.length / 44100)));
     sounds[index].setPlaybackRate(1);
-    sounds[index].panner.connect(audioContext.destination);
+    sounds[index].panner.connect(convolver);
     
 
     meshes[index+10] = new THREE.Mesh(sphere, material_spheres[index] );
