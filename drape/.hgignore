@@ -1,6 +1,0 @@
-syntax: glob
-__MACOSX/*
-*.ogg
-*.jpg
-*.png
-*.mp3
