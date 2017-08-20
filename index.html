@@ -6,26 +6,319 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 
-	<style type="text/css">
-		
-	body {
-		background-color: rgb(254, 254, 254);
-	}
+<style type="text/css">
+	
+@font-face {
+  font-family: cicero-sans;
+  src: url("index-static/fonts/cicero sans negrita.ttf");
+  /*font-weight: normal;*/
+  /*font-style: normal;*/
+}
 
-	</style>
+body {
+	/*background-color: rgb(254, 254, 254);*/
+	background-color: rgb(51, 53, 48);
+	color: rgb(189, 106, 98);
+	font-family: sans-serif;
+	font-size: 42px;
+	margin: 0;
+}
+
+.cover {
+	margin: 0 auto;
+	background-color: rgb(254, 254, 254);
+	padding: 120px;
+	width: calc(80vw - 120px * 2);
+	height: calc(80vw - 120px * 2);
+	min-width: calc(770px - 120px * 2);
+	min-height: calc(770px - 120px * 2);
+	position: fixed;
+	top: 50vh;
+	left: 50vw;
+	transform: translateX(-50%) translateY(-50%);
+}
+
+@media screen and (min-aspect-ratio: 1/1) {
+  .cover {
+		width: calc(80vh - 120px * 2);
+		height: calc(80vh - 120px * 2);
+  }
+}
+
+@media (max-width: 770px) {
+	.cover {
+		/*padding: 60px;*/
+	}
+}
+
+.justified-character {
+	/*display: list-item;*/
+}
+
+.title {
+	/*margin: 0 auto;*/
+	float: right;
+	align: justify;
+	-moz-text-align-last: justify;
+	text-align-last: justify;
+	max-width: 400px;
+	min-width: 376px;
+}
+
+ul {
+  list-style: none
+}
+
+li {
+  display: inline-block;
+  /* inline block hack for IE 6&7 */
+  zoom: 1;
+  *display: inline;
+  padding: 4px;
+}
+
+.title-line {
+	font-size: 0;
+}
+.title-line li {
+	font-size: 36px;
+}
+
+@media (min-width: 770px) {
+	.title-line li {
+		/*font-size: 82px;*/
+	}
+}
+.row-container {
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.row-container-asdf {
+  width: auto;
+
+  display: -webkit-box;     /* iOS 6-, Safari 3.1-6 */
+  display: -moz-box;        /* Firefox 19- */
+  display: -ms-flexbox;     /* IE 10 */
+  display: -webkit-flex;    /* Chrome */
+  display: flex;            /* Opera 12.1, Firefox 20+ */
+
+  /* iOS 6-, Safari 3.1-6 */
+  -webkit-box-orient: horizontal;
+  -webkit-box-pack: center;
+  -webkit-lines: multiple;  /* Only here for informative purpose, this line is what should have made it work, it has never been implemented */ 
+
+  /* Firefox 19- */
+  -moz-flex-flow: row wrap;
+  -moz-justify-content: center;
+  -moz-box-lines: multiple; /* Only here for informative purpose, this line is what should have made it work, it has never been implemented */ 
+
+  /* Chrome */
+  -webkit-flex-flow: row wrap;
+  -webkit-justify-content: center;
+
+  /* IE10 */
+  -ms-flex-flow: row wrap;
+  -ms-justify-content: center;
+
+  /* Opera 12.1, Firefox 20+ */
+  flex-flow: row wrap;
+  justify-content: center;
+}
+
+.row-item {
+  /*width: 20%;*/
+  /*max-width: 400px;*/
+  padding: 4px;
+
+  -webkit-box-flex: auto;    /* iOS 6-, Safari 3.1-6 */
+  -moz-box-flex: 1.0;        /* Firefox 19- */
+  -webkit-flex: auto;        /* Chrome */
+  -ms-flex: auto;            /* IE10 */
+  flex: auto;                /* Opera 12.1, Firefox 20+ */
+}
+
+.aspectWrapper {
+  position: relative!important;
+  top: 0; bottom: 0; left: 0; right: 0;
+}
+
+.one-by-one.aspect-ratio { 
+  padding-bottom: 100%;
+}
+
+.three-by-two.aspect-ratio { 
+  padding-bottom: 66.666%;
+}
+.four-by-three.aspect-ratio { 
+  padding-bottom: 75%;
+}
+.sixteen-by-nine.aspect-ratio { 
+  padding-bottom: 56.25%;
+}
+
+.aspectContent {
+  position: absolute;
+  overflow: hidden;
+  height: 100%;
+  top: 0; bottom: 0; left: 0; right: 0;
+  /*background:gold; */
+}
+
+.aspectContent img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: auto;
+  -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+}
+
+.aspectContent img.landscape {
+  height: 100%!important;
+  width: auto!important;
+}
+
+.thumb-container-container {
+}
+
+.thumb-container {
+}
+
+
+.box {
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+}
+
+.box .row {
+	padding: 40px 100px;
+}
+
+@media (max-width: 1000px) {
+	.box .row {
+		padding: 40px 40px;
+	}
+}
+
+.box .row.header {
+  flex: 0 1 auto;
+  /* The above is shorthand for:
+  flex-grow: 0,
+  flex-shrink: 1,
+  flex-basis: auto
+  */
+}
+
+.box .row.content {
+  flex: 1 1 auto;
+}
+
+.box .row.footer {
+  /*border: 1px dotted grey;*/
+  flex: 0 1 auto;
+}
+
+
+</style>
 
 </head>
 
 
 <body>
-	<span style="
-		font-size: 60px;font-color: 0x0000
-	">
-		<i><b>Sunspots<br><br></b></i>
-		<a href="drape/index.html">drape</a><br><br>
-		<a href="waves/index.html">waves</a><br><br>
-		<a href="location/index.html">location</a><br><br>
-	</span>
+	<div class="cover">
+		<div style="position: relative">
+			<img style="width: 100%; position: absolute; z-index: -100;" class="landscape" src="index-static/images/location.png"/>
+		</div>
+
+		<div class="box">
+
+			<div class="row header">
+			</div>
+			
+			<div class="row content">
+			</div>
+
+			<div class="row footer">
+				<div class="title">
+					<div class="title-line">
+						<li>J</li>
+						<li>E</li>
+						<li>F</li>
+						<li>F</li>
+						<li>&nbsp;</li>
+						<li>S</li>
+						<li>N</li>
+						<li>Y</li>
+						<li>D</li>
+						<li>E</li>
+						<li>R</li>
+					</div>
+
+					<div class="title-line">
+						<li>S</li>
+						<li>U</li>
+						<li>N</li>
+						<li>S</li>
+						<li>P</li>
+						<li>O</li>
+						<li>T</li>
+						<li>S</li>
+					</div>
+				</div>
+			</div>
+
+			<!-- <div class="row content">
+
+				<div class="thumb-container-container">	
+					<div class="thumb-container row-container">
+
+					  <div class="row-item image-grid-item"> 
+					    <div class="aspectWrapper"> 
+					      <div class="one-by-one aspect-ratio"></div> 
+					      <div class="aspectContent">
+									<a href="drape">
+						        <img class="landscape" src="index-static/images/drape.png"/>
+					        </a>
+					      </div> 
+					    </div>
+					  </div>
+
+					  <div class="row-item image-grid-item"> 
+					    <div class="aspectWrapper"> 
+					      <div class="one-by-one aspect-ratio"></div> 
+					      <div class="aspectContent">
+									<a href="waves">
+						        <img src="index-static/images/waves.png"/>
+					        </a>
+					      </div> 
+					    </div>
+					  </div>
+
+					  <div class="row-item image-grid-item"> 
+					    <div class="aspectWrapper"> 
+					      <div class="one-by-one aspect-ratio"></div> 
+					      <div class="aspectContent">
+									<a href="location">
+						        <img class="landscape" src="index-static/images/location.png"/>
+									</a>
+					      </div> 
+					    </div>
+					  </div>
+
+				  </div>
+			  </div>
+
+		  </div> -->
+
+
+	</div>
+
 </body>
 
 </html>
