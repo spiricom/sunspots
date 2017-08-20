@@ -98,8 +98,10 @@ var particles;
 var particleSystem;
 var pMaterial;
 
+
 var loopCount = 0;
 var volRandom = 1;
+
 var analyzerDivisor = 64;
 var whichFile = [5,0];
 
@@ -227,7 +229,7 @@ function init() {
   renderer.localClippingEnabled = true;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.renderReverseSided = false;
-  // renderer.toneMapping = THREE.LinearToneMapping;
+  renderer.toneMapping = THREE.LinearToneMapping;
 
   renderer.setSize(viewportWidth, viewportHeight);
   document.body.appendChild(renderer.domElement);
@@ -305,6 +307,7 @@ function init() {
   // sky light
   var hemiLight = new THREE.HemisphereLight( getPaletteColor());
   scene.add( hemiLight );
+  
 
   // particles
   particles = new THREE.Geometry();
@@ -830,6 +833,7 @@ function update() {
   // renderer.toneMappingExposure = Math.pow( bloomParams.exposure, 4.0 );
   // composer.render();
 }
+
 
 function whenLoaded()
 {
