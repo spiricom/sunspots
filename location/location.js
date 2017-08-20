@@ -208,7 +208,7 @@ function init() {
   // RENDERER
   renderer = new THREE.WebGLRenderer({ 
     antialias: true,
-    logarithmicDepthBuffer: true,
+    // logarithmicDepthBuffer: true,
     devicePixelRatio: window.devicePixelRatio,
     // preserveDrawingBuffer: true,
     gammaInput: true,
@@ -225,7 +225,7 @@ function init() {
   // controls
   controls = new THREE.FirstPersonControls( camera, renderer.domElement );
 
-  controls.movementSpeed = 50; // TODO REVERT
+  controls.movementSpeed = 50;
   controls.lookSpeed = 0.05;
   controls.noFly = true;
   controls.lookVertical = false;
@@ -418,23 +418,23 @@ function init() {
       new THREE.Face3( 0, 2, 3 ) 
     );
 
-    var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
+    // var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
 
-    scene.add( newCapMesh );
-    mesh[i].capMesh = newCapMesh;
+    // scene.add( newCapMesh );
+    // mesh[i].capMesh = newCapMesh;
 
-    // CLOTHS 
-    // MAIN CLOTHS
-    var mainClothSize = 256;
-    var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
-      // pinMode: "random",
-      // pinChance: 0.003,
-      // noRandomRot: true,
-      maxDist: (mainClothSize * 0.25)
-    });
+    // // CLOTHS 
+    // // MAIN CLOTHS
+    // var mainClothSize = 256;
+    // var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
+    //   // pinMode: "random",
+    //   // pinChance: 0.003,
+    //   // noRandomRot: true,
+    //   maxDist: (mainClothSize * 0.25)
+    // });
     // group.pos.copy(crystalPos);
-    group.colorScheme = "main";
-    allClothGroups[i] = group;
+    // group.colorScheme = "main";
+    // allClothGroups[i] = group;
   }
 
 
@@ -683,7 +683,8 @@ function update() {
       // var clothBunch = allClothGroups[i];
       // for (var j = 0; j < clothBunch.numCloths; j++) {
       //   var cloth = clothBunch.cloths[j];
-      //   // cloth.renderMaterial.clippingPlanes = transformedSphereFacePlanes;
+      //   cloth.renderMaterial.clipping = true
+      //   cloth.renderMaterial.clippingPlanes = transformedSphereFacePlanes;
       // }
       
     }
