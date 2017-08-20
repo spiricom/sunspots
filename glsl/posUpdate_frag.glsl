@@ -390,7 +390,7 @@ void main() {
   }
 
   // output updated pos
-  gl_FragColor = vec4( poscc, pincc );
+  // gl_FragColor = vec4( poscc, pincc );
 
   // uncomment to disable update
   // gl_FragColor = vec4( texture2D( positions, uvcc ) );

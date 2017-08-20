@@ -37,6 +37,8 @@ var camera;
 var cameraFixed;
 var renderer;
 var controls;
+var sphereFacePlanes;
+var facePlaneMatrices;
 
 // AUDIO GLOBALS
 var audioContext;
@@ -211,7 +213,6 @@ function init() {
     // preserveDrawingBuffer: true,
     gammaInput: true,
     gammaOutput: true,
-    // localClippingEnabled: true,
   });
   renderer.localClippingEnabled = true;
   renderer.shadowMap.enabled = true;
@@ -224,7 +225,7 @@ function init() {
   // controls
   controls = new THREE.FirstPersonControls( camera, renderer.domElement );
 
-  controls.movementSpeed = 50;
+  controls.movementSpeed = 50; // TODO REVERT
   controls.lookSpeed = 0.05;
   controls.noFly = true;
   controls.lookVertical = false;
@@ -280,6 +281,9 @@ function init() {
     new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
     new THREE.Plane( new THREE.Vector3( 0, -.6, 0 ), 0.7 ),
   ];
+  for (var i = 0; i < localPlane.length; i++) {
+    localPlane[i].normalize();
+  }
 
   // sky mesh
   var geoSky = new THREE.SphereGeometry( 1000, 32, 32 );
@@ -331,10 +335,14 @@ function init() {
   scene.add(particleSystem);
   
   // crystal sphere geom
-  var sphere = new THREE.SphereGeometry( crystalRadius, 3, 2 );
-  sphere.computeFaceNormals();
+  var sphereGeom = new THREE.SphereGeometry( crystalRadius, 3, 2 );
+  sphereGeom.computeFaceNormals();
 
-  // crystal displacement map
+  // clipping planes for clipping to crystal
+  sphereFacePlanes = planesFromGeometry( sphereGeom );
+  facePlaneMatrices = sphereFacePlanes.map( planeToMatrix );
+
+  // crystal shared material stuff
   var mapHeight = new THREE.TextureLoader().load( "images/Infinite-Level_02_Disp_NoSmoothUV-4096.jpg" );
   mapHeight.anisotropy = 16;
   mapHeight.repeat.set( 0.998, 0.998 );
@@ -342,48 +350,93 @@ function init() {
   mapHeight.wrapS = mapHeight.wrapT = THREE.RepeatWrapping;
   mapHeight.format = THREE.RGBFormat;
 
-  // crystal materials
-  for (var i = 0; i < numSounds; i++) {
-    material_sphere[i] = new THREE.MeshPhongMaterial( { 
-      color: 0xffffff, 
-      shininess: 10, 
-      displacementMap: mapHeight,
-      displacementScale: 5,
-      displacementBias: 2,
-      side: THREE.DoubleSide,
-      opacity: 0.8,
+  var sharedMaterialData = { 
+    color: 0xffffff, 
+    shininess: 10, 
+    displacementMap: mapHeight,
+    displacementScale: 5,
+    displacementBias: 2,
+    opacity: 0.8,
+    clipShadows: true,
+  };
 
-      clippingPlanes: [ localPlane[i % numSounds] ],
-      clipShadows: true,
-    } );
+  // cloth texture
+  var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  clothTex.magFilter = THREE.LinearFilter;
+  clothTex.minFilter = THREE.LinearFilter;
+
+  // crystals
+  for (var i = 0; i < numSounds; i++) {
+    var clipPlane = localPlane[i % numSounds];
+
+    // material for main crystal
+    var materialData = Object.assign({
+      clippingPlanes: [ clipPlane ],
+      side: THREE.DoubleSide,
+    }, sharedMaterialData);
+
+    material_sphere[i] = new THREE.MeshPhongMaterial( materialData );
     material_sphere[i].castShadow = true;
     material_sphere[i].receiveShadow = true; 
+
+    var crystalPos = new THREE.Vector3(soundPositions[i][0], soundPositions[i][1], soundPositions[i][2]);
+
+    // main crystal mesh
+    var crystalMesh = new THREE.Mesh( sphereGeom, material_sphere[i] );
+    crystalMesh.position.copy(crystalPos);
+    
+    scene.add( crystalMesh );
+    mesh[i] = crystalMesh;
+
+    // material for crystal cap (plane clipped to crystal)
+
+
+    var capMaterialData = Object.assign({
+      side: THREE.FrontSide,
+    }, sharedMaterialData);
+
+    var capMaterial = new THREE.MeshPhongMaterial( capMaterialData );
+    capMaterial.castShadow = true;
+    capMaterial.receiveShadow = true; 
+    material_sphere[i].capMaterial = capMaterial;
+
+    // clipping plane cap mesh
+    var arbitraryVec = new THREE.Vector3(3, 5, 7).normalize();
+    var planeAxis0 = clipPlane.normal.clone().cross(arbitraryVec);
+    var planeAxis1 = clipPlane.normal.clone().cross(planeAxis0);
+    var closestPointOnPlaneToOrigin = clipPlane.normal.clone().multiplyScalar(-clipPlane.constant);
+
+    var capGeom = new THREE.Geometry();
+    capGeom.vertices.push(
+      closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
+      closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
+      closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
+      closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
+    );
+    capGeom.faces.push( 
+      new THREE.Face3( 0, 1, 2 ),
+      new THREE.Face3( 0, 2, 3 ) 
+    );
+
+    var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
+
+    scene.add( newCapMesh );
+    mesh[i].capMesh = newCapMesh;
+
+    // CLOTHS 
+    // MAIN CLOTHS
+    var mainClothSize = 256;
+    var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
+      // pinMode: "random",
+      // pinChance: 0.003,
+      // noRandomRot: true,
+      maxDist: (mainClothSize * 0.25)
+    });
+    // group.pos.copy(crystalPos);
+    group.colorScheme = "main";
+    allClothGroups[i] = group;
   }
 
-  // crystal meshes
-  for (var i = 0; i < numSounds; i++) {
-    mesh[i] = new THREE.Mesh( sphere, material_sphere[i] );
-    mesh[i].position.set( soundPositions[i][0], soundPositions[i][1],soundPositions[i][2] );
-    scene.add( mesh[i] );
-  }
-
-  // // CLOTHS 
-
-  // var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
-  // // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
-  // clothTex.magFilter = THREE.LinearFilter;
-  // clothTex.minFilter = THREE.LinearFilter;
-
-  // // MAIN CLOTHS
-  // var mainClothSize = 256;
-  // var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
-  //   // pinMode: "random",
-  //   // pinChance: 0.003,
-  //   // noRandomRot: true,
-  //   maxDist: (mainClothSize * 0.25)
-  // });
-  // group.colorScheme = "main";
-  // allClothGroups.push(group);
 
   // AUDIO ////////////////////////
 
@@ -524,22 +577,23 @@ function getSignedDistanceToNearestCrystal() {
     }
   }
 
-  // if inside mesh, check against clipping plane
-  if (leastSignedDist <= 0) {
-    // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
-    var unsignedDist = Math.abs(clipPlane.distanceToPoint(cameraPos));
+  // // if inside mesh, check against clipping plane
+  // if (leastSignedDist <= 0) {
+  //   // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
+  //   var unsignedDist = Math.abs(clipPlane.distanceToPoint(cameraPos));
 
-    var vecCrystalToCamera = camera.position.clone().sub(mesh[idx].position);
+  //   var vecCrystalToCamera = camera.position.clone().sub(mesh[idx].position);
 
-    var outwardClipNormal = clipPlane.normal.clone().negate();
+  // FIXME this is incorrect since clip planes are in world coordssssssss
+  //   var outwardClipNormal = clipPlane.normal.clone().negate();
 
-    var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
-    var signedDist = unsignedDist * (outsideClip ? 1 : -1);
+  //   var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
+  //   var signedDist = unsignedDist * (outsideClip ? 1 : -1);
 
-    if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
-      leastSignedDist = signedDist
-    }
-  }
+  //   if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
+  //     leastSignedDist = signedDist
+  //   }
+  // }
 
   return leastSignedDist;
 }
@@ -557,7 +611,7 @@ var avgVolumes = [];
 function update() {
   requestAnimationFrame(update);
 
-  console.log("" + getSignedDistanceToNearestCrystal() + ", " + getSignedDistanceToNearestCrystalSphere());
+  // console.log("" + getSignedDistanceToNearestCrystal() + ", " + getSignedDistanceToNearestCrystalSphere());
 
   // update audio  ///////////////
   var now = audioContext.currentTime;
@@ -609,9 +663,29 @@ function update() {
       material_sphere[i].emissive.r = val;
       material_sphere[i].emissive.g = val;
       material_sphere[i].emissive.b = val;
+
       mesh[i].rotation.x += (val* valScalar);
       mesh[i].rotation.z += (val* valScalar);
       mesh[i].rotation.y += (val* valScalar);
+
+      // FIXME: these volumes end up slightly small, not sure why
+      var transformedSphereFacePlanes = [];
+      for (var j = 0; j < sphereFacePlanes.length; j++) {
+        var plane = sphereFacePlanes[j].clone();
+        var translatedPlane = plane.applyMatrix4(mesh[i].matrixWorld);
+        translatedPlane.negate();
+        // translatedPlane.constant *= 1.1; // HACK
+        transformedSphereFacePlanes[j] = translatedPlane;
+      }
+
+      material_sphere[i].capMaterial.clippingPlanes = transformedSphereFacePlanes;
+
+      // var clothBunch = allClothGroups[i];
+      // for (var j = 0; j < clothBunch.numCloths; j++) {
+      //   var cloth = clothBunch.cloths[j];
+      //   // cloth.renderMaterial.clippingPlanes = transformedSphereFacePlanes;
+      // }
+      
     }
     loopCount++;
   }
@@ -711,15 +785,143 @@ function bufferLoader(buffer)
 {
   for (var j = 0; j < (numSounds/numBuffers); j++)
   {
-    var thisSound = bufferCounter;
-    //console.log(thisSound);
-    sound[thisSound].setBuffer( buffer );
-    sound[thisSound].setRefDistance( refDist );
-    sound[thisSound].setLoop(true);
-    sound[thisSound].setStartTime(Math.random()*((buffer.length / 44100) - 6));
-    sound[thisSound].setPlaybackRate(ratios[Math.round(Math.random() * (ratios.length - 1))]);
-    sound[thisSound].panner.connect(convolver);
+    if (sound[bufferCounter]) {
+      sound[bufferCounter].setBuffer( buffer );
+      sound[bufferCounter].setRefDistance( refDist );
+      sound[bufferCounter].setLoop(true);
+      sound[bufferCounter].setStartTime(Math.random()*((buffer.length / 44100) - 6));
+      sound[bufferCounter].setPlaybackRate(ratios[Math.round(Math.random() * (ratios.length - 1))]);
+      sound[bufferCounter].panner.connect(convolver);
+    }
     bufferCounter++
   }
   whenLoaded();
 }
+
+
+///////////////////////////////////////////////////////////////////////////////////
+// clipping stuff for creating clipped cap geometry for clipped off bits of crystals
+// modified from https://threejs.org/examples/#webgl_clipping_advanced
+
+
+function planesFromGeometry( geometry ) {
+
+  var verts = geometry.vertices;
+  var faces = geometry.faces;
+
+  var result = new Array( faces.length );
+
+  for ( var i = 0; i < faces.length; i++ ) {
+    
+    var face = faces[i];
+
+    var v0 = verts[face.a];
+    var v1 = verts[face.b];
+    var v2 = verts[face.c];
+
+    result[ i ] = new THREE.Plane().setFromCoplanarPoints( v0, v1, v2 );
+  }
+
+  return result;
+}
+
+function planesFromMesh( vertices, indices ) {
+  // creates a clipping volume from a convex triangular mesh
+  // specified by the arrays 'vertices' and 'indices'
+
+  var n = indices.length / 3,
+    result = new Array( n );
+
+  for ( var i = 0, j = 0; i < n; ++ i, j += 3 ) {
+
+    var a = vertices[ indices[   j   ] ],
+      b = vertices[ indices[ j + 1 ] ],
+      c = vertices[ indices[ j + 2 ] ];
+
+    result[ i ] = new THREE.Plane().
+        setFromCoplanarPoints( a, b, c );
+
+  }
+
+  return result;
+
+}
+
+function createPlanes( n ) {
+  // creates an array of n uninitialized plane objects
+
+  var result = new Array( n );
+
+  for ( var i = 0; i !== n; ++ i )
+    result[ i ] = new THREE.Plane();
+
+  return result;
+
+}
+
+function assignTransformedPlanes( planesOut, planesIn, matrix ) {
+  // sets an array of existing planes to transformed 'planesIn'
+
+  for ( var i = 0, n = planesIn.length; i !== n; ++ i )
+    planesOut[ i ].copy( planesIn[ i ] ).applyMatrix4( matrix );
+
+}
+
+function cylindricalPlanes( n, innerRadius ) {
+
+  var result = createPlanes( n );
+
+  for ( var i = 0; i !== n; ++ i ) {
+
+    var plane = result[ i ],
+      angle = i * Math.PI * 2 / n;
+
+    plane.normal.set(
+        Math.cos( angle ), 0, Math.sin( angle ) );
+
+    plane.constant = innerRadius;
+
+  }
+
+  return result;
+
+}
+
+var planeToMatrix = ( function() {
+  // creates a matrix that aligns X/Y to a given plane
+
+  // temporaries:
+  var xAxis = new THREE.Vector3(),
+    yAxis = new THREE.Vector3(),
+    trans = new THREE.Vector3();
+
+  return function planeToMatrix( plane ) {
+
+    var zAxis = plane.normal,
+      matrix = new THREE.Matrix4();
+
+    // Hughes & Moeller '99
+    // "Building an Orthonormal Basis from a Unit Vector."
+
+    if ( Math.abs( zAxis.x ) > Math.abs( zAxis.z ) ) {
+
+      yAxis.set( -zAxis.y, zAxis.x, 0 );
+
+    } else {
+
+      yAxis.set( 0, -zAxis.z, zAxis.y );
+
+    }
+
+    xAxis.crossVectors( yAxis.normalize(), zAxis );
+
+    plane.coplanarPoint( trans );
+    return matrix.set(
+      xAxis.x, yAxis.x, zAxis.x, trans.x,
+      xAxis.y, yAxis.y, zAxis.y, trans.y,
+      xAxis.z, yAxis.z, zAxis.z, trans.z,
+        0,    0,    0,      1 );
+
+  };
+
+} )();
