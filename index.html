@@ -18,20 +18,20 @@
 body {
 	/*background-color: rgb(254, 254, 254);*/
 	background-color: rgb(51, 53, 48);
-	color: rgb(189, 106, 98);
 	font-family: sans-serif;
 	font-size: 42px;
 	margin: 0;
 }
 
-.cover {
+#cover {
 	margin: 0 auto;
+
 	background-color: rgb(254, 254, 254);
-	padding: 120px;
-	width: calc(80vw - 120px * 2);
-	height: calc(80vw - 120px * 2);
-	min-width: calc(770px - 120px * 2);
-	min-height: calc(770px - 120px * 2);
+	/*padding: 120px;*/
+	width: 92vw;
+	height: 92vw;
+	min-width: 770px;
+	min-height: 770px;
 	position: fixed;
 	top: 50vh;
 	left: 50vw;
@@ -39,30 +39,28 @@ body {
 }
 
 @media screen and (min-aspect-ratio: 1/1) {
-  .cover {
-		width: calc(80vh - 120px * 2);
-		height: calc(80vh - 120px * 2);
-  }
 }
 
 @media (max-width: 770px) {
-	.cover {
-		/*padding: 60px;*/
-	}
 }
 
 .justified-character {
 	/*display: list-item;*/
 }
 
-.title {
+#title {
 	/*margin: 0 auto;*/
+	color: black;
 	float: right;
 	align: justify;
 	-moz-text-align-last: justify;
 	text-align-last: justify;
 	max-width: 400px;
 	min-width: 376px;
+  -webkit-transition: color 0.2s ease-in-out;
+  -moz-transition: color 0.2s ease-in-out;
+  -o-transition: color 0.2s ease-in-out;
+  transition: color 0.2s ease-in-out;
 }
 
 ul {
@@ -164,7 +162,6 @@ li {
   overflow: hidden;
   height: 100%;
   top: 0; bottom: 0; left: 0; right: 0;
-  /*background:gold; */
 }
 
 .aspectContent img {
@@ -217,13 +214,65 @@ li {
 
 .box .row.content {
   flex: 1 1 auto;
+
 }
 
 .box .row.footer {
-  /*border: 1px dotted grey;*/
   flex: 0 1 auto;
 }
 
+
+.content {
+  font-size: 22px;
+  line-height: 1.6;
+}
+
+.content a {
+	color: inherit;
+	text-decoration: none;
+}
+.content a:hover {
+	font-style: italic;
+}
+
+.play {
+	color: inherit;
+	position: relative;
+	top: -2px;
+	font-style: normal !important;
+}
+
+.cover-image {
+	width: 100%; 
+	position: absolute;
+	left: 0;
+	right: 0;
+	z-index: -100;
+  -webkit-transition: opacity 0.6s ease-in-out;
+  -moz-transition: opacity 0.6s ease-in-out;
+  -o-transition: opacity 0.6s ease-in-out;
+  transition: opacity 0.6s ease-in-out;
+}
+
+.cover-image.fg {
+	opacity: 0;
+}
+
+.fill-area {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	/*border: 1px dotted grey;*/
+	padding: inherit;
+}
+
+.cover-inner {
+	z-index: -300;
+	margin: 120px;
+	background-color: rgb(185, 204, 200);
+}
 
 </style>
 
@@ -231,9 +280,13 @@ li {
 
 
 <body>
-	<div class="cover">
-		<div style="position: relative">
-			<img style="width: 100%; position: absolute; z-index: -100;" class="landscape" src="index-static/images/location.png"/>
+	<div id="cover">
+	<div class="fill-area cover-inner">
+		<div style="position: relative;">
+			<!-- <img                        class="cover-image landscape" src="index-static/images/default.png"/> -->
+			<img id="cover-image-drape" class="cover-image fg landscape" src="index-static/images/drape.png"/>
+			<img id="cover-image-waves" class="cover-image fg landscape" src="index-static/images/waves.png"/>
+			<img id="cover-image-locat" class="cover-image fg landscape" src="index-static/images/location.png"/>
 		</div>
 
 		<div class="box">
@@ -241,11 +294,20 @@ li {
 			<div class="row header">
 			</div>
 			
-			<div class="row content">
+			<div class="row content" id="main-content">
+				<p>
+					D&nbsp;I&nbsp;S&nbsp;C&nbsp;&nbsp;0
+				</p>
+				<a class="scene-link" id="link-drape" href="drape">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE A &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Sunspots IV, IX, XI - 'Drape'</a>
+				<br>
+				<a class="scene-link" id="link-waves" href="waves">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE B &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Sunspots V, VIII, XV - 'Waves'</a>
+				<br>
+				<a class="scene-link" id="link-locat" href="location">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE C &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Sunspots VII, XVII - 'Location'</a>
 			</div>
 
+
 			<div class="row footer">
-				<div class="title">
+				<div id="title">
 					<div class="title-line">
 						<li>J</li>
 						<li>E</li>
@@ -318,6 +380,69 @@ li {
 
 
 	</div>
+	</div>
+
+
+	<script type="text/javascript">
+
+		var images = document.getElementsByClassName("cover-image");
+
+		var imgDrape = document.getElementById("cover-image-drape");
+		var imgWaves = document.getElementById("cover-image-waves");
+		var imgLocat = document.getElementById("cover-image-locat");
+		
+		var title = document.getElementById("title");
+		var cover = document.getElementById("cover");
+
+		function onLinkHover(event) {
+			var elm = event.target;
+
+			var imgToShow = 
+				elm.id == "link-drape" ? imgDrape :
+				elm.id == "link-waves" ? imgWaves :
+				elm.id == "link-locat" ? imgLocat :
+				null;
+
+			console.assert(imgToShow, "invalid link id: " + elm.id);
+
+			imgToShow.style.opacity = 1;
+
+			title.style.color = 
+				elm.id == "link-drape" ? "rgb(189, 106, 98)" :
+				elm.id == "link-waves" ? "rgb(189, 106, 98)" :
+				elm.id == "link-locat" ? "rgb(189, 106, 98)" :
+				"black";
+
+			cover.style.color = 
+				elm.id == "link-drape" ? "red" :
+				elm.id == "link-waves" ? "green" :
+				elm.id == "link-locat" ? "white" :
+				"black";
+		}
+
+		function onLinkUnhover(event) {
+			var elm = event.target;
+
+			var imgToShow = 
+				elm.id == "link-drape" ? imgDrape :
+				elm.id == "link-waves" ? imgWaves :
+				elm.id == "link-locat" ? imgLocat :
+				null;
+		
+			console.assert(imgToShow, "invalid link id: " + elm.id);
+
+			imgToShow.style.opacity = 0;
+
+			title.style.color = "black";
+			cover.style.color = "blue";
+		}
+
+		var links = document.getElementsByClassName("scene-link");
+		for (i = 0; i < links.length; i++) {
+			links[i].addEventListener("mouseover", onLinkHover);
+			links[i].addEventListener("mouseout", onLinkUnhover);
+		}
+	</script>
 
 </body>
 
