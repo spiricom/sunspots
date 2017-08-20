@@ -485,6 +485,7 @@ function getSignedDistanceToNearestCrystal() {
   
   var geom = mesh[idx].geometry;
   var crystalPos = mesh[idx].position;
+  var crystalWorldMatrix = mesh[idx].matrixWorld;
   var clipPlane = localPlane[idx];
 
   var leastSignedDist = Infinity;
@@ -493,23 +494,27 @@ function getSignedDistanceToNearestCrystal() {
   var cameraPosArr = [cameraPos.x, cameraPos.y, cameraPos.z];
 
   // get signed dist to mesh (ignoring clipping plane)
+  // by checking dist to each face
   for (var faceIdx = 0; faceIdx < geom.faces.length; faceIdx++) {
     var face = geom.faces[faceIdx];
     
-    var v0 = geom.vertices[face.a].clone().add(crystalPos);
+    // get face vertices in world space
+    var v0 = geom.vertices[face.a].clone().applyMatrix4(crystalWorldMatrix);
     var v0Arr = [v0.x, v0.y, v0.z];
     
-    var v1 = geom.vertices[face.b].clone().add(crystalPos);
+    var v1 = geom.vertices[face.b].clone().applyMatrix4(crystalWorldMatrix);
     var v1Arr = [v1.x, v1.y, v1.z];
 
-    var v2 = geom.vertices[face.c].clone().add(crystalPos);
+    var v2 = geom.vertices[face.c].clone().applyMatrix4(crystalWorldMatrix);
     var v2Arr = [v2.x, v2.y, v2.z];
     
     var closestPt = [];
 
+    // get unsigned dist
     var unsignedDist2 = ClosestPointOnTriangle(v0Arr, v1Arr, v2Arr, cameraPosArr, closestPt);
     var unsignedDist = Math.sqrt(unsignedDist2);
 
+    // if it's new closest, get signed dist
     if (unsignedDist < Math.abs(leastSignedDist)) {
       var closestPtVec = new THREE.Vector3(closestPt[0], closestPt[1], closestPt[2]);
       var vecToCamera = cameraPos.clone().sub(closestPtVec);
@@ -519,22 +524,22 @@ function getSignedDistanceToNearestCrystal() {
     }
   }
 
-  // // if inside mesh, check against clipping plane
-  // if (leastSignedDist <= 0) {
-  //   // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
-  //   var unsignedDist = Math.abs(clipPlane.distanceToPoint(cameraPos));
+  // if inside mesh, check against clipping plane
+  if (leastSignedDist <= 0) {
+    // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
+    var unsignedDist = Math.abs(clipPlane.distanceToPoint(cameraPos));
 
-  //   var vecCrystalToCamera = camera.position.clone().sub(mesh[idx].position);
+    var vecCrystalToCamera = camera.position.clone().sub(mesh[idx].position);
 
-  //   var outwardClipNormal = clipPlane.normal; // TODO
+    var outwardClipNormal = clipPlane.normal.clone().negate();
 
-  //   var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
-  //   var signedDist = unsignedDist * (outsideClip ? 1 : -1);
+    var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
+    var signedDist = unsignedDist * (outsideClip ? 1 : -1);
 
-  //   if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
-  //     leastSignedDist = signedDist
-  //   }
-  // }
+    if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
+      leastSignedDist = signedDist
+    }
+  }
 
   return leastSignedDist;
 }
