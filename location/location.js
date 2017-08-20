@@ -67,6 +67,9 @@ var particleSystem;
 var pMaterial;
 var material_sphere = [];
 
+var crystalSoundGain;
+var crystalSound;
+
 var numSounds = 4;
 var numBuffers = 2;
 
@@ -81,10 +84,14 @@ var waitOffset = 4;
 //sunspotsmetal1 is good, so is timp3_1
 var soundFiles = ['./sounds/sunspots_lonely_knocks.mp3', './sounds/sunspots_wood_groan.mp3','./sounds/sunspotsmetal_harmonics.mp3','./sounds/sunspotsmetal1.mp3','./sounds/sunspotsnoiseTone1.mp3','./sounds/sunspotstimp3_1.mp3','./sounds/sunspotstimp4_1.mp3','./sounds/sunspotsuglydrone1.mp3','./sounds/sunspots_arpeg_slow1.mp3','./sounds/sunspots_arpeg.mp3'];
 
+var whaleSounds = "./sounds/whales_record.mp3"
 var reverbSoundFile = './reverbs/BX20E103.wav';
 var valScalar = .01;
 var panModel = 'equalpower';
 //var panModel = 'HRTF';
+
+var now;
+
 
 var particleCount = 500;
 var particles;
@@ -101,6 +108,9 @@ var clock = new THREE.Clock();
 var refDist = 150;
 
 var crystalRadius = 100;
+
+
+var envelope;
 
 var soundsLoaded = 0;
 var convolver;
@@ -441,10 +451,57 @@ function init() {
   // AUDIO ////////////////////////
 
 
+
+
   // audio listener and context
   listener = new THREE.AudioListener();
   audioContext = THREE.AudioContext;
   camera.add(listener);
+
+
+
+var EnvelopeGenerator = (function(audioContext) {
+      function EnvelopeGenerator() {
+        this.attackTime = 3.0;
+        this.releaseTime = 3.0;
+      };
+
+      EnvelopeGenerator.prototype.trigger = function() {
+        now = audioContext.currentTime;
+        this.param.cancelScheduledValues(now);
+        this.param.setValueAtTime(0, now);
+        this.param.linearRampToValueAtTime(1, now + this.attackTime);
+        this.param.linearRampToValueAtTime(0, now + this.attackTime + this.releaseTime);
+      };
+
+      EnvelopeGenerator.prototype.on = function() {
+        now = audioContext.currentTime;
+        this.param.cancelScheduledValues(now);
+
+        this.param.setValueAtTime(crystalSoundGain.gain.value, now);
+        this.param.linearRampToValueAtTime(1, now + this.attackTime);
+        console.log("on! " + now);
+      };
+
+      EnvelopeGenerator.prototype.off = function() {
+        now = audioContext.currentTime;
+        this.param.cancelScheduledValues(now);
+        this.param.setValueAtTime(crystalSoundGain.gain.value, now);
+        this.param.linearRampToValueAtTime(0, now + this.releaseTime);
+        console.log("off! " + now);
+      };
+
+      EnvelopeGenerator.prototype.connect = function(param) {
+        this.param = param;
+      };
+
+    return EnvelopeGenerator;
+  })(audioContext);
+
+
+  envelope = new EnvelopeGenerator;
+
+
   
   // convolver and stuff
   convolver = audioContext.createConvolver();
@@ -472,6 +529,11 @@ function init() {
   ajaxRequest.send();
   
 
+
+
+
+
+
   // load crystal sounds
   var audioLoader = new THREE.AudioLoader();
 
@@ -492,6 +554,17 @@ function init() {
   for (var i = 0; i < numBuffers; i++) {
     audioLoader.load(soundFiles[whichFile[i]], bufferLoader);
   }
+
+  
+    crystalSoundGain = audioContext.createGain();
+    crystalSoundGain.gain.value = 0.0;
+    crystalSoundGain.connect(audioContext.destination);
+    crystalSoundGain.connect(convolver);
+    crystalSound = audioContext.createBufferSource();
+    audioLoader.load(whaleSounds, crystalLoader);
+    envelope.connect(crystalSoundGain.gain);
+
+
 
   // SETUP VIEWPORT DIMS
   window.addEventListener( "resize", onResize );
@@ -607,12 +680,26 @@ function getSignedDistanceToNearestCrystalSphere() {
 }
 
 var avgVolumes = [];
+var inside = 0;
 
 function update() {
   requestAnimationFrame(update);
 
   // console.log("" + getSignedDistanceToNearestCrystal() + ", " + getSignedDistanceToNearestCrystalSphere());
 
+
+  if ((getSignedDistanceToNearestCrystal() < 0) && (inside == false))
+  {
+    //then we're inside one!
+    envelope.on();
+    inside = true;
+    //console.log("hellllllooooo");
+  }
+  else if ((getSignedDistanceToNearestCrystal() > 0) && (inside == true))
+  {
+    envelope.off();
+    inside = false;
+  }
   // update audio  ///////////////
   var now = audioContext.currentTime;
 
@@ -797,6 +884,16 @@ function bufferLoader(buffer)
     bufferCounter++
   }
   whenLoaded();
+}
+
+
+function crystalLoader(buffer) 
+{
+    crystalSound.buffer = buffer;
+    crystalSound.loop = true;
+    crystalSound.playbackRate.value = (Math.random() * .3) + .5;
+    crystalSound.connect(crystalSoundGain);
+    crystalSound.start(0);
 }
 
 
