@@ -224,7 +224,7 @@ function init() {
   // controls
   controls = new THREE.FirstPersonControls( camera, renderer.domElement );
 
-  controls.movementSpeed = 500;
+  controls.movementSpeed = 50;
   controls.lookSpeed = 0.05;
   controls.noFly = true;
   controls.lookVertical = false;
