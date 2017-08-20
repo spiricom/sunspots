@@ -4,7 +4,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 
 // CONFIG
-var audioEnabled = false;
+var audioEnabled = true;
 
 var fboWidth  = 128;
 var fboHeight = 128;
@@ -163,7 +163,7 @@ function init() {
 
   // RENDERER
   renderer = new THREE.WebGLRenderer({ 
-    antialias: false, // must disable for deferred stuff
+    antialias: true, // must disable for deferred stuff
     devicePixelRatio: 1,
     preserveDrawingBuffer: true, // enable this for canvas image output
     gammaInput: true,
