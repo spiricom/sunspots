@@ -519,36 +519,40 @@ function getSignedDistanceToNearestCrystal() {
     }
   }
 
-  // if inside mesh, check against clipping plane
-  if (leastSignedDist <= 0) {
-    // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
-    var unsignedDist = abs(clipPlane.distanceToPoint(cameraPos));
+  // // if inside mesh, check against clipping plane
+  // if (leastSignedDist <= 0) {
+  //   // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
+  //   var unsignedDist = Math.abs(clipPlane.distanceToPoint(cameraPos));
 
-    var vecCrystalToCamera = camera.position.clone().suv(mesh[idx].position);
+  //   var vecCrystalToCamera = camera.position.clone().sub(mesh[idx].position);
 
-    var outwardClipNormal = 
+  //   var outwardClipNormal = clipPlane.normal; // TODO
 
-    var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
-    var signedDist = unsignedDist * (outsideClip ? 1 : -1);
+  //   var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
+  //   var signedDist = unsignedDist * (outsideClip ? 1 : -1);
 
-    if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
-      leastSignedDist = signedDist
-    }
-  }
+  //   if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
+  //     leastSignedDist = signedDist
+  //   }
+  // }
 
   return leastSignedDist;
+}
+
+function getSignedDistanceToNearestCrystalSphere() {
+
+  var idx = getNearestCrystalIdx();  
+  var signedDistToNearestCrystalSphere = mesh[idx].position.distanceTo(camera.position) - crystalRadius;
+
+  return signedDistToNearestCrystalSphere;
 }
 
 var avgVolumes = [];
 
 function update() {
   requestAnimationFrame(update);
-  
-  var idx = getNearestCrystalIdx();
-  
-  var dist = mesh[idx].position.distanceTo(camera.position) - crystalRadius;
 
-  console.log("" + getSignedDistanceToNearestCrystal() + ", " + dist);
+  console.log("" + getSignedDistanceToNearestCrystal() + ", " + getSignedDistanceToNearestCrystalSphere());
 
   // update audio  ///////////////
   var now = audioContext.currentTime;
