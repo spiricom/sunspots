@@ -50,7 +50,7 @@ var guiParams = {
 };
 
 // CONTROLS VARS
-var moveSpeed = 50;
+var moveSpeed = 30;
 var runningEnabled = DEVMODE;
 
 var pointerLocked = false;
@@ -282,12 +282,15 @@ function render()
   if ( moveDown ) velocity.y -= 400.0 * delta;
 
   var speed = moveSpeed * (running ? 10 : 1);
-  controls.getObject().translateX( velocity.x * delta * speed );
-  controls.getObject().translateY( velocity.y * delta * speed );
-  controls.getObject().translateZ( velocity.z * delta * speed );
+  // controls.getObject().translateX( velocity.x * delta * speed );
+  // controls.getObject().translateY( velocity.y * delta * speed );
+  // controls.getObject().translateZ( velocity.z * delta * speed );
 
-  var pos = controls.getObject().position;
+  // var pos = controls.getObject().position;
   // pos.y = Math.min(pos.y, 150);
+
+  var delta = clock.getDelta();
+  controls.update(delta);
 
   prevTickTime = time;
 
@@ -345,12 +348,28 @@ function HSVtoRGB(h, s, v) {
 
 function initControlElements()
 {
-  controls = new THREE.PointerLockControls(camera);
-  controls.getPitchObject().rotation.x = Math.PI * 0.1;
-  scene.add(controls.getObject());
-  controls.enabled = false;
+  // controls = new THREE.PointerLockControls(camera);
+  // controls.getPitchObject().rotation.x = Math.PI * 0.1;
+  // scene.add(controls.getObject());
+  // controls.enabled = false;
+  controls = new THREE.FirstPersonControls( camera, renderer.domElement );
+
+  controls.movementSpeed = 1000;
+  controls.lookSpeed = 0.05;
+  controls.noFly = true;
+  controls.lookVertical = false;
 
   var element = document.body;
+
+  var onMouseDown = function( event ) {
+    console.log(event.button);
+    if (event.button == 0 ) moveForward = true;
+    if (event.button == 2 ) moveBackward = true;
+  }
+  var onMouseUp = function( event ) {
+    if (event.button == 0 ) moveForward = false;
+    if (event.button == 2 ) moveBackward = false;
+  }
 
   var onKeyDown = function ( event ) {
     switch ( event.keyCode ) {
@@ -411,6 +430,10 @@ function initControlElements()
     }
   };
 
+  document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
+
+  document.addEventListener( 'mousedown', onMouseDown, false );
+  document.addEventListener( 'mouseup', onMouseUp, false );
   document.addEventListener( 'keydown', onKeyDown, false );
   document.addEventListener( 'keyup', onKeyUp, false );
 
@@ -557,7 +580,8 @@ function initVisualElements()
 //   float between 0 and 1 indicated how far through the current shell the camera is
 function getCurrentDomeAroundCamera() {
   // HACK need to get position from controls, which camera inherits from
-  var camDist = controls.getObject().position.length();
+  // var camDist = controls.getObject().position.length();
+  var camDist = camera.position.length();
   for (var i = 0; i < NUMBER_OF_DOMES; i++) {
     var radius = getDomeRadius(i);
     if (radius > camDist) {
