@@ -287,7 +287,7 @@ function render()
   controls.getObject().translateZ( velocity.z * delta * speed );
 
   var pos = controls.getObject().position;
-  pos.y = Math.min(pos.y, 150);
+  // pos.y = Math.min(pos.y, 150);
 
   prevTickTime = time;
 
@@ -346,6 +346,7 @@ function HSVtoRGB(h, s, v) {
 function initControlElements()
 {
   controls = new THREE.PointerLockControls(camera);
+  controls.getPitchObject().rotation.x = Math.PI * 0.1;
   scene.add(controls.getObject());
   controls.enabled = false;
 
@@ -438,7 +439,7 @@ function initControlElements()
 function initVisualElements()
 {
   // CAMERA
-  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
+  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 1000, 100000 );
 
   camera.position.set( 0, -400, 10000 );
   debugAudioLog(camera.position);

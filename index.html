@@ -25,6 +25,7 @@ body {
 
 #cover {
 	margin: 0 auto;
+	color: white;
 
 	background-color: rgb(254, 254, 254);
 	/*padding: 120px;*/
@@ -39,6 +40,10 @@ body {
 }
 
 @media screen and (min-aspect-ratio: 1/1) {
+	#cover {
+		width: 92vh;
+		height: 92vh;
+	}
 }
 
 @media (max-width: 770px) {
@@ -50,7 +55,7 @@ body {
 
 #title {
 	/*margin: 0 auto;*/
-	color: black;
+	color: white;
 	float: right;
 	align: justify;
 	-moz-text-align-last: justify;
@@ -285,7 +290,7 @@ li {
 		<div style="position: relative;">
 			<!-- <img                        class="cover-image landscape" src="index-static/images/default.png"/> -->
 			<img id="cover-image-drape" class="cover-image fg landscape" src="index-static/images/drape.png"/>
-			<img id="cover-image-waves" class="cover-image fg landscape" src="index-static/images/waves.png"/>
+			<img id="cover-image-waves" class="cover-image fg landscape" src="index-static/images/waves-3.png"/>
 			<img id="cover-image-locat" class="cover-image fg landscape" src="index-static/images/location.png"/>
 		</div>
 
@@ -408,16 +413,18 @@ li {
 			imgToShow.style.opacity = 1;
 
 			title.style.color = 
-				elm.id == "link-drape" ? "rgb(189, 106, 98)" :
-				elm.id == "link-waves" ? "rgb(189, 106, 98)" :
+				elm.id == "link-drape" ? "cyan" :
+				elm.id == "link-waves" ? "rgb(247, 206, 101)" :
+				// elm.id == "link-waves" ? "rgb(198, 141, 51)" :
+				// elm.id == "link-waves" ? "rgb(25, 42, 79)" :
 				elm.id == "link-locat" ? "rgb(189, 106, 98)" :
-				"black";
+				"white";
 
 			cover.style.color = 
-				elm.id == "link-drape" ? "red" :
-				elm.id == "link-waves" ? "green" :
+				elm.id == "link-drape" ? "white" :
+				elm.id == "link-waves" ? "white" :
 				elm.id == "link-locat" ? "white" :
-				"black";
+				"white";
 		}
 
 		function onLinkUnhover(event) {
@@ -433,8 +440,8 @@ li {
 
 			imgToShow.style.opacity = 0;
 
-			title.style.color = "black";
-			cover.style.color = "blue";
+			title.style.color = "white";
+			cover.style.color = "white";
 		}
 
 		var links = document.getElementsByClassName("scene-link");
