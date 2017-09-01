@@ -105,8 +105,8 @@ function initSound(){
   
       // connect nodes
       o.connect(g);
-      g.gain.value = 0.0;
-      //g.gain.value = (1.0 / ((numOsc) * 4));
+      //g.gain.value = 0.0;
+      g.gain.value = (1.0 / ((numOsc) * 4));
       g.connect(myFilter);
       o.start(0);
       oscs[j].push(o);
@@ -150,7 +150,7 @@ function ring(whichPlanet)
 
 // gets called whenever a planet crosses the top line
 function onPlanetCrossedLine(planetName, planet) {
-  //ring(planetName-1);
+  ring(planetName-1);
   //console.log("planet crossed line: " + planetName);
 }
 
