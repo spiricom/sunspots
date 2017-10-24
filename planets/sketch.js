@@ -2,13 +2,12 @@
 // IMPORTANT NOTE: requires chrome with experimental canvas features enabled in chrome://flags (for canvas transform matrix retrieval - can be replaced with external transform system if necessary)
 
 /*
-
-[?] always update cursorpos in fullscreen
-  can't replicate -> maybe a browser/os issue?
-[x] hide cursor in fullscreen
-  p5 fullscreen check is weird, cursor's always hidden now
-[x] fix arrow keys sometimes not working (for lines)
-  A key would break line toggle
+add correct chords
+separate ring functions for type of planet
+noise functions for collisions
+decay time control
+timbre control
+tick percussion sounds
 */
 
 var fps = 30;
@@ -142,16 +141,19 @@ function ring(whichPlanet)
   {
     //ramp up to the amplitude of the harmonic quickly (within 7ms)
     gains[whichPlanet][i].gain.cancelScheduledValues(0);
-    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(1.0/(numPlanets*numOsc)))), context.currentTime, 0.005);
+    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(1.0/(howManyPlanets*numOsc)))), context.currentTime, 0.005);
     //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
     gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, 1.7));
   }
 }
 
 // gets called whenever a planet crosses the top line
-function onPlanetCrossedLine(planetName, planet) {
-  //ring(planetName-1);
-  //console.log("planet crossed line: " + planetName);
+function onPlanetCrossedLine(planetName, planet, linecolor) {
+  if (planet.moon == false)
+  {
+    ring(planetName-1, linecolor);
+  }
+  console.log("planet crossed line: " + planetName + "  planet " + planet.moon + "  linecolor " + linecolor);
 }
 
 // gets called _once_ each frame for each pair of overlapping planets
@@ -575,7 +577,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         {
           if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, topline);
           }
         }
         
@@ -583,7 +585,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         {
           if ( (screenPos.y > sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, bottomline);
           }
         }
         
@@ -592,7 +594,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
           
           if ( (screenPos.x < sunPos.x) && ((screenPos.y > sunPos.y) != (planetState.prevScreenPos.y > sunPos.y)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, leftline);
           }
         }
         
@@ -600,7 +602,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         {
           if ( (screenPos.x > sunPos.x) && ((screenPos.y < sunPos.y) != (planetState.prevScreenPos.y < sunPos.y)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, rightline);
           }
         }
       }
