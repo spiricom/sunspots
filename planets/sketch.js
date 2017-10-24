@@ -142,7 +142,7 @@ function ring(whichPlanet)
   {
     //ramp up to the amplitude of the harmonic quickly (within 7ms)
     gains[whichPlanet][i].gain.cancelScheduledValues(0);
-    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(1.0/(numPlanets*numOsc)))), context.currentTime, 0.005);
+    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(1.0/(howManyPlanets*numOsc)))), context.currentTime, 0.005);
     //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
     gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, 1.7));
   }
