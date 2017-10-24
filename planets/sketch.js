@@ -2,11 +2,11 @@
 // IMPORTANT NOTE: requires chrome with experimental canvas features enabled in chrome://flags (for canvas transform matrix retrieval - can be replaced with external transform system if necessary)
 
 /*
-add correct chords
+//
 separate ring functions for type of planet
 noise functions for collisions
-decay time control
-timbre control
+//decay time control
+//timbre control
 tick percussion sounds
 */
 
@@ -23,11 +23,14 @@ var bottomline = 0;
 var leftline = 0;
 var rightline = 0;
 
-var detune = 2;
+var detune = 3;//2
 var randFreqs = [];
-var numOsc = 5;
+var numOsc = 9;
 var gains = [];
 var oscs = [];
+var filters = [];
+var pitchIndex = [];
+var fundamentals = [];
 var howManyPlanets = getNumPlanets();
 var moonsOn = [];
 var ticksOn = [];
@@ -36,12 +39,16 @@ var planetsOn = [];
 var currentColor = 1;
 var planetScalar = 1;
 var ticksScalar = 4;
-
+var toneBrightness = 0.0;
 var planetNum = -1;
 
 //var myScale = [60, 61.77, 62.04, 62.4, 64.71, 64.44, 66.75, 67.02, 67.38, 69.69, 69.42, 71.73]; // just tuned piano (La Monte Young)
 var myScale = [60, 61.05, 62.04, 62.97, 63.86, 64.71, 65.51, 67.02, 68.4, 69.05, 69.69, 70.88];
-
+var scales = [[46.88, 51.86, 54.83, 61.55, 65.90, 76.91, 78.83, 91.55, 94.51, 101.0],
+[51.42, 58.88, 63.09, 70.44, 71.73, 74.10, 80.70, 82.74, 94.51, 101],
+[47.0, 54.02, 61.67, 66.65, 73.67, 83.63, 92.69, 94.53, 101.53, 104.69],
+[44.87, 51.86, 55.73, 61.55, 63.86, 77.9, 78.84, 90.84, 101.1, 102.0],
+[36.0, 51.86, 55.02, 62.04, 65.53, 69.06, 72.0, 81.06, 101.30, 103.25]];
 function setup() {
   // misc
   print = console.log;
@@ -73,31 +80,37 @@ function setup() {
 function initSound(){
 
   context = new AudioContext;
+
   for (var j = 0; j < howManyPlanets; j++)
   {
     
     oscs[j] = [];
     gains[j] = [];
-    var myFilter = context.createBiquadFilter();
+    filters[j] = context.createBiquadFilter();
+
 
     // Connect source to filter, filter to destination.
-    myFilter.connect(context.destination);
-    var myIndex = (Math.round(Math.random() * (myScale.length - 1)));
+    filters[j].connect(context.destination);
+    print(scales[j]);
+    
+    //pitchIndex[j] = (Math.round(Math.random() * (scales[0].length - 1)));
+    pitchIndex[j] = j % scales[0].length;
+    print(pitchIndex[j]);
+    var fundamental = midiToFreq(scales[0][pitchIndex[j]]);
+    /*
     var myOctave = pow(2, (Math.round(Math.random() * 6.0)));
-    var fundamental = midiToFreq(myScale[myIndex] - 36) * (myOctave + 1);
-    myFilter.frequency.value = random(fundamental, fundamental+random(500,6000));
-    myFilter.Q.value = 1.0;
-    //var fundamental = random(40, 160);
-    //create a random array of frequencies
-    for (var i = 0; i < numOsc; i++) { 
-      randFreqs[i] = fundamental * (1);
-      // print(randFreqs[i]);
-    }
-  
+    var fundamental = midiToFreq(myScale[0][myIndex]- 36) * (myOctave + 1);
+    */
+
+    filters[j].frequency.value = random(fundamental, fundamental+random(500,6000));
+    filters[j].Q.value = 1.0;
+
+ 
+    fundamentals[j] = fundamental;
     for (var i = 0; i < numOsc; i++) {
       var o = context.createOscillator();
       o.type = 'sawtooth';
-      o.frequency.value = randFreqs[i];
+      o.frequency.value = fundamental * (i % 3);
       o.detune.value = random(-detune, detune); // random detuning
   
       var g = context.createGain();
@@ -106,7 +119,7 @@ function initSound(){
       o.connect(g);
       g.gain.value = 0.0;
       //g.gain.value = (1.0 / ((numOsc) * 4));
-      g.connect(myFilter);
+      g.connect(filters[j]);
       o.start(0);
       oscs[j].push(o);
       gains[j].push(g);
@@ -135,23 +148,29 @@ function midiToFreq(midi_code) {
   }
 }
 
-function ring(whichPlanet)
+function ring(whichPlanet, linecolor)
 {
+  print(pitchIndex[whichPlanet]);
+  var fundamental = midiToFreq(scales[linecolor-1][pitchIndex[whichPlanet]]);
+  fundamentals[whichPlanet] = fundamental;
+  filters[whichPlanet].frequency.setValueAtTime(random(fundamentals[whichPlanet], fundamentals[whichPlanet]+(toneBrightness * 5000.0)), context.currentTime);
   for (var i = 0; i < numOsc; i++) 
   {
+
+    oscs[whichPlanet][i].frequency.setValueAtTime(fundamentals[whichPlanet] * (i % 3), context.currentTime);
     //ramp up to the amplitude of the harmonic quickly (within 7ms)
     gains[whichPlanet][i].gain.cancelScheduledValues(0);
     gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(1.0/(howManyPlanets*numOsc)))), context.currentTime, 0.005);
     //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
-    gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, 1.7));
+    gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, (planetScalar - .2) * 3.0));
   }
 }
 
 // gets called whenever a planet crosses the top line
 function onPlanetCrossedLine(planetName, planet, linecolor) {
-  if (planet.moon == false)
+  if (planetsOn[planetName] && ((planet.moon == false) || (moonsOn[planetName] == true)))
   {
-    ring(planetName-1, linecolor);
+    ring(planet.idx, linecolor);
   }
   console.log("planet crossed line: " + planetName + "  planet " + planet.moon + "  linecolor " + linecolor);
 }
@@ -533,13 +552,13 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         // if (planet.color) fill(planet.color);
         // else              fill(0, 0, 0);
 
-        var a = mouseY / height;
+        toneBrightness = 1.0 - (mouseY / height);
         var topColor = [1, 1, 1];
         var bottomColor = [1, 1, 1];
         fill(
-          bottomColor[0]*a + topColor[0]*(1-a), 
-          bottomColor[1]*a + topColor[1]*(1-a), 
-          bottomColor[2]*a + topColor[2]*(1-a)
+          bottomColor[0]*toneBrightness + topColor[0]*(1-toneBrightness), 
+          bottomColor[1]*toneBrightness + topColor[1]*(1-toneBrightness), 
+          bottomColor[2]*toneBrightness + topColor[2]*(1-toneBrightness)
         );
 
         if (planet.state.numPlanetsTouching > 0) {
