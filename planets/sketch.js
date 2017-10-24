@@ -151,7 +151,7 @@ function ring(whichPlanet)
 // gets called whenever a planet crosses the top line
 function onPlanetCrossedLine(planetName, planet) {
   ring(planetName-1);
-  //console.log("planet crossed line: " + planetName);
+  console.log("planet crossed line: " + planetName);
 }
 
 // gets called _once_ each frame for each pair of overlapping planets
