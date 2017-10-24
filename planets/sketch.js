@@ -150,7 +150,7 @@ function ring(whichPlanet)
 
 // gets called whenever a planet crosses the top line
 function onPlanetCrossedLine(planetName, planet) {
-  //ring(planetName-1);
+  ring(planetName-1);
   //console.log("planet crossed line: " + planetName);
 }
 
