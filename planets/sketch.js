@@ -27,7 +27,7 @@ var bottomline = 0;
 var leftline = 0;
 var rightline = 0;
 
-var detune = 3;//2
+var detune = 4;// was 2
 var randFreqs = [];
 var numOsc = 9;
 var gains = [];
@@ -249,11 +249,18 @@ function midiToFreq(midi_code) {
   }
 }
 
-function ring(whichPlanet, linecolor)
+function ring(whichPlanet, planet, linecolor)
 {
   print(pitchIndex[whichPlanet]);
   var fundamental = midiToFreq(scales[linecolor-1][pitchIndex[whichPlanet]]);
+  if (planet.moon)
+  {
+    var myOctave = (pow(2, (Math.round(Math.random() * 6.0)))) / 4.0;
+    fundamental = fundamental * (myOctave); 
+    print(myOctave);
+  } 
   fundamentals[whichPlanet] = fundamental;
+
   filters[whichPlanet].frequency.setValueAtTime(random(fundamentals[whichPlanet], fundamentals[whichPlanet]+(toneBrightness * 5000.0)), context.currentTime);
   for (var i = 0; i < numOsc; i++) 
   {
@@ -282,7 +289,7 @@ function collide(whichPlanet)
 function onPlanetCrossedLine(planetName, planet, linecolor) {
   if (planetsOn[planetName] && ((planet.moon == false) || (moonsOn[planetName] == true)))
   {
-    ring(planet.idx, linecolor);
+    ring(planet.idx, planet, linecolor);
   }
   console.log("planet crossed line: " + planetName + "  planet " + planet.moon + "  linecolor " + linecolor);
 }
