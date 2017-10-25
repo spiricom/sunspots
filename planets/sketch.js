@@ -10,6 +10,10 @@ noise functions for collisions
 tick percussion sounds
 */
 
+var reverbSoundFile = './reverbs/BX20E103.wav';
+var convolver;
+var myReverbGain = 0.16;
+
 var fps = 30;
 var centerX, centerY;
 var renderer;
@@ -27,8 +31,12 @@ var detune = 3;//2
 var randFreqs = [];
 var numOsc = 9;
 var gains = [];
+var pitchPanners = [];
+var noisePanners = [];
 var oscs = [];
 var filters = [];
+var noises = [];
+var noiseGains = [];
 var pitchIndex = [];
 var fundamentals = [];
 var howManyPlanets = getNumPlanets();
@@ -49,6 +57,34 @@ var scales = [[46.88, 51.86, 54.83, 61.55, 65.90, 76.91, 78.83, 91.55, 94.51, 10
 [47.0, 54.02, 61.67, 66.65, 73.67, 83.63, 92.69, 94.53, 101.53, 104.69],
 [44.87, 51.86, 55.73, 61.55, 63.86, 77.9, 78.84, 90.84, 101.1, 102.0],
 [36.0, 51.86, 55.02, 62.04, 65.53, 69.06, 72.0, 81.06, 101.30, 103.25]];
+
+
+var bufferSize = 4096;
+var pinkNoise;
+
+function generatePinkNoise() {
+    var b0, b1, b2, b3, b4, b5, b6;
+    b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
+    var node = context.createScriptProcessor(bufferSize, 1, 1);
+    node.onaudioprocess = function(e) {
+        var output = e.outputBuffer.getChannelData(0);
+        for (var i = 0; i < bufferSize; i++) {
+            var white = Math.random() * 2 - 1;
+            b0 = 0.99886 * b0 + white * 0.0555179;
+            b1 = 0.99332 * b1 + white * 0.0750759;
+            b2 = 0.96900 * b2 + white * 0.1538520;
+            b3 = 0.86650 * b3 + white * 0.3104856;
+            b4 = 0.55000 * b4 + white * 0.5329522;
+            b5 = -0.7616 * b5 - white * 0.0168980;
+            output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+            output[i] *= 0.11; // (roughly) compensate for gain
+            b6 = white * 0.115926;
+        }
+    }
+    return node;
+}
+
+
 function setup() {
   // misc
   print = console.log;
@@ -80,6 +116,34 @@ function setup() {
 function initSound(){
 
   context = new AudioContext;
+  
+  //pinknoise sounds for collisions
+  convolver = context.createConvolver();
+  var reverbGain = context.createGain();
+  // grab audio track via XHR for convolver node
+  reverbGain.gain.value = myReverbGain;
+  var soundSource, SpringReverbBuffer;
+
+  //get that REVERBZ
+  ajaxRequest = new XMLHttpRequest();
+  ajaxRequest.open('GET', reverbSoundFile, true);
+  ajaxRequest.responseType = 'arraybuffer';
+  print("hello");
+  ajaxRequest.onload = function() {
+    var audioData = ajaxRequest.response;
+    context.decodeAudioData(audioData, function(buffer) {
+        SpringReverbBuffer = buffer;
+        convolver.buffer = SpringReverbBuffer;
+        convolver.connect(reverbGain);
+        reverbGain.connect(context.destination);
+        console.log("reverb Loaded");
+        //whenLoaded();
+      }, function(e){"Error with decoding audio data" + e.err;});
+  }
+  
+  ajaxRequest.send();
+
+  pinkNoise = generatePinkNoise();
 
   for (var j = 0; j < howManyPlanets; j++)
   {
@@ -88,9 +152,12 @@ function initSound(){
     gains[j] = [];
     filters[j] = context.createBiquadFilter();
 
-
     // Connect source to filter, filter to destination.
-    filters[j].connect(context.destination);
+    pitchPanners[j] = context.createStereoPanner();
+    filters[j].connect(pitchPanners[j]);
+    filters[j].connect(convolver);
+    pitchPanners[j].connect(context.destination);
+    pitchPanners[j].pan.value = (Math.random() * 2.0) - 1.0;
     print(scales[j]);
     
     //pitchIndex[j] = (Math.round(Math.random() * (scales[0].length - 1)));
@@ -127,6 +194,40 @@ function initSound(){
     }
     
   }
+
+  for (var j = 0; j < howManyPlanets; j++)
+  {
+    
+    var myFilter = context.createBiquadFilter();
+
+    // Connect source to filter, filter to destination.
+    noisePanners[j] = context.createStereoPanner();
+    myFilter.connect(convolver);
+    myFilter.connect(noisePanners[j]);
+    noisePanners[j].connect(context.destination);
+    noisePanners[j].pan.value = (Math.random() * 2.0) - 1.0;
+    var myIndex = (Math.round(Math.random() * (myScale.length - 1)));
+    var myOctave = pow(2, (Math.round(Math.random() * 6.0)));
+    var fundamental = midiToFreq(myScale[myIndex] - 36) * (myOctave + 1);
+    myFilter.frequency.value = random(fundamental, fundamental+random(500,6000));
+    myFilter.Q.value = 1.0;
+  
+    var o = context.createBiquadFilter();
+    o.frequency.value = fundamental;
+    o.Q.value = 40.0;
+    var g = context.createGain();
+    // connect nodes
+    pinkNoise.connect(o);
+    o.connect(g);
+    g.gain.value = 0.0;
+    //g.gain.value = (1.0 / ((numOsc) * 4));
+    g.connect(myFilter);
+    //g.connect(context.destination);
+    noises[j] = o;
+    noiseGains[j] = g;
+    
+  }
+
 }
 
 function windowResized() {
@@ -160,11 +261,22 @@ function ring(whichPlanet, linecolor)
     oscs[whichPlanet][i].frequency.setValueAtTime(fundamentals[whichPlanet] * (i % 3), context.currentTime);
     //ramp up to the amplitude of the harmonic quickly (within 7ms)
     gains[whichPlanet][i].gain.cancelScheduledValues(0);
-    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(1.0/(howManyPlanets*numOsc)))), context.currentTime, 0.005);
+    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(4.0/(howManyPlanets*numOsc)))), context.currentTime, 0.005);
     //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
     gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, (planetScalar - .2) * 3.0));
   }
 }
+
+function collide(whichPlanet)
+{
+  //print(whichPlanet);
+  noises[whichPlanet].Q.value = map(mouseY, height, 0, 7.0, 40.0);
+  noiseGains[whichPlanet].gain.cancelScheduledValues(0);
+  noiseGains[whichPlanet].gain.setTargetAtTime(random(0.000001,0.1), context.currentTime, 0.005);
+  //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
+  noiseGains[whichPlanet].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, map(mouseX, 0, width, .05, 1.7)));
+}
+
 
 // gets called whenever a planet crosses the top line
 function onPlanetCrossedLine(planetName, planet, linecolor) {
@@ -182,7 +294,22 @@ function onPlanetTouchingPlanetPerFrame(planetName1, planet1, planetName2, plane
 
 // called once whenever a pair starts touching
 function onPlanetTouchingPlanetEnter(planetName1, planet1, planetName2, planet2) {
-  //print("planets " + planetName1 + " and " + planetName2 + " are now touching");
+  print("planets " + planetName1 + " and " + planetName2 + " are now touching");
+
+  if ((planetsOn[planetName1] || planetsOn[planetName2]) && (moonsOn[planetName1] || moonsOn[planetName2]))
+  {
+    if (planetName1 != "sun")
+    {
+      collide(planetName1);
+    }
+    else
+    {
+      collide(0);
+    }
+    print(planet1.idx + "   " + planet2.idx);
+  }
+    
+
 }
 
 // called once whenever a pair stops touching
