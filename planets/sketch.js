@@ -29,7 +29,7 @@ var rightline = 0;
 
 var detune = 4;// was 2
 var randFreqs = [];
-var numOsc = 9;
+var numOsc = 6;
 var gains = [];
 var pitchPanners = [];
 var noisePanners = [];
