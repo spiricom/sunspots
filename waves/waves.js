@@ -50,7 +50,7 @@ var guiParams = {
 };
 
 // CONTROLS VARS
-var moveSpeed = 50;
+var moveSpeed = 30;
 var runningEnabled = DEVMODE;
 
 var pointerLocked = false;
@@ -75,19 +75,28 @@ var soundsLoaded = 0;
 var curSoundSource;
 var curSoundFile;
 var soundGains = [];
+var domeGains = [];
+var domeSounds = [];
 var sounds = [];
 var loadedSounds = {};
 var analysers = [];
 var audioLoader;
 var waitTimes = [], prevTime = [], onOff = [];
 
+var curDome = 0;
 var soundsPlaying = false;
 var loopCount = 0;
 var noiseSound;
 
+var domeMaxGain = .05;
+
+var sphere;
+  
+var material_spheres;
+
 // VISUALS CONSTANTS
-const NUMBER_OF_WAVES = 5;
-const NUMBER_OF_DOMES = 5;
+const NUMBER_OF_WAVES = 4;
+const NUMBER_OF_DOMES = 4;
 
 const PALETTES = [
 [75,0,0], 
@@ -171,29 +180,28 @@ function getRandomThreePaletteColor() {
   return new THREE.Color(col[0]/255, col[1]/255, col[2]/255);
 }
 
-const WORLD_WIDTH = 40, WORLD_DEPTH = 40;
+const WORLD_WIDTH = 30, WORLD_DEPTH = 30;
 
 // AUDIO CONSTANTS
 
 const REVERB_SOUND_FILE = './reverbs/BX20E103.wav';
 const NOISE_SOUND_FILE = './sounds/synthnoise.ogg';
-
-
+const myDomeSounds = ["sounds/intercom.ogg","sounds/intercom_treble.ogg","sounds/intercom_highpass.ogg","sounds/intercom.ogg"];
 
 
 const PAN_MODEL = 'equalpower';
 
 const NUMBER_OF_SOUND_SOURCES = 4;
-const SOUND_POSITIONS = [[-5000,0,5000], [5000,0,5000], [5000,0,-5000],[-5000,0,-5000], [-5000,30,5000], [5000,80,5000],[-5000, 0, -5000], [5000, -50, -5000]];
+const SOUND_POSITIONS = [[-15000,0,15000], [15000,0,15000], [15000,0,-15000],[-15000,0,-15000], [-15000,30,15000], [15000,80,15000],[-5000, 0, -5000], [5000, -50, -5000]];
 
 const REVERB_GAIN = 1.0;
-const REF_DIST = 2000;
+const REF_DIST = 9000;
 
 const WAIT_MAX = 20;
 const WAIT_OFFSET = 4;
 const RANDOM_VOLUME = true;
-const MAX_VOLUME = 1.0;
-const ANALYSER_DIVISOR = 8;
+const MAX_VOLUME = .7;
+const ANALYSER_DIVISOR = 4;
 const ANALYSER_MULTIPLIER = 1000;
 
 const AUDIO_ENABLED = true;
@@ -225,17 +233,17 @@ window.onload = function() {
 
 function init()
 {
-    //if you want static sounds instead of fading - comment this in and the fade one out
-if (FADING_SINES)
-{
-  mySounds = ["sounds/sinewave330_fade.mp3","sounds/sinewave440_fade.mp3","sounds/sinewave550_fade.mp3","sounds/sinewave770_fade.mp3"];
-  debugAudioLog("fading");
-}
-else
-{
-  mySounds = ["sounds/sinewave330.mp3","sounds/sinewave440.mp3","sounds/sinewave550.mp3","sounds/sinewave770.mp3"];
-  debugAudioLog("not fading");
-}
+  //if you want static sounds instead of fading - comment this in and the fade one out
+  if (FADING_SINES)
+  {
+    mySounds = ["sounds/L/S-1.mp3","sounds/L/S-2.mp3","sounds/L/S-3.mp3","sounds/L/S-4.mp3"];
+    debugAudioLog("fading");
+  }
+  else
+  {
+    mySounds = ["sounds/sinewave330.mp3","sounds/sinewave440.mp3","sounds/sinewave550.mp3","sounds/sinewave770.mp3"];
+    debugAudioLog("not fading");
+  }
 
   initVisualElements();
   if (AUDIO_ENABLED) {
@@ -274,12 +282,15 @@ function render()
   if ( moveDown ) velocity.y -= 400.0 * delta;
 
   var speed = moveSpeed * (running ? 10 : 1);
-  controls.getObject().translateX( velocity.x * delta * speed );
-  controls.getObject().translateY( velocity.y * delta * speed );
-  controls.getObject().translateZ( velocity.z * delta * speed );
+  // controls.getObject().translateX( velocity.x * delta * speed );
+  // controls.getObject().translateY( velocity.y * delta * speed );
+  // controls.getObject().translateZ( velocity.z * delta * speed );
 
-  var pos = controls.getObject().position;
-  pos.y = Math.min(pos.y, 150);
+  // var pos = controls.getObject().position;
+  // pos.y = Math.min(pos.y, 150);
+
+  var delta = clock.getDelta();
+  controls.update(delta);
 
   prevTickTime = time;
 
@@ -296,16 +307,6 @@ function resizeWindow(w, h) {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize( w, h );
-
-  // HACK: need to refresh bloom pass
-  for (var i = 0; i < composer.passes.length; i++) {
-    if (composer.passes[i] === bloomPass) {
-      bloomPass = makeBloomPass(w, h);
-      composer.passes[i] = bloomPass;
-    }
-  }
-  effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h );
-  composer.setSize( w, h );
 }
 
 // Properly handle window resizing
@@ -347,11 +348,28 @@ function HSVtoRGB(h, s, v) {
 
 function initControlElements()
 {
-  controls = new THREE.PointerLockControls(camera);
-  scene.add(controls.getObject());
-  controls.enabled = false;
+  // controls = new THREE.PointerLockControls(camera);
+  // controls.getPitchObject().rotation.x = Math.PI * 0.1;
+  // scene.add(controls.getObject());
+  // controls.enabled = false;
+  controls = new THREE.FirstPersonControls( camera, renderer.domElement );
+
+  controls.movementSpeed = 1000;
+  controls.lookSpeed = 0.05;
+  controls.noFly = true;
+  controls.lookVertical = false;
 
   var element = document.body;
+
+  var onMouseDown = function( event ) {
+    console.log(event.button);
+    if (event.button == 0 ) moveForward = true;
+    if (event.button == 2 ) moveBackward = true;
+  }
+  var onMouseUp = function( event ) {
+    if (event.button == 0 ) moveForward = false;
+    if (event.button == 2 ) moveBackward = false;
+  }
 
   var onKeyDown = function ( event ) {
     switch ( event.keyCode ) {
@@ -412,6 +430,10 @@ function initControlElements()
     }
   };
 
+  document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
+
+  document.addEventListener( 'mousedown', onMouseDown, false );
+  document.addEventListener( 'mouseup', onMouseUp, false );
   document.addEventListener( 'keydown', onKeyDown, false );
   document.addEventListener( 'keyup', onKeyUp, false );
 
@@ -436,27 +458,11 @@ function initControlElements()
 }
 
 
-// function lockChangeAlert() {
-//   var canvas = document.querySelector('canvas');
-
-//   pointerLocked = document.pointerLockElement === canvas || document.mozPointerLockElement === canvas;
-
-//   controls.enabled = pointerLocked;
-// }
-
-function makeBloomPass(w, h) {
-  var bloom = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), 1.5, 0.4, 0.85);//1.0, 9, 0.5, 512);
-  bloom.radius = 0.9 * w / window.innerWidth;
-  bloom.threshold = 0.59;
-  bloom.strength = 0.26;
-
-  return bloom;
-}
 
 function initVisualElements()
 {
   // CAMERA
-  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 10, 100000 );
+  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 1000, 100000 );
 
   camera.position.set( 0, -400, 10000 );
   debugAudioLog(camera.position);
@@ -493,64 +499,7 @@ function initVisualElements()
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
 
-  // POST FX //////////////////////////
-  renderScene = new THREE.RenderPass(scene, camera);
-  // renderScene.clear = true;
-  // renderLowLodScene = new THREE.RenderPass(lowLodScene, camera);
-  // renderLowLodScene.clear = false;
-
-  effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
-  effectFXAA.uniforms['resolution'].value.set(1 / viewportWidth, 1 / viewportHeight );
-
-  var copyShader = new THREE.ShaderPass(THREE.CopyShader);
-  copyShader.renderToScreen = true;
-
-  bloomPass = makeBloomPass(viewportWidth, viewportHeight);
-
-  composer = new THREE.EffectComposer(renderer);
-  composer.setSize(viewportWidth, viewportHeight);
-  // composer.addPass({
-  //   render: function(renderer) {
-  //     for (var i = 0; i < testCloths.length; i++) {
-  //       scene.add(testCloths[i].rootNode);
-  //     }
-  //   }, 
-  //   setSize: function() {} 
-  // });
-  composer.addPass(renderScene);
-  
-  // composer.addPass({
-  //   render: function(renderer) {
-  //     for (var i = 0; i < testCloths.length; i++) {
-  //       lowLodNode.add(testCloths[i].rootNode);
-  //     }
-  //   }, 
-  //   setSize: function() {} 
-  // });
-  // composer.addPass(renderLowLodScene);
-
-  composer.addPass(effectFXAA);
-  composer.addPass(bloomPass);
-  composer.addPass(copyShader);
-  //renderer.toneMapping = THREE.ReinhardToneMapping;
-
-  // GUI (FX TUNING) //////////////////////////
-  if (GUI_ENABLED) {
-    var gui = new dat.GUI();
-
-    gui.add( guiParams, 'exposure', 0.1, 2 );
-    gui.add( guiParams, 'bloomThreshold', 0.0, 1.0 ).onChange( function(value) {
-        bloomPass.threshold = Number(value);
-    });
-    gui.add( guiParams, 'bloomStrength', 0.0, 3.0 ).onChange( function(value) {
-        bloomPass.strength = Number(value);
-    });
-    gui.add( guiParams, 'bloomRadius', 0.0, 1.0 ).onChange( function(value) {
-        bloomPass.radius = Number(value);
-    });
-    gui.open();
-  }
-
+ 
   // LIGHTS //////////////////////////
   scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.001 );
 
@@ -593,9 +542,11 @@ function initVisualElements()
     geometry[j] = new THREE.PlaneGeometry( 100000, 100000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
     geometry[j].rotateX( - Math.PI / 2 );
     geometry[j].rotateY(Math.random() * 3.14 );
+    debugAudioLog(dome[j].material.uniforms.topColor.value);
     uniforms = {
-      topColor:    { value: new THREE.Color(  getRandomPaletteColor() ) },
-      bottomColor: { value: new THREE.Color(  getRandomPaletteColor() ) },
+      topColor:    { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
+      bottomColor: { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
+
       offset:      { value: 1 }, //0
       exponent:    { value: 0.6 },//.6
       time: {type: "f", value: 0.1 },
@@ -604,7 +555,8 @@ function initVisualElements()
       positionscalar: {type: "f", value: 0.05 },
       turbulencescalar: {type: "f", value: 0.5 },
     };
-    material[j] = new THREE.ShaderMaterial({ 
+      debugAudioLog("here");
+      material[j] = new THREE.ShaderMaterial({ 
       vertexShader: ShaderLoader.get( "posNoise_vert" ), 
       fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
       uniforms: uniforms, 
@@ -628,7 +580,8 @@ function initVisualElements()
 //   float between 0 and 1 indicated how far through the current shell the camera is
 function getCurrentDomeAroundCamera() {
   // HACK need to get position from controls, which camera inherits from
-  var camDist = controls.getObject().position.length();
+  // var camDist = controls.getObject().position.length();
+  var camDist = camera.position.length();
   for (var i = 0; i < NUMBER_OF_DOMES; i++) {
     var radius = getDomeRadius(i);
     if (radius > camDist) {
@@ -673,9 +626,9 @@ function renderVisuals() {
       else {
         waveMagnitudes[i] = 1;
       }
-      material[i].uniforms[ 'time' ].value = .000025 * (i + 1) *( waveMagnitudes[i] * 10 );
+      material[i].uniforms[ 'time' ].value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
       //material[j].uniforms[ 'bscalar' ].value = waveMagnitude[j] * 1 + 50;
-      material[i].uniforms[ 'amp' ].value = waveMagnitudes[i] * 1 + 50;
+      material[i].uniforms[ 'amp' ].value = (waveMagnitudes[i] * 1 + 50) + (Math.random()*.0001);
     }
 
 
@@ -714,14 +667,38 @@ function renderVisuals() {
 // Initialize the (all important) audio elements of the piece
 function initAudioElements() {
   // Create invisible spheres to attach the audio to (convenience)
+  sphere = new THREE.SphereGeometry(500, 10, 10);
 
+  //bumpMap: mapHeight, bumpScale: 10
+  material_spheres = new THREE.MeshPhongMaterial( { color: 0xffffff,
+                                                      shininess: 10,
+                                                      side: THREE.DoubleSide,
+                                                      opacity:.8} );
+  material_spheres.castShadow = false;
+  material_spheres.receiveShadow = false;
+  material_spheres.visible = true;
   // Init audio context
   listener = new THREE.AudioListener();
   audioContext = THREE.AudioContext;
   // Attach audio listener to our moving camera
   camera.add(listener);
 
-  /*
+  for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
+  {
+    soundGains[i] = audioContext.createGain();
+  }
+  // Create an audio loader for the piece and load the noise sound into it
+  audioLoader = new THREE.AudioLoader();
+  for (var i = 0; i < NUMBER_OF_DOMES; i++)
+  {
+    domeGains[i] = audioContext.createGain();
+    domeGains[i].connect(audioContext.destination);
+    domeSounds[i] = audioContext.createBufferSource();
+    audioLoader.load(myDomeSounds[i], domeSoundLoader);
+    
+    domeGains[i].gain.value = 0.0;
+  }
+  
   convolver = audioContext.createConvolver();
   var reverbGain = audioContext.createGain();
   // grab audio track via XHR for convolver node
@@ -744,8 +721,8 @@ function initAudioElements() {
       }, function(e) {"Error with decoding audio data" + e.err;});
   }
   ajaxRequest.send();
-*/
-/*
+
+
   // Create central noise sound and add it to the scene via noiseMesh
   var noiseMesh = new THREE.Mesh(sphere, material_spheres[0]);
   noiseMesh.position.set(0, 0, 0);
@@ -755,22 +732,19 @@ function initAudioElements() {
   // noiseSound.setPanningModel(PAN_MODEL);
   noiseSound.setFilter(soundGains[i]);
   debugAudioLog("rolloff = 7");
+  //noiseSound.setRefDistance(10000);
   noiseSound.setRolloffFactor(7);
   noiseMesh.add(noiseSound);
-*/
-  // Setup each of the sound sources
 
+  // Setup each of the sound source
 
-  // Create an audio loader for the piece and load the noise sound into it
-  audioLoader = new THREE.AudioLoader();
-
-  /*
+  
   audioLoader.load(NOISE_SOUND_FILE, noiseLoader);
-*/
+
   curSoundSource = 0;
   for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
   {
-    audioLoader.load("sounds/noise_burst.mp3", testAudioLoader);
+    audioLoader.load(mySounds[i], firstBufferLoader);
     
   }
 
@@ -779,7 +753,7 @@ function initAudioElements() {
 // Not actually 'rendering' audio, but all the audio stuff that is done in the render step
 function renderAudio() {
   var now = audioContext.currentTime;
-  /* 
+  
   if (soundsPlaying)
   {
     if ((loopCount % 100) === 0)
@@ -797,10 +771,34 @@ function renderAudio() {
     }
     loopCount++;
   }
+  var whichDome = getCurrentDomeAroundCamera();
+  
+  for (var i = 0; i < NUMBER_OF_DOMES; i++)
+  { 
+    if (i == whichDome[0])
+    {
+      if (whichDome[1] > .5)
+      {
+        domeGains[i].gain.value = (1.0 - whichDome[1]) * domeMaxGain;
+      }
+      else
+      {
+        domeGains[i].gain.value = whichDome[1] * domeMaxGain;
+      }
+      
+    }
+    else
+    {
+      domeGains[i].gain.value = 0.0;
+    }
+  }
+  
+  
 }
 
 // Choose, load, and play a random sound file in the given source index
-function playRandomSound(soundSourceIndex) {
+function playRandomSound(soundSourceIndex) 
+{
   if (soundSourceIndex > 3) {
     throw new Error('Invalid soundSourceIndex passed to playRandomSound');
   }
@@ -833,11 +831,12 @@ function playRandomSound(soundSourceIndex) {
   {
     // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
     soundGains[curSoundSource].gain.value = Math.random() * MAX_VOLUME + 0.0000001;
+    debugAudioLog(soundGains[curSoundSource].gain.value);
   }
 
   if (loadedSounds[curSoundFile] === undefined)
   {
-    audioLoader.load(curSoundFile, bufferLoader);
+    audioLoader.load(curSoundFile, bufferReloader);
   }
   else
   {
@@ -846,14 +845,45 @@ function playRandomSound(soundSourceIndex) {
     sounds[curSoundSource].play();
   }
 
-  */
+  
 }
-/*
+
 // Loader function for THREE.js to load audio
-function bufferLoader(buffer)
+function firstBufferLoader(buffer)
 {
   var index = curSoundSource;
   // Create a new sound so we can have a new sound buffer
+  sounds[index] = new THREE.PositionalAudio( listener );
+  // sounds[index].setPanningModel(PAN_MODEL);
+  sounds[index].setFilter(soundGains[index]);
+  // sounds[index].setRolloffFactor(2);
+
+  meshes[index+10] = new THREE.Mesh(sphere, material_spheres[index] );
+  meshes[index+10].position.set( SOUND_POSITIONS[index][0], SOUND_POSITIONS[index][1], SOUND_POSITIONS[index][2] );
+  //scene.add( meshes[index+10] );
+
+  sounds[index].setBuffer(buffer);
+  sounds[index].setRefDistance(REF_DIST);
+  sounds[index].setLoop(false);
+  sounds[index].startTime = 0;
+  sounds[index].setPlaybackRate(1);
+  sounds[index].panner.connect(convolver);
+    meshes[index+10].add(sounds[index]);
+  analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
+  // Add the sound to the object map
+  loadedSounds[curSoundFile] = sounds[index];
+  sounds[index].play();
+   debugAudioLog("bufferLoader done" + " " + index);
+    //debugAudioLog(curSoundSource);
+  curSoundSource++;
+}
+
+function bufferReloader(buffer)
+{
+  
+  var index = curSoundSource;
+
+    // Create a new sound so we can have a new sound buffer
   sounds[index] = new THREE.PositionalAudio( listener );
   // sounds[index].setPanningModel(PAN_MODEL);
   sounds[index].setFilter(soundGains[index]);
@@ -865,65 +895,16 @@ function bufferLoader(buffer)
   sounds[index].startTime = 0;
   sounds[index].setPlaybackRate(1);
   sounds[index].panner.connect(convolver);
-  debugAudioLog(meshes[index]);
-  meshes[index].add(sounds[index]);
-  analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
+    meshes[index+10].add(sounds[index]);
+    sounds[index].connect(analysers[index]);
   // Add the sound to the object map
   loadedSounds[curSoundFile] = sounds[index];
   sounds[index].play();
-
-  debugAudioLog("bufferLoader done");
+  debugAudioLog("bufferReloader done" + " " + index);
+    //debugAudioLog(curSoundSource);
+  //curSoundSource++;
 }
 
-*/
-function testAudioLoader(buffer)
-{
-
-    var index = curSoundSource;
-    var sphere = new THREE.SphereGeometry(500, 10, 10);
-  
-    var material_spheres;
-
-    //bumpMap: mapHeight, bumpScale: 10
-    material_spheres = new THREE.MeshPhongMaterial( { color: 0xffffff,
-                                                        shininess: 10,
-                                                        side: THREE.DoubleSide,
-                                                        opacity:.8} );
-    material_spheres.castShadow = false;
-    material_spheres.receiveShadow = false;
-    material_spheres.visible = true;
-
-    // Create a new sound
-    sounds[index] = new THREE.PositionalAudio( listener );
-    //sounds[index].setPanningModel(PAN_MODEL);
-    sounds[index].setFilter(soundGains[index]);
-    sounds[index].setRolloffFactor(2);
-
-    sounds[index].setBuffer(buffer);
-    sounds[index].setRefDistance(REF_DIST);
-    sounds[index].setLoop(true);
-    sounds[index].startTime = (Math.random()*((buffer.length / 44100)));
-    sounds[index].setPlaybackRate(1);
-    sounds[index].panner.connect(audioContext.destination);
-    
-
-    meshes[index+10] = new THREE.Mesh(sphere, material_spheres[index] );
-    meshes[index+10].position.set( SOUND_POSITIONS[index][0], SOUND_POSITIONS[index][1], SOUND_POSITIONS[index][2] );
-    scene.add( meshes[index+10] );
-    soundGains[index] = audioContext.createGain();
-    meshes[index+10].add(sounds[index]);
-
-    analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
-    //analysers[index].fftSize = 1024;
-
-    // Add the sound to the object map
-    loadedSounds[curSoundFile] = sounds[index];
-    sounds[index].play();
-    debugAudioLog("bufferLoader done");
-    debugAudioLog(curSoundSource);
-    curSoundSource++;
-
-}
 // Loader function for THREE.js to load audio, specifically for the noise source
 function noiseLoader(buffer)
 {
@@ -935,6 +916,25 @@ function noiseLoader(buffer)
   //noiseSound.panner.connect(audioContext.destination); //noise not connected for now
   whenLoaded();
 }
+
+
+// Loader function for THREE.js to load audio, specifically for the noise source
+function domeSoundLoader(buffer)
+{
+  
+  var i = curDome;
+  curDome++;
+  domeSounds[i].buffer = buffer;
+  debugAudioLog(domeSounds[i]);
+  domeSounds[i].loop = true;
+  domeSounds[i].startTime = (Math.random()*((buffer.length / 44100) - 6));
+  domeSounds[i].playbackRate.value = (Math.random() * .3) + .1;
+  domeSounds[i].connect(domeGains[i]); //noise not connected for now
+  domeSounds[i].start(); 
+  
+  //whenLoaded();
+}
+
 
 // Called when noise and the convolver are loaded
 function whenLoaded()

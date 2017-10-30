@@ -311,7 +311,9 @@ function ring(whichPlanet, planet, linecolor)
     oscs[whichPlanet][i].frequency.setValueAtTime(fundamentals[whichPlanet] * (i % 3), context.currentTime);
     //ramp up to the amplitude of the harmonic quickly (within 7ms)
     gains[whichPlanet][i].gain.cancelScheduledValues(0);
+
     gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(4.0/(howManyPlanets*numOsc)))), context.currentTime, 0.005);
+
     //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
     gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, (planetScalar - .2) * 3.0));
   }

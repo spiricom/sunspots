@@ -199,7 +199,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     texture: { type: "t", value: tex },
   };
 
-  var renderShader = new THREE.ShaderMaterial({
+  var renderMaterial = new THREE.ShaderMaterial({
     uniforms: this.renderUniforms,
     extensions: {
       derivatives: true,
@@ -212,6 +212,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     transparent: true,
     shading: THREE.SmoothShading,
   });
+  this.renderMaterial = renderMaterial;
 
   // render geom
   var renderGeom = new THREE.BufferGeometry();
@@ -254,7 +255,8 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   renderGeom.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1))
 
   // renderMesh
-  var renderMesh = new THREE.Mesh( renderGeom, renderShader );
+  var renderMesh = new THREE.Mesh( renderGeom, renderMaterial );
+  this.renderMesh = renderMesh;
 
   // random orientation
   // HACK: just store the rotation here, apply it in scenegraph setup later

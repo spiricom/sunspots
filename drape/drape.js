@@ -237,7 +237,7 @@ function init() {
   // CONTROLS
   if (true) {
     controls = new THREE.TrackballControls( camera, renderer.domElement );
-    controls.noZoom = false;
+    controls.noZoom = true;
     controls.noPan = true;
   }
 
