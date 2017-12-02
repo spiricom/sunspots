@@ -60,21 +60,24 @@ void main() {
   vec2 uv = fragCoord.xy / iResolution.xy;
 
 
-  // PROJECTOR
+  // PROJECTOR-OLD
   // col = pow(col, vec3(0.6));
   // col *= 0.5;
   // col += -0.4;
 
 
-  // SCREEN
+  // SCREEN-OLD
   // col = pow(col, vec3(0.7));
   // col *= 0.5;
   // col += -0.4;
+
+  // SCREEN
   col = pow(col, vec3(0.5));
   col *= 0.5;
   col += -0.4;
 
-  col *= 1.0 +  + sin(iGlobalTime * 1.) * 0.1;
+
+  // col *= 1.0 +  + sin(iGlobalTime * 1.) * 0.1;
 
   // vignette
   // https://www.shadertoy.com/view/4lSXDm

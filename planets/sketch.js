@@ -2,14 +2,17 @@
 // IMPORTANT NOTE: requires chrome with experimental canvas features enabled in chrome://flags (for canvas transform matrix retrieval - can be replaced with external transform system if necessary)
 
 /*
-
-[?] always update cursorpos in fullscreen
-  can't replicate -> maybe a browser/os issue?
-[x] hide cursor in fullscreen
-  p5 fullscreen check is weird, cursor's always hidden now
-[x] fix arrow keys sometimes not working (for lines)
-  A key would break line toggle
+//
+separate ring functions for type of planet
+noise functions for collisions
+//decay time control
+//timbre control
+tick percussion sounds
 */
+
+var reverbSoundFile = './reverbs/BX20E103.wav';
+var convolver;
+var myReverbGain = 0.10;
 
 var fps = 30;
 var centerX, centerY;
@@ -24,11 +27,23 @@ var bottomline = 0;
 var leftline = 0;
 var rightline = 0;
 
-var detune = 2;
+var detune = 4;// was 2
 var randFreqs = [];
-var numOsc = 5;
+var numOsc = 6;
 var gains = [];
+var pitchPanners = [];
+var noisePanners = [];
+var tickPanners = [];
 var oscs = [];
+var pitchFilters = [];
+var noiseFilters = [];
+var tickFilters = [];
+var ticks = [];
+var tickGains = [];
+var noises = [];
+var noiseGains = [];
+var pitchIndex = [];
+var fundamentals = [];
 var howManyPlanets = getNumPlanets();
 var moonsOn = [];
 var ticksOn = [];
@@ -37,11 +52,56 @@ var planetsOn = [];
 var currentColor = 1;
 var planetScalar = 1;
 var ticksScalar = 4;
-
+var toneBrightness = 0.0;
 var planetNum = -1;
-
+var previousTickPos = [];
 //var myScale = [60, 61.77, 62.04, 62.4, 64.71, 64.44, 66.75, 67.02, 67.38, 69.69, 69.42, 71.73]; // just tuned piano (La Monte Young)
 var myScale = [60, 61.05, 62.04, 62.97, 63.86, 64.71, 65.51, 67.02, 68.4, 69.05, 69.69, 70.88];
+var scales = [[46.88, 51.86, 54.83, 61.55, 65.90, 76.91, 78.83, 91.55, 94.51, 101.0],
+[51.42, 58.88, 63.09, 70.44, 71.73, 74.10, 80.70, 82.74, 94.51, 101],
+[47.0, 54.02, 61.67, 66.65, 73.67, 83.63, 92.69, 94.53, 101.53, 104.69],
+[44.87, 51.86, 55.73, 61.55, 63.86, 77.9, 78.84, 90.84, 101.1, 102.0],
+[36.0, 51.86, 55.02, 62.04, 65.53, 69.06, 72.0, 81.06, 101.30, 103.25]];
+
+
+var bufferSize = 4096;
+var pinkNoise;
+var whiteNoise;
+
+function generatePinkNoise() {
+    var b0, b1, b2, b3, b4, b5, b6;
+    b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
+    var node = context.createScriptProcessor(bufferSize, 1, 1);
+    node.onaudioprocess = function(e) {
+        var output = e.outputBuffer.getChannelData(0);
+        for (var i = 0; i < bufferSize; i++) {
+            var white = Math.random() * 2 - 1;
+            b0 = 0.99886 * b0 + white * 0.0555179;
+            b1 = 0.99332 * b1 + white * 0.0750759;
+            b2 = 0.96900 * b2 + white * 0.1538520;
+            b3 = 0.86650 * b3 + white * 0.3104856;
+            b4 = 0.55000 * b4 + white * 0.5329522;
+            b5 = -0.7616 * b5 - white * 0.0168980;
+            output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+            output[i] *= 0.11; // (roughly) compensate for gain
+            b6 = white * 0.115926;
+        }
+    }
+    return node;
+}
+
+function generateWhiteNoise() {
+    var node = context.createScriptProcessor(bufferSize, 1, 1);
+    node.onaudioprocess = function(e) {
+        var output = e.outputBuffer.getChannelData(0);
+        for (var i = 0; i < bufferSize; i++) {
+            var white = Math.random() * 2 - 1;           
+            output[i] = white;
+        }
+    }
+    return node;
+}
+
 
 function setup() {
   // misc
@@ -65,56 +125,153 @@ function setup() {
   initSound();
 
   for (var i = 0; i < 11; i++)
+  {
     moonsOn[i] = 0;
     ticksOn[i] = 0;
     ringsOn[i] = 0;
     planetsOn[i] = 0;
+    previousTickPos[i] = [];
+    for (var j = 0; j < 64; j++)
+    {
+      previousTickPos[i][j] = 0;
+    }
+  }
+      
 }
 
 function initSound(){
 
   context = new AudioContext;
+
+  convolver = context.createConvolver();
+  var reverbGain = context.createGain();
+  // grab audio track via XHR for convolver node
+  reverbGain.gain.value = myReverbGain;
+  var soundSource, SpringReverbBuffer;
+
+  //get that REVERBZ
+  ajaxRequest = new XMLHttpRequest();
+  ajaxRequest.open('GET', reverbSoundFile, true);
+  ajaxRequest.responseType = 'arraybuffer';
+  ajaxRequest.onload = function() {
+    var audioData = ajaxRequest.response;
+    context.decodeAudioData(audioData, function(buffer) {
+        SpringReverbBuffer = buffer;
+        convolver.buffer = SpringReverbBuffer;
+        convolver.connect(reverbGain);
+        reverbGain.connect(context.destination);
+        console.log("reverb Loaded");
+      }, function(e){"Error with decoding audio data" + e.err;});
+  }
+  
+  ajaxRequest.send();
+
+  pinkNoise = generatePinkNoise();
+  whiteNoise = generateWhiteNoise();
+
+  //pitches for planet sphere line crossings
   for (var j = 0; j < howManyPlanets; j++)
   {
-    
     oscs[j] = [];
     gains[j] = [];
-    var myFilter = context.createBiquadFilter();
+    pitchFilters[j] = context.createBiquadFilter();
 
-    // Connect source to filter, filter to destination.
-    myFilter.connect(context.destination);
-    var myIndex = (Math.round(Math.random() * (myScale.length - 1)));
-    var myOctave = pow(2, (Math.round(Math.random() * 6.0)));
-    var fundamental = midiToFreq(myScale[myIndex] - 36) * (myOctave + 1);
-    myFilter.frequency.value = random(fundamental, fundamental+random(500,6000));
-    myFilter.Q.value = 1.0;
-    //var fundamental = random(40, 160);
-    //create a random array of frequencies
-    for (var i = 0; i < numOsc; i++) { 
-      randFreqs[i] = fundamental * (1);
-      // print(randFreqs[i]);
-    }
-  
-    for (var i = 0; i < numOsc; i++) {
+    pitchPanners[j] = context.createStereoPanner();
+    pitchFilters[j].connect(pitchPanners[j]);
+    pitchFilters[j].connect(convolver);
+    pitchPanners[j].connect(context.destination);
+    pitchPanners[j].pan.value = (Math.random() * 2.0) - 1.0;
+    print(scales[j]);
+
+    pitchIndex[j] = j % scales[0].length;
+    print(pitchIndex[j]);
+    var fundamental = midiToFreq(scales[0][pitchIndex[j]]);
+
+    pitchFilters[j].frequency.value = random(fundamental, fundamental+random(500,6000));
+    pitchFilters[j].Q.value = 1.0;
+ 
+    fundamentals[j] = fundamental;
+
+    for (var i = 0; i < numOsc; i++) 
+    {
       var o = context.createOscillator();
       o.type = 'sawtooth';
-      o.frequency.value = randFreqs[i];
+      o.frequency.value = fundamental * (i % 3);
       o.detune.value = random(-detune, detune); // random detuning
   
       var g = context.createGain();
-  
-      // connect nodes
+
       o.connect(g);
-      //g.gain.value = 0.0;
-      g.gain.value = (1.0 / ((numOsc) * 4));
-      g.connect(myFilter);
+      g.gain.value = 0.0;
+      g.connect(pitchFilters[j]);
       o.start(0);
       oscs[j].push(o);
       gains[j].push(g);
-
     }
+  }
+
+  //dark noise sounds for planet sphere collisions
+  for (var j = 0; j < howManyPlanets; j++)
+  {
+    noiseFilters[j] = context.createBiquadFilter();
+
+    noisePanners[j] = context.createStereoPanner();
+    noiseFilters[j].connect(convolver);
+    noiseFilters[j].connect(noisePanners[j]);
+    noisePanners[j].connect(context.destination);
+    noisePanners[j].pan.value = (Math.random() * 2.0) - 1.0;
+    var myIndex = (Math.round(Math.random() * (myScale.length - 1)));
+    var myOctave = pow(2, (Math.round(Math.random() * 6.0)));
+    var fundamental = midiToFreq(myScale[myIndex] - 36) * (myOctave + 1);
+    noiseFilters[j].frequency.value = random(fundamental, fundamental+random(500,6000));
+    noiseFilters[j].Q.value = 1.0;
+  
+    var o = context.createBiquadFilter();
+    o.frequency.value = fundamental;
+    o.Q.value = 40.0;
+    var g = context.createGain();
+
+    pinkNoise.connect(o);
+    o.connect(g);
+    g.gain.value = 0.0;
+    g.connect(noiseFilters[j]);
+    noises[j] = o;
+    noiseGains[j] = g;
     
   }
+
+  //white noise sounds for tick line crossings
+  for (var j = 0; j < howManyPlanets; j++)
+  {  
+    tickFilters[j] = context.createBiquadFilter();
+    tickFilters[j].type = "highpass";
+
+    tickPanners[j] = context.createStereoPanner();
+    tickFilters[j].connect(convolver);
+    tickFilters[j].connect(tickPanners[j]);
+    tickPanners[j].connect(context.destination);
+    tickPanners[j].pan.value = (Math.random() * 2.0) - 1.0;
+    var myIndex = (Math.round(Math.random() * (myScale.length - 1)));
+    var myOctave = pow(2, (Math.round(Math.random() * 6.0)));
+    var fundamental = midiToFreq(myScale[myIndex] - 36) * (myOctave + 1);
+    tickFilters[j].frequency.value = random(fundamental, fundamental+random(400,10000));
+    tickFilters[j].Q.value = 1.0;
+  
+    var o = context.createBiquadFilter();
+    o.type = "bandpass";
+    o.frequency.value = (tickFilters[j].frequency.value + 700);
+    o.Q.value = 1.0;
+    var g = context.createGain();
+
+    whiteNoise.connect(o);
+    o.connect(g);
+    g.gain.value = 0.0;
+    g.connect(tickFilters[j]);
+    ticks[j] = o;
+    tickGains[j] = g;
+    
+  }
+
 }
 
 function windowResized() {
@@ -136,22 +293,68 @@ function midiToFreq(midi_code) {
   }
 }
 
-function ring(whichPlanet)
+function ring(whichPlanet, planet, linecolor)
 {
+  //print(pitchIndex[whichPlanet]);
+  var fundamental = midiToFreq(scales[linecolor-1][pitchIndex[whichPlanet]]);
+  if (planet.moon)
+  {
+    var myOctave = (pow(2, (Math.round(Math.random() * 6.0)))) / 4.0;
+    fundamental = fundamental * (myOctave); 
+    print(myOctave);
+  } 
+  fundamentals[whichPlanet] = fundamental;
+
+  pitchFilters[whichPlanet].frequency.setValueAtTime(random(fundamentals[whichPlanet], fundamentals[whichPlanet]+(toneBrightness * 5000.0)), context.currentTime);
   for (var i = 0; i < numOsc; i++) 
   {
+    oscs[whichPlanet][i].frequency.setValueAtTime(fundamentals[whichPlanet] * (i % 3), context.currentTime);
     //ramp up to the amplitude of the harmonic quickly (within 7ms)
     gains[whichPlanet][i].gain.cancelScheduledValues(0);
-    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(1.0/(numPlanets*numOsc)))), context.currentTime, 0.005);
+
+    gains[whichPlanet][i].gain.setTargetAtTime((random(0.0000001,(4.0/(howManyPlanets*numOsc)))), context.currentTime, 0.005);
+
     //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
-    gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, 1.7));
+    gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, (planetScalar - .2) * 3.0));
   }
 }
 
-// gets called whenever a planet crosses the top line
-function onPlanetCrossedLine(planetName, planet) {
-  ring(planetName-1);
-  //console.log("planet crossed line: " + planetName);
+function collide(whichPlanet)
+{
+  //print(whichPlanet);
+  noises[whichPlanet].Q.value = map(mouseY, height, 0, 7.0, 40.0);
+  noiseGains[whichPlanet].gain.cancelScheduledValues(0);
+  noiseGains[whichPlanet].gain.setTargetAtTime(random(0.000001,0.1), context.currentTime, 0.005);
+  //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
+  noiseGains[whichPlanet].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, map(mouseX, 0, width, .05, 1.7)));
+}
+
+function tickCrossSound(whichPlanet)
+{
+  //print(whichPlanet);
+  tickGains[whichPlanet].gain.cancelScheduledValues(0);
+  tickGains[whichPlanet].gain.setTargetAtTime(random(0.000001,0.1), context.currentTime, 0.005);
+  //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
+  tickGains[whichPlanet].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.01, 0.02));
+}
+
+
+// gets called whenever a planet crosses a line
+function onPlanetCrossedLine(planetName, planet, linecolor) {
+  if (planetsOn[planetName] && ((planet.moon == false) || (moonsOn[planetName] == true)))
+  {
+    ring(planet.idx, planet, linecolor);
+  }
+  //console.log("planet crossed line: " + planetName + "  planet " + planet.moon + "  linecolor " + linecolor);
+}
+
+// gets called whenever a tick crosses a line
+function onTickCrossedLine(planetName, planet, linecolor) {
+  if (ticksOn[planetName])
+  {
+    tickCrossSound(planet.idx, planet, linecolor);
+  }
+  //console.log("tick crossed line: " + planetName + "  planet " + planet.moon + "  linecolor " + linecolor);
 }
 
 // gets called _once_ each frame for each pair of overlapping planets
@@ -161,7 +364,22 @@ function onPlanetTouchingPlanetPerFrame(planetName1, planet1, planetName2, plane
 
 // called once whenever a pair starts touching
 function onPlanetTouchingPlanetEnter(planetName1, planet1, planetName2, planet2) {
-  //print("planets " + planetName1 + " and " + planetName2 + " are now touching");
+  print("planets " + planetName1 + " and " + planetName2 + " are now touching");
+
+  if ((planetsOn[planetName1] || planetsOn[planetName2]) && (moonsOn[planetName1] || moonsOn[planetName2]))
+  {
+    if (planetName1 != "sun")
+    {
+      collide(planetName1);
+    }
+    else
+    {
+      collide(0);
+    }
+    print(planet1.idx + "   " + planet2.idx);
+  }
+    
+
 }
 
 // called once whenever a pair stops touching
@@ -509,6 +727,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
           if (ticksOn[p.name])
           {
               var numTicks = p.numTicks * ticksScalar;
+
               for (var j = 0; j < numTicks; j++) 
               {
                 // HACK: start at >0 degrees because 0-degree subpixel line renders more opaque in chrome
@@ -531,13 +750,13 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         // if (planet.color) fill(planet.color);
         // else              fill(0, 0, 0);
 
-        var a = mouseY / height;
+        toneBrightness = 1.0 - (mouseY / height);
         var topColor = [1, 1, 1];
         var bottomColor = [1, 1, 1];
         fill(
-          bottomColor[0]*a + topColor[0]*(1-a), 
-          bottomColor[1]*a + topColor[1]*(1-a), 
-          bottomColor[2]*a + topColor[2]*(1-a)
+          bottomColor[0]*toneBrightness + topColor[0]*(1-toneBrightness), 
+          bottomColor[1]*toneBrightness + topColor[1]*(1-toneBrightness), 
+          bottomColor[2]*toneBrightness + topColor[2]*(1-toneBrightness)
         );
 
         if (planet.state.numPlanetsTouching > 0) {
@@ -560,12 +779,15 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
       screenPos.x = screenPos.x * vpR + centerX;
       screenPos.y = screenPos.y * vpR + centerY;
 
+
       // initialize prevScreenPos
       if (typeof planetState.prevScreenPos === "undefined") {
         planetState.prevScreenPos = screenPos;
       }
 
       planetState.screenPos = screenPos;
+      
+
 
       // line crossing checks
       if (p.name !== "sun") 
@@ -575,7 +797,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         {
           if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, topline);
           }
         }
         
@@ -583,7 +805,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         {
           if ( (screenPos.y > sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, bottomline);
           }
         }
         
@@ -592,7 +814,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
           
           if ( (screenPos.x < sunPos.x) && ((screenPos.y > sunPos.y) != (planetState.prevScreenPos.y > sunPos.y)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, leftline);
           }
         }
         
@@ -600,12 +822,72 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         {
           if ( (screenPos.x > sunPos.x) && ((screenPos.y < sunPos.y) != (planetState.prevScreenPos.y < sunPos.y)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p);
+            onPlanetCrossedLine(p.name || p.idx, p, rightline);
           }
         }
       }
 
       planetState.prevScreenPos = screenPos;
+
+
+      //now check ticks
+
+      var numTicks = p.numTicks * ticksScalar;
+      for (var j = 0; j < numTicks; j++) 
+      {
+        // HACK: start at >0 degrees because 0-degree subpixel line renders more opaque in chrome
+        var theta = map(j, 0, numTicks, 0.05, 360);
+        // theta += sin(theta*3) * 6;
+        var v = createVector(cos(theta), sin(theta));
+        x = v.x;
+        y = v.y;
+        screenPos = {
+          x: x * invMat.a + y * invMat.c + invMat.e,
+          y: x * invMat.b + y * invMat.d + invMat.f
+        };
+        screenPos.x = screenPos.x * 30 + centerX;
+        screenPos.y = screenPos.y * 30 + centerY;
+
+        if (ticksOn[p.name])
+        {
+          if (p.name !== "sun") 
+          {
+            if (topline > 0)
+            {
+              if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (previousTickPos[p.name][j].x > sunPos.x)) ) 
+              {
+                onTickCrossedLine(p.name || p.idx, p, topline);
+              }
+            }
+
+            if (bottomline > 0)
+            {
+              if ( (screenPos.y > sunPos.y) && ((screenPos.x > sunPos.x) != (previousTickPos[p.name][j].x > sunPos.x)) ) 
+              {
+                onTickCrossedLine(p.name || p.idx, p, bottomline);
+              }
+            }
+            
+            if (leftline > 0)
+            { 
+              if ( (screenPos.x < sunPos.x) && ((screenPos.y > sunPos.y) != (previousTickPos[p.name][j].y > sunPos.y)) ) 
+              {
+                onTickCrossedLine(p.name || p.idx, p, leftline);
+              }
+            }
+            
+            if (rightline > 0)
+            {
+              if ( (screenPos.x > sunPos.x) && ((screenPos.y < sunPos.y) != (previousTickPos[p.name][j].y < sunPos.y)) ) 
+              {
+                onTickCrossedLine(p.name || p.idx, p, rightline);
+              }
+            }
+          }
+        }
+        previousTickPos[p.name][j] = screenPos;
+        
+      }
     }
 
   }
@@ -718,6 +1000,7 @@ function getPlanetSystem() {
         r: 0.02,
         period: 6,
         numTicks: 1,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         moon: false,
@@ -745,6 +1028,7 @@ function getPlanetSystem() {
         r: 0.03,
         period: 7,
         numTicks: 1,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         moon: false,
@@ -773,6 +1057,7 @@ function getPlanetSystem() {
         r: 0.03,
         period: 11,
         numTicks: 1,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         moon: false,
@@ -803,6 +1088,7 @@ function getPlanetSystem() {
         moon: false,
         noTrail: false,
         numTicks: 2,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         orbiters: [
@@ -826,6 +1112,7 @@ function getPlanetSystem() {
         period: 10,
         moon: false,
         numTicks: 1,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         orbiters: [
@@ -852,6 +1139,7 @@ function getPlanetSystem() {
         r: 0.02,
         period: 12,
         numTicks: 1,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         moon: false,
@@ -879,6 +1167,7 @@ function getPlanetSystem() {
         r: 0.02,
         period: 15,
         numTicks: 1,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         moon: false,
@@ -906,6 +1195,7 @@ function getPlanetSystem() {
         r: 0.02,
         period: 8,
         numTicks: 1,
+        numCurrentTicks: 0,
         tickInner: .01,
         tickOuter: .01,
         moon: false,

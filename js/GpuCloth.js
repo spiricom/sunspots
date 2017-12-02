@@ -23,10 +23,22 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   for (var x = 0; x < fboWidth; x++) {
     for (var y = 0; y < fboHeight; y++) {
       posData[idx] = (x / (fboWidth-1) - 0.5) * this.sideLength * initPosMult;
+      // if (y == 0) {
+      //   console.log("x" + x + ": " + posData[idx]);
+      // }
       idx++;
       posData[idx] = (y / (fboHeight-1) - 0.5) * this.sideLength * initPosMult;
+      // if (x == 0) {
+      //   console.log("y" + y + ": " + posData[idx]);
+      // }
       idx++;
-      posData[idx] = 0;
+      if (options.randomInitialZ) {
+        posData[idx] = (Math.random()*2-1) * this.sideLength * 0.5;
+      }
+      else {
+        posData[idx] = 0;
+        // posData[idx] = idx / len * this.sideLength;
+      }
       idx++;
 
       // pinning
@@ -58,6 +70,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   // update shader uniforms
   var updateUniforms = {
     positions: { type: "t", value: null },
+    prevPositions: { type: "t", value: null },
     initPositions: { type: "t", value: initialPosTex },
     velocities: { type: "t", value: null },
     dims: { type: "2fv", value: new THREE.Vector2(fboWidth, fboHeight) },
@@ -70,23 +83,72 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   // update shaders
   var posUpdateShaders = [];
   var flagss = options.flagss || [
-    [ "integrateVel", ],
+    // [     
+    // "BEND_PASS_H_1",
+    // "BEND_PASS_H_2",
+    // "BEND_PASS_V_1",
+    // "BEND_PASS_V_2",
 
-    // [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
-    // [ "SHEAR_PASS_2", "SHEAR_CONSTRAINTS_ENABLED", ],
-    // [ "SHEAR_PASS_3", "SHEAR_CONSTRAINTS_ENABLED", ],
-    // [ "SHEAR_PASS_4", "SHEAR_CONSTRAINTS_ENABLED", ],
+    // "STRETCH_PASS_H_1",
+    // "STRETCH_PASS_H_2",
+    // "STRETCH_PASS_V_2",
+    // "STRETCH_PASS_V_1",
 
-    [ "BEND_PASS_1", ],
-    [ "BEND_PASS_2", ],
+    // "SHEAR_CONSTRAINTS_ENABLED",
+    // "SHEAR_PASS_1",
+    // "SHEAR_PASS_2",
+    // "SHEAR_PASS_3",
+    // "SHEAR_PASS_4",
+    // ],
+
+    // [     
+    // "BEND_PASS_H_1",
+    // "BEND_PASS_H_2",
+    // "BEND_PASS_V_1",
+    // "BEND_PASS_V_2",
+    // ],
+
+    // [ 
+    // "INTEGRATE_VEL_PASS", 
+    
+    // "STRETCH_PASS_H_1",
+    // "STRETCH_PASS_H_2",
+    // "STRETCH_PASS_V_2",
+    // "STRETCH_PASS_V_1",
+    // ],
+
+    // [     
+    // "SHEAR_CONSTRAINTS_ENABLED",
+    // "SHEAR_PASS_1",
+    // "SHEAR_PASS_2",
+    // "SHEAR_PASS_3",
+    // "SHEAR_PASS_4",
+    // ],
+
+    [ "INTEGRATE_VEL_PASS", ],
+
+    [ "SHEAR_PASS_1", "SHEAR_CONSTRAINTS_ENABLED", ],
+    [ "SHEAR_PASS_2", "SHEAR_CONSTRAINTS_ENABLED", ],
+    [ "SHEAR_PASS_3", "SHEAR_CONSTRAINTS_ENABLED", ],
+    [ "SHEAR_PASS_4", "SHEAR_CONSTRAINTS_ENABLED", ],
+
+    [ "BEND_PASS_H_1", ],
+    [ "BEND_PASS_H_2", ],
+    [ "BEND_PASS_V_1", ],
+    [ "BEND_PASS_V_2", ],
+
     [ "STRETCH_PASS_H_1", ],
     [ "STRETCH_PASS_H_2", ],
 
-    [ "BEND_PASS_3", ],
-    [ "BEND_PASS_4", ],
     [ "STRETCH_PASS_V_2", ],
     [ "STRETCH_PASS_V_1", ],
   ];
+
+  var updateDefines = {};
+  if (typeof options.maxDist === "number") {
+    updateDefines.MAX_DIST = "float(" + options.maxDist + ")";
+  }
+
   for (var k = 0; k < flagss.length; k++) {
     var posFragShader = "";
 
@@ -100,6 +162,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       uniforms: updateUniforms,
       vertexShader: ShaderLoader.get( "posUpdate_vert" ),
       fragmentShader: posFragShader,
+      defines: updateDefines,
     });
 
     posUpdateShaders.push(posUpdateShader);
@@ -108,7 +171,8 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   var velUpdateShader = new THREE.ShaderMaterial({
     uniforms: updateUniforms,
     vertexShader: ShaderLoader.get( "velUpdate_vert" ),
-    fragmentShader:  ShaderLoader.get( "velUpdate_frag" )
+    fragmentShader:  ShaderLoader.get( "velUpdate_frag" ),
+    defines: updateDefines,
   });
 
   // render shader
@@ -125,6 +189,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
 
   this.renderUniforms = {
     positions: { type: "t", value: initialPosTex },
+    prevPositions: { type: "t", value: initialPosTex },
     // pointSize: { type: "f", value: 1 },
     dataTexDims: { type: "2vf", value: new THREE.Vector2(fboWidth, fboHeight) },
     waveMag: {type: "f", value: 1},
@@ -134,7 +199,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     texture: { type: "t", value: tex },
   };
 
-  var renderShader = new THREE.ShaderMaterial({
+  var renderMaterial = new THREE.ShaderMaterial({
     uniforms: this.renderUniforms,
     extensions: {
       derivatives: true,
@@ -147,6 +212,7 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
     transparent: true,
     shading: THREE.SmoothShading,
   });
+  this.renderMaterial = renderMaterial;
 
   // render geom
   var renderGeom = new THREE.BufferGeometry();
@@ -154,11 +220,22 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
   // vertex buffer
   var l = (fboWidth * fboHeight);
   var vertices = new Float32Array(l * 3);
-  for (var j = 0; j < l; j++) {
-    vertices[j*3 + 0] = (j % fboWidth) / fboWidth ;
-    vertices[j*3 + 1] = (j / fboWidth) / fboHeight;
-    vertices[j*3 + 2] = 0;
+  var idx = 0;
+  for (var x = 0; x < fboWidth; x++) {
+    for (var y = 0; y < fboHeight; y++) {
+      vertices[idx] = x / (fboWidth-1);
+      idx++;
+      vertices[idx] = y / (fboHeight-1);
+      idx++;
+      vertices[idx] = 0;
+      idx++;
+    }
   }
+  // for (var j = 0; j < l; j++) {
+    // vertices[j*3 + 0] = (j % fboWidth) / fboWidth;
+    // vertices[j*3 + 1] = (j / fboWidth) / fboHeight;
+    // vertices[j*3 + 2] = 0;
+  // }
   renderGeom.addAttribute("position", new THREE.BufferAttribute(vertices, 3));
 
   // index buffer
@@ -175,22 +252,25 @@ function GpuCloth( width, height, color, tex, sideLength, options ) {
       indices.push( (x+0) + (y+1)*fboWidth );
     }
   }
-  renderGeom.setIndex(new THREE.BufferAttribute(new Uint16Array(indices), 1))
+  renderGeom.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1))
 
   // renderMesh
-  var renderMesh = new THREE.Mesh( renderGeom, renderShader );
+  var renderMesh = new THREE.Mesh( renderGeom, renderMaterial );
+  this.renderMesh = renderMesh;
 
   // random orientation
-  // renderMesh.rotation.x = Math.PI * 2 * Math.random();
-  // renderMesh.rotation.y = Math.PI * 2 * Math.random();
   // HACK: just store the rotation here, apply it in scenegraph setup later
   renderMesh.rotx = Math.PI * 2 * Math.random();
   renderMesh.roty = Math.PI * 2 * Math.random();
 
   // CREATE CLOTH
-  this.particleSystem = new GpuParticleSystem( fboWidth, fboHeight, posUpdateShaders, [velUpdateShader], renderMesh, initialPosTex, initialVelTex );
-  // this.particleSystem.shufflePasses = true;
-  // scene.add( this.particleSystem.renderMesh );
+  this.particleSystem = new GpuParticleSystem( 
+    fboWidth, fboHeight, 
+    posUpdateShaders, [velUpdateShader], 
+    renderMesh, 
+    initialPosTex, initialVelTex, {
+    verletIntegration: true,
+  } );
 
 }
 

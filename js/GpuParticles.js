@@ -3,12 +3,13 @@
 // uses multiple render passes since threejs doesn't support mrt
 
 
-function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterials, renderMesh, initPosTex, initVelTex ){
+function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterials, renderMesh, initPosTex, initVelTex, options ){
 
   var gl = renderer.getContext();
 
   // set to true for randomized order each frame
   this.shufflePasses = false;
+  this.verletIntegration = options.verletIntegration;
 
   renderMesh.frustumCulled = false;
 
@@ -53,8 +54,14 @@ function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterial
 
   this.posRenderTex_target = new THREE.WebGLRenderTarget(width, height, options);
   this.posRenderTex_source = new THREE.WebGLRenderTarget(width, height, options);
-  this.velRenderTex_target = new THREE.WebGLRenderTarget(width, height, options);
-  this.velRenderTex_source = new THREE.WebGLRenderTarget(width, height, options);
+
+  if (this.verletIntegration) {
+    this.posRenderTex_prevSource = new THREE.WebGLRenderTarget(width, height, options);
+  }
+  else {
+    this.velRenderTex_target = new THREE.WebGLRenderTarget(width, height, options);
+    this.velRenderTex_source = new THREE.WebGLRenderTarget(width, height, options);
+  }
 
   // used for rendering attribute textures
   var simGeom = new THREE.BufferGeometry();
@@ -90,20 +97,54 @@ function GpuParticleSystem( width, height, posUpdateMaterials, velUpdateMaterial
   this.isFirstPass = [true, true];
 };
 
+// NOTE: stores in this.averagePos (for no clear reason)
 GpuParticleSystem.prototype.getAveragePos = function() {
   var w = this.posRenderTex_source.width;
   var h = this.posRenderTex_source.height;
 
-  if (!this.pixelBuffer) {
+  if (!this.pixelBuffer) { // avoid allocating new buffer every call
     this.pixelBuffer = new Float32Array(w * h * 4);
+    // this.pixelBuffer = new Float32Array(4);
     this.averagePos = [];
   }
 
   renderer.readRenderTargetPixels(this.posRenderTex_source, 0, 0, w, h, this.pixelBuffer);
+
   var x = 0;
   var y = 0;
   var z = 0;
   var count = 0;
+
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, 0, 0, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, w, 0, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, w, h, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, 0, h, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+  // renderer.readRenderTargetPixels(this.posRenderTex_source, w/2, h/2, 1, 1, this.pixelBuffer);
+  // x += this.pixelBuffer[0];
+  // y += this.pixelBuffer[1];
+  // z += this.pixelBuffer[2];
+  // count++;
+
+  // x /= count;
+  // y /= count;
+  // z /= count;
+
   for (var i = 0; i < w * h; i+= 10) {
     x += this.pixelBuffer[i*4 + 0];
     y += this.pixelBuffer[i*4 + 1];
@@ -117,6 +158,7 @@ GpuParticleSystem.prototype.getAveragePos = function() {
   this.averagePos.x = x;
   this.averagePos.y = y;
   this.averagePos.z = z;
+
   // return [x, y, z];
 }
 
@@ -129,10 +171,9 @@ function shuffle(a) {
 }
 
 GpuParticleSystem.prototype.update = function(camera) {
-  // // make sure camera matrices are updated
+  // make sure camera matrices are updated
   camera.updateMatrix();
   camera.updateMatrixWorld();
-  // camera.matrixWorldInverse.getInverse( camera.matrixWorld );
 
   // // if not in view, don't update
   // var frustum = new THREE.Frustum;
@@ -150,37 +191,48 @@ GpuParticleSystem.prototype.update = function(camera) {
     this.velUpdateMeshes[i].visible = false;
   }
 
-  // update pos, then vel
-  for (var posVel = 0; posVel <= 1; posVel++) {
+  // update vel (if not verlet mode), then pos
+  for (var posVel = (this.verletIntegration ? 1 : 0); posVel <= 1; posVel++) {
     var isVelPass = posVel === 0;
 
     var curMeshArr = isVelPass ? this.velUpdateMeshes : this.posUpdateMeshes;
 
     // for each pass on this attribute (pos/vel)
-    var idxs = [];
+    var passIdxs = [];
     for (var i = 0; i < curMeshArr.length; i++) {
-      idxs.push(i);
+      passIdxs.push(i);
     }
     if (this.shufflePasses) {
-      shuffle(idxs);
+      shuffle(passIdxs);
     }
 
-    for (var idxIdx = 0; idxIdx < idxs.length; idxIdx++) {
-      var i = idxs[idxIdx];
+    for (var passNum = 0; passNum < passIdxs.length; passNum++) {
+      var i = passIdxs[passNum];
 
       var curMesh = curMeshArr[i];
 
       // use just the shader for this pass
       curMesh.visible = true;
 
-      // read pos/vel from source textures
+      // bind correct pos/vel source textures
       if (!this.isFirstPass[posVel]) {
         curMesh.material.uniforms.positions.value = this.posRenderTex_source.texture;
-        curMesh.material.uniforms.velocities.value = this.velRenderTex_source.texture;
+        if (this.verletIntegration) {
+          curMesh.material.uniforms.prevPositions.value = this.posRenderTex_prevSource.texture;
+        }
+        else {
+          curMesh.material.uniforms.velocities.value = this.velRenderTex_source.texture;
+        }
       }
       else {
+        // bind init values
         curMesh.material.uniforms.positions.value = this.initPosTex;
-        curMesh.material.uniforms.velocities.value = this.initVelTex;
+        if (this.verletIntegration) {
+          curMesh.material.uniforms.prevPositions.value = this.initPosTex;
+        }
+        else {
+          curMesh.material.uniforms.velocities.value = this.initVelTex;
+        }
       }
       this.isFirstPass[posVel] = false;
 
@@ -192,15 +244,26 @@ GpuParticleSystem.prototype.update = function(camera) {
       curMesh.visible = false;
 
       // flip source/target tex
-      if (isVelPass) { // vel pass
+      if (isVelPass) { // flip vel textures
         var justWrittenTo = this.velRenderTex_target;
         this.velRenderTex_target = this.velRenderTex_source;
         this.velRenderTex_source = justWrittenTo;
       }
-      else {// pos pass
-        var justWrittenTo = this.posRenderTex_target;
-        this.posRenderTex_target = this.posRenderTex_source;
-        this.posRenderTex_source = justWrittenTo;
+      else { // flip pos textures
+        if (this.verletIntegration && passNum == passIdxs.length - 1) {
+          var prevPrevSource = this.posRenderTex_prevSource;
+          var justWrittenTo = this.posRenderTex_target;
+          var prevSource = this.posRenderTex_source;
+          
+          this.posRenderTex_target = prevPrevSource;
+          this.posRenderTex_source = justWrittenTo;
+          this.posRenderTex_prevSource = prevSource;
+        }
+        else {
+          var justWrittenTo = this.posRenderTex_target;
+          this.posRenderTex_target = this.posRenderTex_source;
+          this.posRenderTex_source = justWrittenTo;
+        }
       }
     }
   }

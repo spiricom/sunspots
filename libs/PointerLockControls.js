@@ -47,6 +47,9 @@ THREE.PointerLockControls = function ( camera ) {
     return yawObject;
 
   };
+  this.getPitchObject = function () {
+    return pitchObject;
+  }
 
   this.getDirection = function() {
 
