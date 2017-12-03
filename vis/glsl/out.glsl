@@ -2,7 +2,6 @@
 
 // will be multiplied by pixelRatio
 // #define NUM_TILES (4.0 * vec2(1.0, 1.0 / (16.0 / 9.0)))
-// #define NUM_TILES 2.0
 #define NUM_TILES 1.0
 
 // #define DEBUG_DRAW
@@ -42,6 +41,8 @@ void main(){
 
   vec4 tSamp;
 
+  bool toneMap = false;
+
 #ifdef DEBUG_DRAW
   uv.y = 1.0 - uv.y;
 
@@ -61,17 +62,7 @@ void main(){
     else {
       tSamp = texture(CHANNEL_TO_SAMPLE, (uv * 2.0 - vec2(1.0, 0.0)) * NUM_TILES);
 
-      vec3 gray = vec3(0.5);
-      vec3 hsv = rgb2hsv(tSamp.rgb);
-      // hsv.y *= 0.7;
-      // hsv.y = 10000.0;
-      // hsv = clamp(hsv, 0.0, 1.0);
-      vec3 rgb = hsv2rgb(hsv);
-
-      tSamp.rgb = rgb;
-
-      // tSamp.rgb = (tSamp.rgb - gray) * 1.4 + gray;
-      tSamp.rgb = clamp(tSamp.rgb, 0.0, 1.0);
+      toneMap = true;
     }
   }
 
@@ -81,8 +72,28 @@ void main(){
   vec2 coord = vec2(uv.x, 1.0 - uv.y);
   tSamp = texture(CHANNEL_TO_SAMPLE, coord);
 
+  toneMap = true;
 
 #endif
+
+
+  if (toneMap) {
+    vec3 col = tSamp.rgb;
+    
+    vec3 gray = vec3(0.5);
+    vec3 hsv = rgb2hsv(col);
+    // hsv.y *= 0.9;
+    // hsv.y = 10000.0;
+    // hsv = clamp(hsv, 0.0, 1.0);
+    col = hsv2rgb(hsv);
+
+    // col = (col - gray) * 1.8 + gray;
+    col = clamp(col, 0.0, 1.0);
+
+    // col = vec3(1.0) - col;
+
+    tSamp.rgb = col;
+  }
 
 
   fragColor = tSamp;
