@@ -4,12 +4,12 @@ float forceMult = 2.0;
 
 // #define FOCUS_COEFF 0.5
 // #define FOCUS_COEFF 0.9
-#define FOCUS_COEFF 0.1
+#define FOCUS_COEFF 0.35
 
 // #define WAVE_FOCUS_COEFF 1.0
-#define WAVE_FOCUS_COEFF 1.008
+#define WAVE_FOCUS_COEFF 1.40
 
-#define WAVE_FOCUS_COEFF_2 1.0//24
+#define WAVE_FOCUS_COEFF_2 1.40
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
 vec3 rgb2hsv(vec3 c) {
@@ -93,8 +93,8 @@ vec4 update(vec2 uv) {
 
   vec3 hsv = rgb2hsv(color.rgb);
   // hsv.y *= sin(float(iFrame) * 0.003) * 0.004 + 1.0 + 0.002;
-  hsv.y *= 1.03;
-  // hsv.y *= 0.9995;
+  // hsv.y *= 1.01;
+  // hsv.y *= 0.99;
   // hsv.z *= 1.01;
   // hsv = clamp(hsv, 0.0, 1.0);
   color.rgb = hsv2rgb(hsv);
