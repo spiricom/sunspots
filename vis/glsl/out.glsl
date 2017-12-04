@@ -34,6 +34,18 @@ vec3 hsv2rgb(vec3 c) {
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
+// Filmic ToneMapping http://filmicgames.com/archives/75
+float A = 0.15;
+float B = 0.50;
+float C = 0.10;
+float D = 0.20;
+float E = 0.02;
+float F = 0.30;
+float W = 1000.0;
+vec3 Uncharted2Tonemap(vec3 x) {
+  return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
 void main(){
 
   // vec2 uv = fragCoord.xy / iResolution.xy;
@@ -76,16 +88,23 @@ void main(){
 
 #endif
 
-
+  toneMap = false;
   if (toneMap) {
     vec3 col = tSamp.rgb;
     
     vec3 gray = vec3(0.5);
     vec3 hsv = rgb2hsv(col);
-    // hsv.y *= 0.9;
+    // hsv.x *= 0.3;
+    // hsv.x += 0.1;
+    // hsv.x = fract(hsv.x);
+
+    hsv.y *= 0.9;
+    // hsv.z *= 1.9;
     // hsv.y = 10000.0;
     // hsv = clamp(hsv, 0.0, 1.0);
     col = hsv2rgb(hsv);
+
+    // col = Uncharted2Tonemap(col);
 
     // col = (col - gray) * 1.8 + gray;
     col = clamp(col, 0.0, 1.0);

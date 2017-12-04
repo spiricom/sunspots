@@ -7,7 +7,7 @@ float forceMult = 2.0;
 #define FOCUS_COEFF 0.1
 
 // #define WAVE_FOCUS_COEFF 1.0
-#define WAVE_FOCUS_COEFF 1.004
+#define WAVE_FOCUS_COEFF 1.008
 
 #define WAVE_FOCUS_COEFF_2 1.0//24
 
@@ -72,17 +72,17 @@ vec4 update(vec2 uv) {
     // color = fract(color);
   }
 
-  if (distance(color.rgb, vec3(0.0)) < 0.001) {
-    color = vec4(0.3, 0.3, 0.3, 1.0);
+  if (distance(color.rgb, vec3(0.0)) < 0.00001) {
+    // color = vec4(0.3, 0.3, 0.3, 1.0);
     // vec3 hsv = rgb2hsv(color.rgb);
     // hsv.x += 0.3;
     // color.rgb = hsv2rgb(hsv);
     
-    color *= 100.0;
+    // color *= 100000.0;
     // color.r = 1.0;
   }
   else if (distance(color.rgb, vec3(1.0)) < 0.95) {
-    color = vec4(0.3, 0.3, 0.3, 1.0);
+    // color = vec4(0.3, 0.3, 0.3, 1.0);
     // vec3 hsv = rgb2hsv(color.rgb);
     // hsv.x += 0.001;
     // color.rgb = hsv2rgb(hsv);
