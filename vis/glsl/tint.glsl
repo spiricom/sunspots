@@ -1,10 +1,10 @@
 
 // float forceMult = 8.0;
-float forceMult = 1.2;
+float forceMult = 3.2;
 
 // #define FOCUS_COEFF 0.5
 // #define FOCUS_COEFF 0.9
-#define FOCUS_COEFF 0.1
+#define FOCUS_COEFF 0.9
 
 // #define WAVE_FOCUS_COEFF 1.0
 #define WAVE_FOCUS_COEFF 1.0001

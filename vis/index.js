@@ -84,24 +84,31 @@ function init(){
       prevModelMatrix: { type: 'm4', },
     },
     vertexShader: document.getElementById( "vertexShader" ).textContent,
-    fragmentShader: document.getElementById( "fragmentShader1" ).textContent
+    fragmentShader: document.getElementById( "fragmentShader1" ).textContent,
+    side: THREE.DoubleSide,
   });
 
   var lambertMat = new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } );
 
-  var geometry = new THREE.BoxBufferGeometry( 50, 50, 50 );
-  for ( var i = 0; i < 1; i ++ ) {
+  // var geometry = new THREE.BoxBufferGeometry( 600, 600, 600 );
+  var geometry = new THREE.SphereBufferGeometry( 600 );
+
+  // var object = new THREE.Mesh( geometry, mat.clone() );
+  // scene.add( object );
+  // objs.push(object);
+
+  for ( var i = 0; i < 10; i ++ ) {
     var object = new THREE.Mesh( geometry, mat.clone() );
     // var object = new THREE.Mesh( geometry, lambertMat );
-    // object.position.x = Math.random() * 800 - 400;
-    // object.position.y = Math.random() * 800 - 400;
-    // object.position.z = Math.random() * 800 - 400;
+    object.position.x = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
+    object.position.y = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
+    object.position.z = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
     // object.rotation.x = Math.random() * 2 * Math.PI;
     // object.rotation.y = Math.random() * 2 * Math.PI;
     // object.rotation.z = Math.random() * 2 * Math.PI;
-    // object.scale.x = Math.random() + 0.5;
-    // object.scale.y = Math.random() + 0.5;
-    // object.scale.z = Math.random() + 0.5;
+    object.scale.x = 0.8;
+    object.scale.y = 0.8;
+    object.scale.z = 0.8;
     scene.add( object );
     objs.push(object);
   }
@@ -110,7 +117,7 @@ function init(){
     new THREE.PlaneGeometry(2, 2),
     new THREE.ShaderMaterial({
       vertexShader: document.getElementById("quadVertexShader").textContent,
-      fragmentShader: document.getElementById("fragmentShader1").textContent,
+      fragmentShader: document.getElementById("fragmentShaderBasic").textContent,
       depthWrite: false,
       depthTest: false
     })
@@ -119,9 +126,9 @@ function init(){
 
 
   controls = new THREE.TrackballControls( camera, renderer.domElement );
-  camera.position.z = 100;
-  // controls.noZoom = true;
-  // controls.noPan = true;
+  camera.position.z = 10;
+  controls.noZoom = true;
+  controls.noPan = true;
 
   // setInterval(update, 1 / 30 * 1000);
   update();
@@ -147,9 +154,9 @@ function render() {
       var obj = objs[i];
 
 
-      obj.rotation.x -= 0.01;
-      obj.rotation.y -= 0.01;
-      obj.rotation.z -= 0.01;
+      // obj.rotation.x -= 0.01;
+      // obj.rotation.y -= 0.01;
+      // obj.rotation.z -= 0.01;
 
       obj.material.uniforms.texture.value = rts[2][1].texture;
       obj.material.uniforms.prevViewMatrix.value = prevViewMatrix;

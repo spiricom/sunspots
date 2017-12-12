@@ -134,7 +134,7 @@
     }
   </script>
 
-  <script id="fragmentShader1" type="x-shader/x-fragment">
+  <script id="fragmentShaderBasic" type="x-shader/x-fragment">
     varying vec4 prevPos;
     uniform sampler2D texture;
 
@@ -146,6 +146,18 @@
       gl_FragColor = vec4( color, 1.0 );
 
       // gl_FragColor = vec4( screenUv, 0.0, 1.0 );
+    }
+  </script>
+
+  <script id="fragmentShader1" type="x-shader/x-fragment">
+    varying vec4 prevPos;
+    uniform sampler2D texture;
+
+    void main( void ) {
+      vec2 screenUv = prevPos.xy / prevPos.w * 0.5 + 0.5;
+
+      vec3 color = texture2D( texture, screenUv ).rgb;
+      gl_FragColor = vec4( color, 1.0 );
     }
   </script>
 
