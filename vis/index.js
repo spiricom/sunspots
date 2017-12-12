@@ -97,11 +97,11 @@ function init(){
   // scene.add( object );
   // objs.push(object);
 
-  for ( var i = 0; i < 10; i ++ ) {
+  for ( var i = 0; i < 4; i ++ ) {
     var object = new THREE.Mesh( geometry, mat.clone() );
     // var object = new THREE.Mesh( geometry, lambertMat );
     object.position.x = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
-    object.position.y = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
+    object.position.y = (Math.random()*0.4+0.6) * 600;
     object.position.z = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
     // object.rotation.x = Math.random() * 2 * Math.PI;
     // object.rotation.y = Math.random() * 2 * Math.PI;
@@ -126,7 +126,7 @@ function init(){
 
 
   controls = new THREE.TrackballControls( camera, renderer.domElement );
-  camera.position.z = 10;
+  camera.position.z = 20;
   controls.noZoom = true;
   controls.noPan = true;
 

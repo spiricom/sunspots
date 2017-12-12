@@ -13,8 +13,8 @@
 
 #define CHANNEL_TO_SAMPLE TINT
 
-vec4 mixColor(vec4 c0, vec4 c1, float r) {
-  return max(c0, mix(vec4(0.0), c1, r));
+vec3 mixColor(vec3 c0, vec3 c1, float r) {
+  return max(c0, mix(vec3(0.0), c1, r));
 }
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
@@ -93,6 +93,21 @@ void main(){
     // col = vec3(1.0) - col;
 
     tSamp.rgb = col;
+
+
+
+    vec3 color = vec3(0.0, 0.0, 0.0);
+
+    // palettization:
+    color = mixColor(color, vec3(9.0, 33.0, 64.0) / 255.0, tSamp.r);
+    color = mixColor(color, vec3(242.0, 199.0, 119.0) / 255.0, tSamp.g);
+    color = mixColor(color, vec3(191.0, 42.0, 42.0) / 255.0, tSamp.b);
+
+    // float v = pow(color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722, 1.5);
+    // v = clamp(v, 0.0, 1.0);
+    // tSamp = vec4(v, v, v, 1.0);
+    tSamp.rgb = color;
+    // tSamp.xyz *= v;
   }
 
 
