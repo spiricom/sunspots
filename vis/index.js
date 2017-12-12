@@ -101,11 +101,11 @@ function init(){
     var object = new THREE.Mesh( geometry, mat.clone() );
     // var object = new THREE.Mesh( geometry, lambertMat );
     object.position.x = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
-    object.position.y = (Math.random()*0.4+0.6) * 600;
     object.position.z = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
-    // object.rotation.x = Math.random() * 2 * Math.PI;
-    // object.rotation.y = Math.random() * 2 * Math.PI;
-    // object.rotation.z = Math.random() * 2 * Math.PI;
+    object.position.y = (Math.random()*0.3+0.7) * 600;
+    object.rotation.x = Math.random() * 2 * Math.PI;
+    object.rotation.y = Math.random() * 2 * Math.PI;
+    object.rotation.z = Math.random() * 2 * Math.PI;
     object.scale.x = 0.8;
     object.scale.y = 0.8;
     object.scale.z = 0.8;
