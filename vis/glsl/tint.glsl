@@ -1,15 +1,15 @@
 
 // float forceMult = 8.0;
-float forceMult = 2.0;
+float forceMult = 1.2;
 
 // #define FOCUS_COEFF 0.5
 // #define FOCUS_COEFF 0.9
-#define FOCUS_COEFF 0.35
+#define FOCUS_COEFF 0.1
 
 // #define WAVE_FOCUS_COEFF 1.0
-#define WAVE_FOCUS_COEFF 1.40
+#define WAVE_FOCUS_COEFF 1.0001
 
-#define WAVE_FOCUS_COEFF_2 1.40
+#define WAVE_FOCUS_COEFF_2 1.0//24
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
 vec3 rgb2hsv(vec3 c) {
@@ -72,31 +72,36 @@ vec4 update(vec2 uv) {
     // color = fract(color);
   }
 
-  if (distance(color.rgb, vec3(0.0)) < 0.00001) {
+  if (distance(color.rgb, vec3(0.0)) < 0.001) {
     // color = vec4(0.3, 0.3, 0.3, 1.0);
     // vec3 hsv = rgb2hsv(color.rgb);
     // hsv.x += 0.3;
     // color.rgb = hsv2rgb(hsv);
     
-    // color *= 100000.0;
+    color *= 100.0;
     // color.r = 1.0;
   }
   else if (distance(color.rgb, vec3(1.0)) < 0.95) {
-    // color = vec4(0.3, 0.3, 0.3, 1.0);
-    // vec3 hsv = rgb2hsv(color.rgb);
-    // hsv.x += 0.001;
-    // color.rgb = hsv2rgb(hsv);
+    // color = vec4(0.0, 0.0, 0.0, 1.0);
+    
+
+    vec3 hsv = rgb2hsv(color.rgb);
+    hsv.x += 0.1;
+    hsv.y *= 1.3;
+    color.rgb = hsv2rgb(hsv);
+    
+    color *= 0.6;
 
     // color.y *= 1.01;
     // color.r = 1.0;
   }
 
   vec3 hsv = rgb2hsv(color.rgb);
-  // hsv.y *= sin(float(iFrame) * 0.003) * 0.004 + 1.0 + 0.002;
-  // hsv.y *= 1.01;
-  // hsv.y *= 0.99;
-  // hsv.z *= 1.01;
-  // hsv = clamp(hsv, 0.0, 1.0);
+  hsv.y *= sin(float(iFrame) * 0.003) * 0.004 + 1.0 + 0.002;
+  // hsv.y *= 1.03;
+  // hsv.y *= 0.9995;
+  // hsv.z *= 1.0;
+  hsv = clamp(hsv, 0.0, 1.0);
   color.rgb = hsv2rgb(hsv);
 
 
@@ -126,7 +131,7 @@ void main() {
   // vec2 uv = fragCoord.xy / iResolution.xy;
   vec2 uv = getUv();
 
-  if (float(iFrame) == 0.0) {
+  if (float(iFrame) <= 2.0) {
     color = init(uv);
   } else {
     color = update(uv);

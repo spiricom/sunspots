@@ -439,6 +439,15 @@ var ShaderSystem = function(renderer, updateFragDefines) {
 
   }
 
+  var getRenderTarget = function(bufferIdx) {
+    if (!object.initialized) return null;
+    return renderTargetPairs;//[bufferIdx][1].texture;
+  };
+
+  var setRenderTarget = function(bufferIdx, texture) {
+    renderTargetPairs[bufferIdx][1].texture = texture;
+  };
+
   var updateAndRender = function() {
     if (LIVE_UPDATE && !ShaderLoader.loading) {
       delete shadersToLoad.neurons_vert;
@@ -520,8 +529,12 @@ var ShaderSystem = function(renderer, updateFragDefines) {
   shaderLoader = new ShaderLoader();
   shaderLoader.loadShaders(shadersToLoad, shadersDir, init);
 
+  // exports
   object.updateAndRender = updateAndRender;
   object.fragDefines = fragDefines;
+  object.getRenderTarget = getRenderTarget;
+  object.setRenderTarget = setRenderTarget;
+  object.renderTargetOptions = renderTargetOptions;
 
   return object;
 }
