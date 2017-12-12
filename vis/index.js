@@ -97,7 +97,7 @@ function init(){
   // scene.add( object );
   // objs.push(object);
 
-  for ( var i = 0; i < 4; i ++ ) {
+  for ( var i = 0; i < 7; i ++ ) {
     var object = new THREE.Mesh( geometry, mat.clone() );
     // var object = new THREE.Mesh( geometry, lambertMat );
     object.position.x = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;

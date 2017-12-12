@@ -96,18 +96,22 @@ void main(){
 
 
 
-    vec3 color = vec3(0.0, 0.0, 0.0);
-
     // palettization:
-    color = mixColor(color, vec3(9.0, 33.0, 64.0) / 255.0, tSamp.r);
-    color = mixColor(color, vec3(242.0, 199.0, 119.0) / 255.0, tSamp.g);
-    color = mixColor(color, vec3(191.0, 42.0, 42.0) / 255.0, tSamp.b);
+    vec3 color = vec3(0.0);
 
-    // float v = pow(color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722, 1.5);
-    // v = clamp(v, 0.0, 1.0);
-    // tSamp = vec4(v, v, v, 1.0);
+    // color = mixColor(color, vec3(191.0, 42.0, 42.0) / 255.0, tSamp.r);
+    // color = mixColor(color, vec3(242.0, 199.0, 119.0) / 255.0, tSamp.g);
+    // color = mixColor(color, vec3(9.0, 33.0, 64.0) / 255.0, tSamp.b);
+
+    color += vec3(191.0, 42.0, 42.0) / 255.0 * tSamp.r;
+    color += vec3(242.0, 199.0, 119.0) / 255.0 * tSamp.g;
+    color += vec3(9.0, 33.0, 64.0) / 255.0 * tSamp.b;
+
+    // color = mixColor(color, vec3(255.0, 129.0, 171.0) / 255.0, tSamp.r);
+    // color = mixColor(color, vec3(92.0, 232.0, 134.0) / 255.0, tSamp.g);
+    // color = mixColor(color, vec3(102.0, 203.0, 255.0) / 255.0, tSamp.b);
+
     tSamp.rgb = color;
-    // tSamp.xyz *= v;
   }
 
 
