@@ -1,15 +1,5 @@
 "use strict";
 
-// waves fixes
-
-// Once I got the gain of the audio back under control, I narrowed down the source of the audio glitches. The random clicks are happening because of some processing when rendering the wave cloths. Commenting out 
-// var waveMagUnif = testCloths[j].cloths[0].renderUniforms.waveMag;
-// makes the clicks go away (but also ruins the cloth effect, of course). 
-
-// I tried lowering the resolution of the cloths (I think it actually looks really nice with a lower cloth resolution and flat shading turned on, check out the version I pushed), but the clicks are still there, even with very low resolution cloths. Any ideas what the issue might be? Is there anything in your code that could be really heavy and interrupt the audio? 
-
-// When you get a chance to check it out, let me know what you find. 
-
 // MISC VARS
 
 var DEVMODE = true;
@@ -34,7 +24,13 @@ var paused = false;
 // VISUALS VARS
 
 var camera, controls, scene, renderer, uniforms;
-// var lowLodScene, lowLodNode;
+var bgScene;
+var quadScene;
+var bgQuad;
+var renderTarget;
+var renderTarget2;
+var fixedCamera;
+
 var waveMagnitudes = [2,5,6,7];
 var skyMat = [];
 var meshes = [];
@@ -50,19 +46,6 @@ var guiParams = {
 };
 
 // CONTROLS VARS
-var moveSpeed = 30;
-var runningEnabled = DEVMODE;
-
-var pointerLocked = false;
-var running = false;
-var moveForward = false;
-var moveBackward = false;
-var moveLeft = false;
-var moveRight = false;
-var moveUp = false;
-var moveDown = false;
-var canJump = false;
-
 var prevTickTime = performance.now();
 var velocity = new THREE.Vector3();
 
@@ -261,42 +244,27 @@ function init()
 function render()
 {
   requestAnimationFrame(render);
-
   if (paused) return;
 
-  // controls
   var time = performance.now();
-  var delta = ( time - prevTickTime ) / 1000;
-
-  velocity.x -= velocity.x * 10.0 * delta;
-  velocity.y -= velocity.y * 10.0 * delta;
-  velocity.z -= velocity.z * 10.0 * delta;
-
-  if ( moveForward ) velocity.z -= 400.0 * delta;
-  if ( moveBackward ) velocity.z += 400.0 * delta;
-
-  if ( moveLeft ) velocity.x -= 400.0 * delta;
-  if ( moveRight ) velocity.x += 400.0 * delta;
-  
-  if ( moveUp ) velocity.y += 400.0 * delta;
-  if ( moveDown ) velocity.y -= 400.0 * delta;
-
-  var speed = moveSpeed * (running ? 10 : 1);
-  // controls.getObject().translateX( velocity.x * delta * speed );
-  // controls.getObject().translateY( velocity.y * delta * speed );
-  // controls.getObject().translateZ( velocity.z * delta * speed );
-
-  // var pos = controls.getObject().position;
-  // pos.y = Math.min(pos.y, 150);
+  // var delta = ( time - prevTickTime ) / 1000;
 
   var delta = clock.getDelta();
   controls.update();
 
   prevTickTime = time;
-
+  
+  var quat = new THREE.Quaternion();
   meshes[0].setRotationFromQuaternion( camera.quaternion.clone() );
-  meshes[1].setRotationFromQuaternion( camera.quaternion.clone().multiply(camera.quaternion.clone()) );
-  meshes[2].setRotationFromQuaternion( camera.quaternion.clone().conjugate() );
+  meshes[1].setRotationFromQuaternion( camera.quaternion.clone() );
+  meshes[2].setRotationFromQuaternion( camera.quaternion.clone() );
+  meshes[3].setRotationFromQuaternion( camera.quaternion.clone() );
+  
+  meshes[1].setRotationFromQuaternion( meshes[1].quaternion.clone().multiply(camera.quaternion.clone() ));
+
+  // meshes[0].setRotationFromQuaternion( camera.quaternion.clone().multiply(camera.quaternion.clone()).multiply(camera.quaternion.clone().slerp(quat, 0.9) ));
+  // meshes[1].setRotationFromQuaternion( camera.quaternion.clone().slerp(quat, 0.99).multiply(camera.quaternion.clone()) );
+  // meshes[2].setRotationFromQuaternion( camera.quaternion.clone().conjugate() );
 
   // audio
   if (AUDIO_ENABLED) {
@@ -349,121 +317,11 @@ function HSVtoRGB(h, s, v) {
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
 function initControlElements()
 {
-  // controls = new THREE.PointerLockControls(camera);
-  // controls.getPitchObject().rotation.x = Math.PI * 0.1;
-  // scene.add(controls.getObject());
-  // controls = new THREE.FirstPersonControls( camera, renderer.domElement );
-  // controls.enabled = false;
-
-  // controls.movementSpeed = 1000;
-  // controls.lookSpeed = 0.05;
-  // controls.noFly = true;
-  // controls.lookVertical = false;
-
-
   controls = new THREE.TrackballControls( camera, renderer.domElement );
   controls.noZoom = true;
   controls.noPan = true;
-
-  var element = document.body;
-
-  var onMouseDown = function( event ) {
-    console.log(event.button);
-    if (event.button == 0 ) moveForward = true;
-    if (event.button == 2 ) moveBackward = true;
-  }
-  var onMouseUp = function( event ) {
-    if (event.button == 0 ) moveForward = false;
-    if (event.button == 2 ) moveBackward = false;
-  }
-
-  var onKeyDown = function ( event ) {
-    switch ( event.keyCode ) {
-      case 16: // SHIFT
-        running = runningEnabled; break;
-      case 38: // up
-      case 87: // w
-        moveForward = true; break;
-      case 37: // left
-      case 65: // a
-        moveLeft = true; break;
-      case 40: // down
-      case 83: // s
-        moveBackward = true; break;
-      case 39: // right
-      case 68: // d
-        moveRight = true; break;
-      case 69: // e
-        moveUp = true; break;      
-      case 67: // c
-        moveDown = true; break;
-      case 80: // p
-        var w = screenshotDims ? screenshotDims[0] : window.innerWidth;
-        var h = screenshotDims ? screenshotDims[1] : window.innerHeight;
-        resizeWindow(w, h);
-        renderVisuals();
-        // paused = true;
-        // setTimeout(function() {
-          // paused = false;
-          window.open( renderer.domElement.toDataURL( 'image/png' ), 'screenshot' );
-          resizeWindow(window.innerWidth, window.innerHeight);
-        // }, 0);
-        break;
-    }
-  };
-
-  var onKeyUp = function ( event ) {
-
-    switch( event.keyCode ) {
-      case 16: // SHIFT
-        running = false; break;
-      case 38: // up
-      case 87: // w
-        moveForward = false; break;
-      case 37: // left
-      case 65: // a
-        moveLeft = false; break;
-      case 40: // down
-      case 83: // s
-        moveBackward = false; break;
-      case 39: // right
-      case 68: // d
-        moveRight = false; break;
-      case 69: // e
-        moveUp = false; break;      
-      case 67: // c
-        moveDown = false; break;
-    }
-  };
-
-  document.oncontextmenu = document.body.oncontextmenu = function() {return false;}
-
-  document.addEventListener( 'mousedown', onMouseDown, false );
-  document.addEventListener( 'mouseup', onMouseUp, false );
-  document.addEventListener( 'keydown', onKeyDown, false );
-  document.addEventListener( 'keyup', onKeyUp, false );
-
-  // // pointer lock
-  // var canvas = document.querySelector('canvas');
-  // var ctx = canvas.getContext('2d');
-
-  // canvas.requestPointerLock = canvas.requestPointerLock ||
-  //                             canvas.mozRequestPointerLock;
-
-  // document.exitPointerLock = document.exitPointerLock ||
-  //                            document.mozExitPointerLock;
-
-  // canvas.onclick = function() {
-  //   canvas.requestPointerLock();
-  // };
-
-  // document.addEventListener('pointerlockchange', lockChangeAlert, false);
-  // document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
-
-  // controls.enabled = pointerLocked;
 }
 
 
@@ -471,16 +329,20 @@ function initControlElements()
 function initVisualElements()
 {
   // CAMERA
-  camera = new THREE.PerspectiveCamera( 28, window.innerWidth / window.innerHeight, 4000, 20000 );
-
+  camera = new THREE.PerspectiveCamera( 18, window.innerWidth / window.innerHeight, 4000, 20000 );
   camera.position.set( 0, 0, 6000 );
-  debugAudioLog(camera.position);
   camera.lookAt(new THREE.Vector3(0, 0, 0));
 
+  fixedCamera = new THREE.PerspectiveCamera( 8, window.innerWidth / window.innerHeight, 4000, 20000 );
+  fixedCamera.position.set( 0, 0, 6000 );
+  fixedCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
   // SCENES
+  bgScene = new THREE.Scene();
+  quadScene = new THREE.Scene();
   scene = new THREE.Scene();
   
-  // RENDERER //////////////////////////
+  // RENDERER 
   renderer = new THREE.WebGLRenderer({ 
     antialias: true,
     preserveDrawingBuffer: true,
@@ -500,12 +362,21 @@ function initVisualElements()
 
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
-
+  
+  // render target
+  renderTarget = new THREE.WebGLRenderTarget(1024, 1024, {
+    magFilter: THREE.NearestFilter,
+    minFilter: THREE.NearestFilter,
+  });
+  renderTarget2 = new THREE.WebGLRenderTarget(1024, 1024, {
+    magFilter: THREE.NearestFilter,
+    minFilter: THREE.NearestFilter,
+  });
  
-  // LIGHTS //////////////////////////
+  // LIGHTS 
   scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.001 );
 
-  // DOMES //////////////////////////
+  // DOMES 
   var skyGeo = [];
   var dome = [];
   for (var j = 0; j <= NUMBER_OF_DOMES; j++)
@@ -537,19 +408,22 @@ function initVisualElements()
     // scene.add( dome[j] );
   }
 
-  // WAVES //////////////////////////
+  // WAVES 
   var geometry = [];
   for (j = 0; j < NUMBER_OF_WAVES; j++)
   {
-    // geometry[j] = new THREE.PlaneGeometry( 1000, 1000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
-    geometry[j] = new THREE.IcosahedronGeometry( 1000, 4 );
+    geometry[j] = new THREE.PlaneGeometry( 2000, 2000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
+    // geometry[j] = new THREE.BoxGeometry( 1000, 1000, 1000, WORLD_WIDTH, WORLD_DEPTH, WORLD_WIDTH );
+    // geometry[j] = new THREE.IcosahedronGeometry( 1000, 4 );
     
-    geometry[j].rotateX(Math.random() * 3.14 );
-    geometry[j].rotateY(Math.random() * 3.14 );
-    geometry[j].rotateZ(Math.random() * 3.14 );
+    // geometry[j].rotateX(Math.random() * 3.14 );
+    // geometry[j].rotateY(Math.random() * 3.14 );
+    // geometry[j].rotateZ(Math.random() * 3.14 );
 
     // geometry[j].rotateX( - Math.PI / 2 );
     // geometry[j].rotateY(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
+    geometry[j].rotateZ(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
+
     debugAudioLog(dome[j].material.uniforms.topColor.value);
     
     uniforms = {
@@ -574,6 +448,66 @@ function initVisualElements()
     });
     meshes[j] = new THREE.Mesh( geometry[j], material[j] );
     scene.add( meshes[j] );
+    // meshes[j].position.set(0, 1500, 0);
+  }
+
+  // BG RENDER QUAD
+  bgQuad = new THREE.Mesh(
+    new THREE.PlaneGeometry(2, 2),
+    new THREE.ShaderMaterial({
+      vertexShader: document.getElementById("quadVertexShader").textContent,
+      fragmentShader: document.getElementById("fragmentShaderBasic").textContent,
+      // depthWrite: false,
+      // depthTest: false,
+      uniforms: {
+        texture: { type: 't', },
+        // prevViewMatrix: { type: 'm4', },
+        // prevModelMatrix: { type: 'm4', },
+      },
+    })
+  );
+  bgScene.add(bgQuad);
+  // quadScene.add(bgQuad);
+
+
+  for (j = 0; j < NUMBER_OF_WAVES; j++)
+  {
+    // var geo = new THREE.PlaneGeometry( 2000, 2000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
+    // var geo = new THREE.BoxGeometry( 1000, 1000, 100, WORLD_WIDTH, WORLD_DEPTH, WORLD_WIDTH * 0.1 );
+    var geo = new THREE.IcosahedronGeometry( 1000, 4 );
+    
+    // geo.rotateX(Math.random() * 3.14 );
+    // geo.rotateY(Math.random() * 3.14 );
+    // geo.rotateZ(Math.random() * 3.14 );
+
+    // geo.rotateX( - Math.PI / 2 );
+    // geo.rotateY(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
+    geo.rotateZ(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
+
+    debugAudioLog(dome[j].material.uniforms.topColor.value);
+    
+    uniforms = {
+      topColor:    { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
+      bottomColor: { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
+
+      offset:      { value: 1 }, //0
+      exponent:    { value: 0.6 },//.6
+      time: {type: "f", value: 0.1 },
+      amp: {type: "f", value: 0.5 },  //500
+      bscalar: {type: "f", value: -3 }, //-5
+      positionscalar: {type: "f", value: 0.5 },
+      turbulencescalar: {type: "f", value: 0.5 },
+    };
+
+    material[j+NUMBER_OF_WAVES] = new THREE.ShaderMaterial({ 
+      vertexShader: ShaderLoader.get( "posNoise_vert" ), 
+      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+      uniforms: uniforms, 
+      side: THREE.DoubleSide,
+    });
+    meshes[j] = new THREE.Mesh( geo, material[j+NUMBER_OF_WAVES] );
+    
+    // bgScene.add( meshes[j] );
     // meshes[j].position.set(0, 1500, 0);
   }
 }
@@ -630,8 +564,10 @@ function renderVisuals() {
         waveMagnitudes[i] = 1;
       }
       material[i].uniforms.time.value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
+      material[i+NUMBER_OF_WAVES].uniforms.time.value = material[i].uniforms.time.value
       //material[j].uniforms.bscalar.value = waveMagnitude[j] * 1 + 50;
-      material[i].uniforms.amp.value = (waveMagnitudes[i] * 0.5 + 4) + (Math.random()*.0001) * 0.01;
+      material[i].uniforms.amp.value = -(waveMagnitudes[i] * 0.5 + 4 + Math.random()*.1);
+      material[i+NUMBER_OF_WAVES].uniforms.amp.value = material[i].uniforms.amp.value;
     }
   }
 
@@ -645,20 +581,13 @@ function renderVisuals() {
   // RENDER
   renderer.clear();
 
-  // for (var i = 0; i < testCloths.length; i++) {
-  //   scene.add(testCloths[i].rootNode);
-  // }
-  renderer.render(scene, camera);
-  
-  // for (var i = 0; i < testCloths.length; i++) {
-  //   lowLodNode.add(testCloths[i].rootNode);
-  // }
-  // renderer.render(lowLodScene, camera);
+  renderer.render(scene, fixedCamera, renderTarget);
 
-  //goofing around
-    //debugAudioLog(camera.position); // comment this out once camera pos is set
-  // renderer.toneMappingExposure = Math.pow( guiParams.exposure, 4.0 );
-  // composer.render();
+  bgQuad.material.uniforms.texture.value = renderTarget.texture;
+  renderer.render(bgScene, camera);
+  
+  // bgQuad.material.uniforms.texture.value = renderTarget2.texture;
+  // renderer.render(quadScene, camera);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -776,7 +705,7 @@ function renderAudio() {
   
   for (var i = 0; i < NUMBER_OF_DOMES; i++)
   { 
-    if (i == whichDome[0])
+    // if (i == whichDome[0])
     {
       if (whichDome[1] > .5)
       {
@@ -788,13 +717,11 @@ function renderAudio() {
       }
       
     }
-    else
-    {
-      domeGains[i].gain.value = 0.0;
-    }
-  }
-  
-  
+    // else
+    // {
+    //   domeGains[i].gain.value = 0.0;
+    // }
+  }  
 }
 
 // Choose, load, and play a random sound file in the given source index

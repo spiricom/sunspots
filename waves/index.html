@@ -56,6 +56,62 @@
         })();
     </script> -->
 
+
+    <script id="vertexShader" type="x-shader/x-vertex">
+      varying vec2 vUv;
+      varying vec4 prevPos;
+      
+      uniform mat4 prevViewMatrix;
+      uniform mat4 prevModelMatrix;
+      
+      void main()
+      {
+        vUv = uv;
+        vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+        
+        prevPos = projectionMatrix * prevModelMatrix * vec4( position, 1.0 );
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    </script>
+
+    <script id="quadVertexShader" type="x-shader/x-vertex">
+      varying vec2 vUv;
+      varying vec4 prevPos;
+
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position.xy, -0.4, 1.0);
+        prevPos = gl_Position;
+      }
+    </script>
+
+    <script id="fragmentShaderBasic" type="x-shader/x-fragment">
+      varying vec4 prevPos;
+      uniform sampler2D texture;
+
+      void main( void ) {
+        vec2 screenUv = prevPos.xy / prevPos.w * 0.5 + 0.5;
+        // vec2 screenUv = gl_FragCoord.xy / 512.0;
+
+        vec3 color = texture2D( texture, screenUv ).rgb;
+        gl_FragColor = vec4( color, 1.0 );
+
+        // gl_FragColor = vec4( screenUv, 0.0, 1.0 );
+      }
+    </script>
+
+    <script id="fragmentShader1" type="x-shader/x-fragment">
+      varying vec4 prevPos;
+      uniform sampler2D texture;
+
+      void main( void ) {
+        vec2 screenUv = prevPos.xy / prevPos.w * 0.5 + 0.5;
+
+        vec3 color = texture2D( texture, screenUv ).rgb;
+        gl_FragColor = vec4( color, 1.0 );
+      }
+    </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style> 
       body {padding: 0; margin: 0;} 

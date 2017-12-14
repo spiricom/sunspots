@@ -124,7 +124,6 @@ function init(){
   );
   bgScene.add(quad);
 
-
   controls = new THREE.TrackballControls( camera, renderer.domElement );
   camera.position.z = 20;
   controls.noZoom = true;
