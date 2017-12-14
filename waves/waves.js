@@ -17,7 +17,7 @@ var DEVMODE = true;
 var FADING_SINES = true;
 var mySounds;
 
-var debugAudioMode = true;
+var debugAudioMode = false;
 function debugAudioLog(val) {
   if (debugAudioMode) {
     console.log(val);
@@ -290,9 +290,13 @@ function render()
   // pos.y = Math.min(pos.y, 150);
 
   var delta = clock.getDelta();
-  controls.update(delta);
+  controls.update();
 
   prevTickTime = time;
+
+  meshes[0].setRotationFromQuaternion( camera.quaternion.clone() );
+  meshes[1].setRotationFromQuaternion( camera.quaternion.clone().multiply(camera.quaternion.clone()) );
+  meshes[2].setRotationFromQuaternion( camera.quaternion.clone().conjugate() );
 
   // audio
   if (AUDIO_ENABLED) {
@@ -351,13 +355,18 @@ function initControlElements()
   // controls = new THREE.PointerLockControls(camera);
   // controls.getPitchObject().rotation.x = Math.PI * 0.1;
   // scene.add(controls.getObject());
+  // controls = new THREE.FirstPersonControls( camera, renderer.domElement );
   // controls.enabled = false;
-  controls = new THREE.FirstPersonControls( camera, renderer.domElement );
 
-  controls.movementSpeed = 1000;
-  controls.lookSpeed = 0.05;
-  controls.noFly = true;
-  controls.lookVertical = false;
+  // controls.movementSpeed = 1000;
+  // controls.lookSpeed = 0.05;
+  // controls.noFly = true;
+  // controls.lookVertical = false;
+
+
+  controls = new THREE.TrackballControls( camera, renderer.domElement );
+  controls.noZoom = true;
+  controls.noPan = true;
 
   var element = document.body;
 
@@ -462,22 +471,15 @@ function initControlElements()
 function initVisualElements()
 {
   // CAMERA
-  camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 1000, 100000 );
+  camera = new THREE.PerspectiveCamera( 28, window.innerWidth / window.innerHeight, 4000, 20000 );
 
-  camera.position.set( 0, -400, 10000 );
+  camera.position.set( 0, 0, 6000 );
   debugAudioLog(camera.position);
-  // camera.lookAt(new THREE.Vector3(0, 0, 0));
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
 
   // SCENES
   scene = new THREE.Scene();
   
-  // lowLodScene = new THREE.Scene();
-  // lowLodNode = new THREE.Object3D();
-  // lowLodNode.position.y = 700;
-  // lowLodNode.scale.x = 2.5;
-  // lowLodNode.scale.z = 2.5;
-  // lowLodScene.add(lowLodNode);
-
   // RENDERER //////////////////////////
   renderer = new THREE.WebGLRenderer({ 
     antialias: true,
@@ -519,8 +521,8 @@ function initVisualElements()
       time: {type: "f", value: 0.0 },
       amp: {type: "f", value: 500.0 },
       bscalar: {type: "f", value: -5.0 },
-      positionscalar: {type: "f", value: .05 },
-      turbulencescalar: {type: "f", value: .5 }
+      positionscalar: {type: "f", value: 0.0 },
+      turbulencescalar: {type: "f", value: 0.0 }
     };
     skyGeo[j] = new THREE.IcosahedronGeometry( getDomeRadius(j), 3 );
 
@@ -532,17 +534,24 @@ function initVisualElements()
     });
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
     dome[j].position.y = -300;
-    scene.add( dome[j] );
+    // scene.add( dome[j] );
   }
 
   // WAVES //////////////////////////
   var geometry = [];
   for (j = 0; j < NUMBER_OF_WAVES; j++)
   {
-    geometry[j] = new THREE.PlaneGeometry( 100000, 100000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
-    geometry[j].rotateX( - Math.PI / 2 );
+    // geometry[j] = new THREE.PlaneGeometry( 1000, 1000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
+    geometry[j] = new THREE.IcosahedronGeometry( 1000, 4 );
+    
+    geometry[j].rotateX(Math.random() * 3.14 );
     geometry[j].rotateY(Math.random() * 3.14 );
+    geometry[j].rotateZ(Math.random() * 3.14 );
+
+    // geometry[j].rotateX( - Math.PI / 2 );
+    // geometry[j].rotateY(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
     debugAudioLog(dome[j].material.uniforms.topColor.value);
+    
     uniforms = {
       topColor:    { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
       bottomColor: { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
@@ -550,28 +559,22 @@ function initVisualElements()
       offset:      { value: 1 }, //0
       exponent:    { value: 0.6 },//.6
       time: {type: "f", value: 0.1 },
-      amp: {type: "f", value: 1.0 },  //500
-      bscalar: {type: "f", value: -15.0 }, //-5
-      positionscalar: {type: "f", value: 0.05 },
+      amp: {type: "f", value: 0.5 },  //500
+      bscalar: {type: "f", value: -3 }, //-5
+      positionscalar: {type: "f", value: 0.5 },
       turbulencescalar: {type: "f", value: 0.5 },
     };
-      debugAudioLog("here");
-      material[j] = new THREE.ShaderMaterial({ 
+
+    debugAudioLog("here");
+    material[j] = new THREE.ShaderMaterial({ 
       vertexShader: ShaderLoader.get( "posNoise_vert" ), 
       fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
       uniforms: uniforms, 
       side: THREE.DoubleSide,
     });
-    // material[j] = new THREE.MeshBasicMaterial({ 
-    //   color: new THREE.Color(getRandomPaletteColor()) ,
-    // });
-    // material[j].uniforms = {
-    //   time: {},
-    //   amp: {},
-    // };
     meshes[j] = new THREE.Mesh( geometry[j], material[j] );
     scene.add( meshes[j] );
-    meshes[j].position.set(0, 1500, 0);
+    // meshes[j].position.set(0, 1500, 0);
   }
 }
 
@@ -626,18 +629,16 @@ function renderVisuals() {
       else {
         waveMagnitudes[i] = 1;
       }
-      material[i].uniforms[ 'time' ].value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
-      //material[j].uniforms[ 'bscalar' ].value = waveMagnitude[j] * 1 + 50;
-      material[i].uniforms[ 'amp' ].value = (waveMagnitudes[i] * 1 + 50) + (Math.random()*.0001);
+      material[i].uniforms.time.value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
+      //material[j].uniforms.bscalar.value = waveMagnitude[j] * 1 + 50;
+      material[i].uniforms.amp.value = (waveMagnitudes[i] * 0.5 + 4) + (Math.random()*.0001) * 0.01;
     }
-
-
   }
 
 
   for (var j = 0; j < NUMBER_OF_DOMES+1; j++)
   {
-    skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
+    skyMat[j].uniforms.time.value = .000025 * (j + 1) *( Date.now() - start );
   }
 
 
