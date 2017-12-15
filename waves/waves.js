@@ -240,13 +240,17 @@ function init()
   render();
 }
 
+var lastControlTime = -999;
+
+var mouseDown = 0;
+
 // updates and renders
 function render()
 {
   requestAnimationFrame(render);
   if (paused) return;
 
-  var time = performance.now();
+  var time = performance.now() / 1000;
   // var delta = ( time - prevTickTime ) / 1000;
 
   var delta = clock.getDelta();
@@ -254,13 +258,28 @@ function render()
 
   prevTickTime = time;
   
-  var quat = new THREE.Quaternion();
-  meshes[0].setRotationFromQuaternion( camera.quaternion.clone() );
-  meshes[1].setRotationFromQuaternion( camera.quaternion.clone() );
-  meshes[2].setRotationFromQuaternion( camera.quaternion.clone() );
-  meshes[3].setRotationFromQuaternion( camera.quaternion.clone() );
+  if (mouseDown) {
+    lastControlTime = time;
+  }
+  console.log(lastControlTime);
+  console.log(time - lastControlTime);
+  console.log(mouseDown);
+
+  if (time - lastControlTime > 5) {
+    meshes[0].rotation.z += delta * 0.2;
+  }
+
+  meshes[1].rotation.z = camera.rotation.z;
+  meshes[2].rotation.z = camera.rotation.y;
+  meshes[3].rotation.z = camera.rotation.x;
+
+  // var quat = new THREE.Quaternion();
+  // meshes[0].setRotationFromQuaternion( camera.quaternion.clone() );
+  // meshes[1].setRotationFromQuaternion( camera.quaternion.clone() );
+  // meshes[2].setRotationFromQuaternion( camera.quaternion.clone() );
+  // meshes[3].setRotationFromQuaternion( camera.quaternion.clone() );
   
-  meshes[1].setRotationFromQuaternion( meshes[1].quaternion.clone().multiply(camera.quaternion.clone() ));
+  // meshes[1].setRotationFromQuaternion( meshes[1].quaternion.clone().multiply(camera.quaternion.clone() ));
 
   // meshes[0].setRotationFromQuaternion( camera.quaternion.clone().multiply(camera.quaternion.clone()).multiply(camera.quaternion.clone().slerp(quat, 0.9) ));
   // meshes[1].setRotationFromQuaternion( camera.quaternion.clone().slerp(quat, 0.99).multiply(camera.quaternion.clone()) );
@@ -324,8 +343,6 @@ function initControlElements()
   controls.noPan = true;
 }
 
-
-
 function initVisualElements()
 {
   // CAMERA
@@ -350,8 +367,9 @@ function initVisualElements()
     gammaOutput: true,
     // logarithmicDepthBuffer: true,
   });
-  renderer.setClearColor( getRandomPaletteColor() );
-  // renderer.autoClear = false;
+  
+  // renderer.autoClearColor = false;
+  renderer.autoClear = false;
   renderer.localClippingEnabled = true;
 
   renderer.setPixelRatio( window.devicePixelRatio );
@@ -359,6 +377,13 @@ function initVisualElements()
   THREEx.Screenshot.bindKey(renderer);
 
   document.body.appendChild( renderer.domElement );
+
+  renderer.domElement.addEventListener("mousedown", function() { 
+    ++mouseDown;
+  });
+  renderer.domElement.addEventListener("mouseup", function() {
+    --mouseDown;
+  });
 
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
@@ -410,7 +435,7 @@ function initVisualElements()
 
   // WAVES 
   var geometry = [];
-  for (j = 0; j < NUMBER_OF_WAVES; j++)
+  for (j = 0; j < NUMBER_OF_WAVES+2; j++)
   {
     geometry[j] = new THREE.PlaneGeometry( 2000, 2000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
     // geometry[j] = new THREE.BoxGeometry( 1000, 1000, 1000, WORLD_WIDTH, WORLD_DEPTH, WORLD_WIDTH );
@@ -424,11 +449,12 @@ function initVisualElements()
     // geometry[j].rotateY(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
     geometry[j].rotateZ(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
 
-    debugAudioLog(dome[j].material.uniforms.topColor.value);
+    // debugAudioLog(dome[j].material.uniforms.topColor.value);
+    var col = j < NUMBER_OF_DOMES ? new THREE.Color(dome[j].material.uniforms.topColor.value) : getRandomThreePaletteColor();
     
     uniforms = {
-      topColor:    { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
-      bottomColor: { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
+      topColor:    { value: col },
+      bottomColor: { value: col },
 
       offset:      { value: 1 }, //0
       exponent:    { value: 0.6 },//.6
@@ -445,6 +471,7 @@ function initVisualElements()
       fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
       uniforms: uniforms, 
       side: THREE.DoubleSide,
+      colorWrite: j != 0,
     });
     meshes[j] = new THREE.Mesh( geometry[j], material[j] );
     scene.add( meshes[j] );
@@ -469,7 +496,11 @@ function initVisualElements()
   bgScene.add(bgQuad);
   // quadScene.add(bgQuad);
 
+  renderer.setClearColor( dome[1].material.uniforms.topColor.value );
+  renderer.clear();
+  renderer.clearTarget(renderTarget);
 
+  // extra sphere waves
   for (j = 0; j < NUMBER_OF_WAVES; j++)
   {
     // var geo = new THREE.PlaneGeometry( 2000, 2000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
@@ -505,7 +536,7 @@ function initVisualElements()
       uniforms: uniforms, 
       side: THREE.DoubleSide,
     });
-    meshes[j] = new THREE.Mesh( geo, material[j+NUMBER_OF_WAVES] );
+    // meshes[j] = new THREE.Mesh( geo, material[j+NUMBER_OF_WAVES] );
     
     // bgScene.add( meshes[j] );
     // meshes[j].position.set(0, 1500, 0);
@@ -579,11 +610,16 @@ function renderVisuals() {
 
 
   // RENDER
-  renderer.clear();
+  renderer.clearDepth();
+  renderer.clearStencil();
+  renderer.clearTarget(renderTarget, false, true, true);
+
+  // renderer.render(scene, fixedCamera);
 
   renderer.render(scene, fixedCamera, renderTarget);
-
   bgQuad.material.uniforms.texture.value = renderTarget.texture;
+  
+  renderer.clearDepth();
   renderer.render(bgScene, camera);
   
   // bgQuad.material.uniforms.texture.value = renderTarget2.texture;
