@@ -3,13 +3,21 @@
 
 /*
 //
-separate ring functions for type of planet
-noise functions for collisions
-//decay time control
-//timbre control
-tick percussion sounds
+TODO:
+
+create new tick shape (triangle?)
+
+create adjustable tick length
+
+connect tick length to keys on keyboard
+
+adjust control for color
+
+numbers (or symbols?) on circles
+
 */
 
+var soundsOn = 0;
 var reverbSoundFile = './reverbs/BX20E103.wav';
 var convolver;
 var myReverbGain = 0.10;
@@ -21,11 +29,24 @@ var vpR; // radius of biggest circle that fits in viewport
 var t = 0;
 var startTime = new Date().getTime();
 var sunPos; // screen pixels
+var fadeSpeed = 2;
+var lineThickness = 4;
+var tickThickness = 4;
+var ringThickness = 2;
+var differentPerc = true;
+var planetText = false;
+var useSymbols = false;
+var useNumbers = true;
+var useShapes = false;
+var tickLength = [];
 
-var topline = 0;
-var bottomline = 0;
-var leftline = 0;
-var rightline = 0;
+var theLines = [0,0,0,0];
+var theLinesPrev = [0,0,0,0];
+var lineFades = [0,0,0,0];
+var lineFadeDirection = [0,0,0,0];
+var lineColors = [0,0,0,0];
+
+var fontLookup = ["F", "B", "g", "E", "H", "N", "P", "h", "i", "j", "k"];
 
 var detune = 4;// was 2
 var randFreqs = [];
@@ -47,11 +68,15 @@ var fundamentals = [];
 var howManyPlanets = getNumPlanets();
 var moonsOn = [];
 var ticksOn = [];
+var ticksOnPrev = [];
 var ringsOn = [];
+var ringsOnPrev = [];
 var planetsOn = [];
+var planetsOnPrev = [];
+var moonsOnPrev = [];
 var currentColor = 1;
 var planetScalar = 1;
-var ticksScalar = 4;
+var ticksScalar = [];
 var toneBrightness = 0.0;
 var planetNum = -1;
 var previousTickPos = [];
@@ -67,6 +92,15 @@ var scales = [[46.88, 51.86, 54.83, 61.55, 65.90, 76.91, 78.83, 91.55, 94.51, 10
 var bufferSize = 4096;
 var pinkNoise;
 var whiteNoise;
+
+var symbolFont;
+var numberFont;
+var shapeFont;
+function preload() {
+  symbolFont = loadFont('fonts/AGATHODA.ttf');
+  numberFont = loadFont('fonts/braille.ttf');
+  shapeFont = loadFont('fonts/geo.ttf');
+}
 
 function generatePinkNoise() {
     var b0, b1, b2, b3, b4, b5, b6;
@@ -124,13 +158,21 @@ function setup() {
   // audio
   initSound();
 
-  for (var i = 0; i < 11; i++)
+  for (var i = 0; i < 20; i++)
   {
     moonsOn[i] = 0;
     ticksOn[i] = 0;
+    ticksOnPrev[i] = 0;
     ringsOn[i] = 0;
+    ringsOnPrev[i] = 0;
     planetsOn[i] = 0;
+    planetsOnPrev[i] = 0;
+    moonsOnPrev[i] = 0;
     previousTickPos[i] = [];
+    moonFades[i] = 0;
+    moonFadeDirs[i] = 0;
+    ticksScalar[i] = 4;
+    tickLength[i] = 1;
     for (var j = 0; j < 64; j++)
     {
       previousTickPos[i][j] = 0;
@@ -181,10 +223,10 @@ function initSound(){
     pitchFilters[j].connect(convolver);
     pitchPanners[j].connect(context.destination);
     pitchPanners[j].pan.value = (Math.random() * 2.0) - 1.0;
-    print(scales[j]);
+    //print(scales[j]);
 
     pitchIndex[j] = j % scales[0].length;
-    print(pitchIndex[j]);
+    //print(pitchIndex[j]);
     var fundamental = midiToFreq(scales[0][pitchIndex[j]]);
 
     pitchFilters[j].frequency.value = random(fundamental, fundamental+random(500,6000));
@@ -301,7 +343,7 @@ function ring(whichPlanet, planet, linecolor)
   {
     var myOctave = (pow(2, (Math.round(Math.random() * 6.0)))) / 4.0;
     fundamental = fundamental * (myOctave); 
-    print(myOctave);
+    //print(myOctave);
   } 
   fundamentals[whichPlanet] = fundamental;
 
@@ -343,7 +385,10 @@ function tickCrossSound(whichPlanet)
 function onPlanetCrossedLine(planetName, planet, linecolor) {
   if (planetsOn[planetName] && ((planet.moon == false) || (moonsOn[planetName] == true)))
   {
-    ring(planet.idx, planet, linecolor);
+    if (soundsOn)
+    {
+      ring(planet.idx, planet, linecolor);
+    }
   }
   //console.log("planet crossed line: " + planetName + "  planet " + planet.moon + "  linecolor " + linecolor);
 }
@@ -352,7 +397,10 @@ function onPlanetCrossedLine(planetName, planet, linecolor) {
 function onTickCrossedLine(planetName, planet, linecolor) {
   if (ticksOn[planetName])
   {
-    tickCrossSound(planet.idx, planet, linecolor);
+    if (soundsOn)
+    {
+      tickCrossSound(planet.idx, planet, linecolor);
+    }
   }
   //console.log("tick crossed line: " + planetName + "  planet " + planet.moon + "  linecolor " + linecolor);
 }
@@ -364,7 +412,7 @@ function onPlanetTouchingPlanetPerFrame(planetName1, planet1, planetName2, plane
 
 // called once whenever a pair starts touching
 function onPlanetTouchingPlanetEnter(planetName1, planet1, planetName2, planet2) {
-  print("planets " + planetName1 + " and " + planetName2 + " are now touching");
+  //print("planets " + planetName1 + " and " + planetName2 + " are now touching");
 
   if ((planetsOn[planetName1] || planetsOn[planetName2]) && (moonsOn[planetName1] || moonsOn[planetName2]))
   {
@@ -376,7 +424,7 @@ function onPlanetTouchingPlanetEnter(planetName1, planet1, planetName2, planet2)
     {
       collide(0);
     }
-    print(planet1.idx + "   " + planet2.idx);
+    //print(planet1.idx + "   " + planet2.idx);
   }
     
 
@@ -396,19 +444,20 @@ var planetsList = [];
 
 var trailDatas = [];
 
+
 function keyPressed() 
 {
   if (keyCode === LEFT_ARROW) {
-    leftline = leftline > 0 ? 0 : currentColor;
+    theLines[0] = theLines[0] > 0 ? 0 : currentColor;
   }
   if (keyCode === RIGHT_ARROW) {
-    rightline = rightline > 0 ? 0 : currentColor;
+    theLines[1] = theLines[1] > 0 ? 0 : currentColor;
   }
   if (keyCode === UP_ARROW) {
-    topline = topline > 0 ? 0 : currentColor;
+    theLines[2] = theLines[2] > 0 ? 0 : currentColor;
   }
   if (keyCode === DOWN_ARROW) {
-    bottomline = bottomline > 0 ? 0 : currentColor;
+    theLines[3] = theLines[3] > 0 ? 0 : currentColor;
   }
  
   if (planetNum > -1) {
@@ -613,43 +662,143 @@ function keyPressed()
   //ticks Scalar
   if (keyCode === 90) 
   {
-    ticksScalar = 2;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 2;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 2;
+    }
   }
-    if (keyCode === 88) 
+  if (keyCode === 88) 
   {
-    ticksScalar = 3;
+        if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 3;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 3;
+    }
   }
-    if (keyCode === 67) 
+  if (keyCode === 67) 
   {
-    ticksScalar = 4;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 4;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 4;
+    }
   }
-    if (keyCode === 86) 
+  if (keyCode === 86) 
   {
-    ticksScalar = 5;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 5;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 5;
+    }
   }
-    if (keyCode === 66) 
+  if (keyCode === 66) 
   {
-    ticksScalar = 6;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 6;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 6;
+    }
   }
   if (keyCode === 78) 
   {
-    ticksScalar = 7;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 7;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 7;
+    }
   }
   if (keyCode === 77) 
   {
-    ticksScalar = 8;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 8;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 8;
+    }
   }
   if (keyCode === 188) 
   {
-    ticksScalar = 9;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 9;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 8;
+    }
   }
   if (keyCode === 190) 
   {
-    ticksScalar = 10;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 10;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 10;
+    }
   }
   if (keyCode === 191) 
   {
-    ticksScalar = 11;
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        ticksScalar[i] = 11;
+      }
+    }
+    else
+    {
+      ticksScalar[planetNum] = 11;
+    }
   }
 
   //planet selection
@@ -689,7 +838,127 @@ function keyPressed()
   {
     planetNum = 10;
   }
+
+  if (keyCode === 220) // `
+  {
+    if(differentPerc == true)
+    {
+      differentPerc = false;
+    }
+    else
+    {
+      differentPerc = true;
+    }
+  }
+
+  //tick length
+  if (keyCode === 81) 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        tickLength[i] = .5;
+      }
+    }
+    else
+    {
+      tickLength[planetNum] = .5;
+    }
+  }
+  if (keyCode === 87) 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        tickLength[i] = 1;
+      }
+    }
+    else
+    {
+      tickLength[planetNum] = 1;
+    }
+
+  }
+  if (keyCode === 69) 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        tickLength[i] = 2;
+      }
+    }
+    else
+    {
+      tickLength[planetNum] = 2;
+    }
+  }
+  if (keyCode === 82) 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        tickLength[i] = 4;
+      }
+    }
+    else
+    {
+      tickLength[planetNum] = 4;
+    }
+  }
+  if (keyCode === 84) 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        tickLength[i] = 5;
+      }
+    }
+    else
+    {
+      tickLength[planetNum] = 5;
+    }
+  }
+  if (keyCode === 89) 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        tickLength[i] = 7;
+      }
+    }
+    else
+    {
+      tickLength[planetNum] = 7;
+    }
+  }
+  if (keyCode === 85) 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+        tickLength[i] = 10;
+      }
+    }
+    else
+    {
+      tickLength[planetNum] = 10;
+    }
+  }
+
 }
+
+
+
+var myCounter = 0;
+var moonFades = [];
+var moonFadeDirs = [];
 
 function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
   var p = planet;
@@ -711,62 +980,231 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
   push();
   rotate(orbitTheta);
   {
+    
+
     // draw ring
+
+    if (drawRings)
+    {
+      //print("in drawRings");
+      //print(ringsOn[p.name] +  " + " + ringsOnPrev[p.name]);
+      //print("hey!!");
+        if ((ringsOn[p.name] == 1) && (ringsOnPrev[p.name] == 0))
+        {
+          p.rFadeDir = 1;
+        }
+        else if ((ringsOn[p.name] == 0) && (ringsOnPrev[p.name] == 1))
+        {
+          p.rFadeDir = -1;
+        }
+        ringsOnPrev[p.name] = ringsOn[p.name];
+      
+    }
+
+
+
+    p.rFade = p.rFade + p.rFadeDir * fadeSpeed;
+    if (p.rFade > 255)
+    {
+      p.rFade = 255;
+      p.rFadeDir = 0;
+    }
+    else if (p.rFade < 0)
+    {
+      p.rFade = 0;
+      p.rFadeDir = 0;
+    }
+    noFill();
+    strokeWeight(ringThickness/vpR);
+    stroke(255,255,255,p.rFade);
+    ellipse(0, 0, p.orbitR);
+
+    if (p.moon == true)
+    {
+        stroke(255,255,255,moonFades[p.name]);
+        ellipse(0, 0, p.orbitR);
+    }
+
+
     if (drawRings && p.orbitR > 0) 
     {
         if ((p.moon == false) || moonsOn[p.name])
         { 
-          // ring
-          noFill();
-          if (ringsOn[p.name])
-          {
-            ellipse(0, 0, p.orbitR);
-          }
+          
           // ring ticks
 
-          if (ticksOn[p.name])
-          {
-              var numTicks = p.numTicks * ticksScalar;
 
-              for (var j = 0; j < numTicks; j++) 
-              {
-                // HACK: start at >0 degrees because 0-degree subpixel line renders more opaque in chrome
-                var theta = map(j, 0, numTicks, 0.05, 360);
-                // theta += sin(theta*3) * 6;
-                var v = createVector(cos(theta), sin(theta));
-                var v0 = p5.Vector.mult(v, p.orbitR - p.tickInner);
-                var v1 = p5.Vector.mult(v, p.orbitR + p.tickOuter);
-                line(v0.x, v0.y, v1.x, v1.y);
-              }
+          if ((ticksOn[p.name] == 1) && (ticksOnPrev[p.name] == 0))
+          {
+            p.tFadeDir = 1;
           }
+          else if ((ticksOn[p.name] == 0) && (ticksOnPrev[p.name] == 1))
+          {
+            p.tFadeDir = -1;
+          }
+          ticksOnPrev[p.name] = ticksOn[p.name];
+          
+          p.tFade = p.tFade + p.tFadeDir * fadeSpeed;
+          if (p.tFade > 255)
+          {
+            p.tFade = 255;
+            p.tFadeDir = 0;
+          }
+          else if (p.tFade < 0)
+          {
+            p.tFade = 0;
+            p.tFadeDir = 0;
+          }
+
+
+          var numTicks = p.numTicks * ticksScalar[p.name];
+
+          for (var j = 0; j < numTicks; j++) 
+          {
+            // HACK: start at >0 degrees because 0-degree subpixel line renders more opaque in chrome
+            var theta = map(j, 0, numTicks, 0.05, 360);
+            // theta += sin(theta*3) * 6;
+            var v = createVector(cos(theta), sin(theta));
+            var v0 = p5.Vector.mult(v, p.orbitR - (p.tickInner * tickLength[p.name]));
+            var v1 = p5.Vector.mult(v, p.orbitR + (p.tickOuter * tickLength[p.name]));
+            strokeWeight(tickThickness/vpR);
+            stroke(255,255,255,p.tFade);
+            line(v0.x, v0.y, v1.x, v1.y);
+
+            if (differentPerc == true)
+            {
+              //print("hello");
+              //var v2 = p5.Vector.mult(v.add(.1), p.orbitR - (p.tickInner * tickLength[p.name]));
+              //var v3 = p5.Vector.mult(v.add(-.1), p.orbitR + (p.tickOuter * tickLength[p.name]));
+              //line(v2.x, v2.y, v3.x, v3.y);
+              var v2 = p5.Vector.mult(v, p.orbitR);
+              ellipse(v2.x, v2.y, p.tickInner * tickLength[p.name]);
+              //draw triangles! How does do dis?
+            }
+
+            //line(v2.x, v2.y,v3.x, v3.y); 
+            //line(0,300,400,200);
+
+          }
+          
         }
     }
 
+
     // draw planet
     if (drawPlanets) {
-      if ((((p.moon == false) || moonsOn[p.name]) && planetsOn[p.name]) || (p.name == "sun"))
-      { 
-        noStroke();
-        // if (planet.color) fill(planet.color);
-        // else              fill(0, 0, 0);
 
-        toneBrightness = 1.0 - (mouseY / height);
-        var topColor = [1, 1, 1];
-        var bottomColor = [1, 1, 1];
-        fill(
-          bottomColor[0]*toneBrightness + topColor[0]*(1-toneBrightness), 
-          bottomColor[1]*toneBrightness + topColor[1]*(1-toneBrightness), 
-          bottomColor[2]*toneBrightness + topColor[2]*(1-toneBrightness)
-        );
+      noStroke();
+
+      if (p.moon == false)
+      {
+        if ((planetsOn[p.name] == 1) && (planetsOnPrev[p.name] == 0))
+        {
+          p.fadeDir = 1;
+        }
+        else if ((planetsOn[p.name] == 0) && (planetsOnPrev[p.name] == 1))
+        {
+          p.fadeDir = -1;
+        }
+        p.fade = p.fade + p.fadeDir * fadeSpeed;
+        if (p.fade > 255)
+        {
+          p.fade = 255;
+          p.fadeDir = 0;
+        }
+        else if (p.fade < 0)
+        {
+          p.fade = 0;
+          p.fadeDir = 0;
+        }
+        planetsOnPrev[p.name] = planetsOn[p.name];
+        fill(0,0,0,p.fade);
 
         if (planet.state.numPlanetsTouching > 0) {
-          fill(255, 0, 0);
+          fill(255, 0, 0, p.fade);
         }
         ellipse(p.orbitR, 0, p.r * planetScalar);
+
+        if (p.name != "sun")
+        {
+          if (planetText)
+          {
+            textSize(.07 * planetScalar * p.r * 30);
+            if (useSymbols)
+            {
+              textFont(symbolFont);
+            }
+            else if (useNumbers)
+            {
+              textFont(numberFont);
+            }
+            else if (useShapes)
+            {
+              textFont(shapeFont);
+            }
+            fill(255, 255, 255, p.fade);
+            text(fontLookup[p.name], p.orbitR-(.028*planetScalar * p.r * 30), .028 * planetScalar * p.r * 30);
+          }
+        }
+      }
+      if (p.moon == true)
+      {
+        if ((moonsOn[p.name] == 1) && (moonsOnPrev[p.name] == 0))
+        {
+          moonFadeDirs[p.name] = 1;
+        }
+        else if ((moonsOn[p.name] == 0) && (moonsOnPrev[p.name] == 1))
+        {
+          moonFadeDirs[p.name] = -1;
+        }
+        moonsOnPrev[p.name] = moonsOn[p.name];
+
+        moonFades[p.name] = moonFades[p.name] + moonFadeDirs[p.name]* fadeSpeed;
+        if (moonFades[p.name] > 255)
+        {
+          moonFades[p.name] = 255;
+          moonFadeDirs[p.name] = 0;
+        }
+        else if (p.fade < 0)
+        {
+          moonFades[p.name] = 0;
+          moonFadeDirs[p.name] = 0;
+        }
+        //toneBrightness = 1.0 - (mouseY / height);
+        fill(0,0,0,moonFades[p.name]);
+
+        if (planet.state.numPlanetsTouching > 0) {
+          fill(255, 0, 0, moonFades[p.name]);
+        }
+        ellipse(p.orbitR, 0, p.r * planetScalar);
+
+        if (p.name != "sun")
+        {
+          if (planetText)
+          {
+            textSize(.07 * planetScalar * p.r * 30);
+            if (useSymbols)
+            {
+              textFont(symbolFont);
+            }
+            else if (useNumbers)
+            {
+              textFont(numberFont);
+            }
+            else if (useShapes)
+            {
+              textFont(shapeFont);
+            }
+            fill(255, 255, 255, moonFades[p.name]);
+            text(fontLookup[p.name], p.orbitR-(.028*planetScalar * p.r * 30), .028 * planetScalar * p.r * 30);
+          }
+        }
       }
     }
 
     if (updatePass) {
+
+
       // get screen pos
       var curMat = renderer.drawingContext.currentTransform
       var invMat = curMat;
@@ -788,41 +1226,42 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
       planetState.screenPos = screenPos;
       
 
-
+/*
       // line crossing checks
       if (p.name !== "sun") 
       {
         
-        if (topline > 0)
-        {
-          if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
-          {
-            onPlanetCrossedLine(p.name || p.idx, p, topline);
-          }
-        }
+
         
-        if (bottomline > 0)
-        {
-          if ( (screenPos.y > sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
-          {
-            onPlanetCrossedLine(p.name || p.idx, p, bottomline);
-          }
-        }
-        
-        if (leftline > 0)
+        if (theLines[0] > 0)
         { 
           
           if ( (screenPos.x < sunPos.x) && ((screenPos.y > sunPos.y) != (planetState.prevScreenPos.y > sunPos.y)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p, leftline);
+            onPlanetCrossedLine(p.name || p.idx, p, theLines[0]);
           }
         }
         
-        if (rightline > 0)
+        if (theLines[1] > 0)
         {
           if ( (screenPos.x > sunPos.x) && ((screenPos.y < sunPos.y) != (planetState.prevScreenPos.y < sunPos.y)) ) 
           {
-            onPlanetCrossedLine(p.name || p.idx, p, rightline);
+            onPlanetCrossedLine(p.name || p.idx, p, theLines[1]);
+          }
+        }
+        if (theLines[2] > 0)
+        {
+          if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
+          {
+            onPlanetCrossedLine(p.name || p.idx, p, theLines[2]);
+          }
+        }
+        
+        if (theLines[3] > 0)
+        {
+          if ( (screenPos.y > sunPos.y) && ((screenPos.x > sunPos.x) != (planetState.prevScreenPos.x > sunPos.x)) ) 
+          {
+            onPlanetCrossedLine(p.name || p.idx, p, theLines[3]);
           }
         }
       }
@@ -852,35 +1291,33 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         {
           if (p.name !== "sun") 
           {
-            if (topline > 0)
-            {
-              if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (previousTickPos[p.name][j].x > sunPos.x)) ) 
-              {
-                onTickCrossedLine(p.name || p.idx, p, topline);
-              }
-            }
-
-            if (bottomline > 0)
-            {
-              if ( (screenPos.y > sunPos.y) && ((screenPos.x > sunPos.x) != (previousTickPos[p.name][j].x > sunPos.x)) ) 
-              {
-                onTickCrossedLine(p.name || p.idx, p, bottomline);
-              }
-            }
-            
-            if (leftline > 0)
+            if (theLines[0] > 0)
             { 
               if ( (screenPos.x < sunPos.x) && ((screenPos.y > sunPos.y) != (previousTickPos[p.name][j].y > sunPos.y)) ) 
               {
-                onTickCrossedLine(p.name || p.idx, p, leftline);
+                onTickCrossedLine(p.name || p.idx, p, theLines[0]);
               }
             }
-            
-            if (rightline > 0)
+            if (theLines[1] > 0)
             {
               if ( (screenPos.x > sunPos.x) && ((screenPos.y < sunPos.y) != (previousTickPos[p.name][j].y < sunPos.y)) ) 
               {
-                onTickCrossedLine(p.name || p.idx, p, rightline);
+                onTickCrossedLine(p.name || p.idx, p, theLines[1]);
+              }
+            }
+            if (theLines[2] > 0)
+            {
+              if ( (screenPos.y < sunPos.y) && ((screenPos.x > sunPos.x) != (previousTickPos[p.name][j].x > sunPos.x)) ) 
+              {
+                onTickCrossedLine(p.name || p.idx, p, theLines[2]);
+              }
+            }
+
+            if (theLines[3] > 0)
+            {
+              if ( (screenPos.y > sunPos.y) && ((screenPos.x > sunPos.x) != (previousTickPos[p.name][j].x > sunPos.x)) ) 
+              {
+                onTickCrossedLine(p.name || p.idx, p, theLines[3]);
               }
             }
           }
@@ -888,10 +1325,15 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         previousTickPos[p.name][j] = screenPos;
         
       }
+      */
+
     }
+    
+    
 
   }
   pop();
+
 
   // children
   if (p.orbiters) {
@@ -900,9 +1342,11 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
     {
       for (var i = 0; i < p.orbiters.length; i++) {
         updateAndDrawPlanets(p.orbiters[i], drawRings, drawPlanets, updatePass);
+        //print("drawing orbiter " + i + " of p.name = " + p.name);
       }
     }
     pop();
+
   }
 }
 
@@ -981,247 +1425,7 @@ function updatePlanetOverlaps() {
 
 var planetSystem;
 
-function getPlanetSystem() {
 
-  // defines the solar system
-  // refreshed every frame for live reloading purposes - can be made static without other changes
-  planetSystem = planetSystem || {
-    name: "sun",
-    orbitR: 0,
-    r: 0.025,
-    period: 1,
-    numTicks: 0,
-    noTrail: true,
-    moon: false,
-    orbiters: [
-      {
-        name: 1,
-        orbitR: 0.15,
-        r: 0.02,
-        period: 6,
-        numTicks: 1,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        moon: false,
-        orbiters: [
-          {
-            name: 1,
-            orbitR: 0.15,
-            r: 0.02,
-            period: 9,
-            moon: true,
-
-          },
-          {
-            name: 1,
-            orbitR: 0.25,
-            r: 0.02,
-            period: 10,
-            moon: true,
-          },
-        ],
-      },
-      {
-        name: 2,
-        orbitR: 0.25,
-        r: 0.03,
-        period: 7,
-        numTicks: 1,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        moon: false,
-        orbiters: [
-          {
-            name: 2,
-            orbitR: 0.15,
-            r: 0.02,
-            period: 8,
-            moon: true,
-
-          },
-          {
-            name: 2,
-            orbitR: 0.25,
-            r: 0.02,
-            period: 2,
-            moon: true,
-          },
-        ],
-
-      },
-      {
-        name: 3,
-        orbitR: 0.35,
-        r: 0.03,
-        period: 11,
-        numTicks: 1,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        moon: false,
-        orbiters: [
-          {
-            name: 3,
-            orbitR: 0.1,
-            r: 0.02,
-            period: 7,
-            moon: true,
-
-          },
-          {
-            name: 3,
-            orbitR: 0.2,
-            r: 0.02,
-            period: 6,
-            moon: true,
-          },
-        ],
-
-      },
-      {
-        name: 4,
-        orbitR: 0.45,
-        r: 0.03,
-        period: 5,
-        moon: false,
-        noTrail: false,
-        numTicks: 2,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        orbiters: [
-
-           { 
-             name: 4,
-             orbitR: 0.1,
-             r: 0.02,
-             period: 2.4,
-             numTicks: 0,
-            noTrail: true,
-            moon: true,
-            
-           },
-        ],
-      },
-      {
-        name: 5,
-        orbitR: .55,
-        r: 0.02,
-        period: 10,
-        moon: false,
-        numTicks: 1,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        orbiters: [
-          {
-            name: 5,
-            orbitR: 0.1,
-            r: 0.02,
-            period: 5,
-            moon: true,
-
-          },
-          {
-            name: 5,
-            orbitR: 0.2,
-            r: 0.02,
-            period: 3,
-            moon: true,
-          },
-        ],
-      },
-      {
-        name: 6,
-        orbitR: .65,
-        r: 0.02,
-        period: 12,
-        numTicks: 1,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        moon: false,
-        orbiters: [
-          {
-            name: 6,
-            orbitR: 0.1,
-            r: 0.02,
-            period: 13,
-            moon: true,
-
-          },
-          {
-            name: 6,
-            orbitR: 0.2,
-            r: 0.02,
-            period: 2,
-            moon: true,
-          },
-        ],
-      },
-      {
-        name: 7,
-        orbitR: .75,
-        r: 0.02,
-        period: 15,
-        numTicks: 1,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        moon: false,
-        orbiters: [
-          {
-            name: 7,
-            orbitR: 0.1,
-            r: 0.02,
-            period: 12,
-            moon: true,
-
-          },
-          {
-            name: 7,
-            orbitR: 0.2,
-            r: 0.02,
-            period: 1,
-            moon: true,
-          },
-        ],
-      },
-      {
-        name: 8,
-        orbitR: .85,
-        r: 0.02,
-        period: 8,
-        numTicks: 1,
-        numCurrentTicks: 0,
-        tickInner: .01,
-        tickOuter: .01,
-        moon: false,
-        orbiters: [
-          {
-            name: 8,
-            orbitR: 0.1,
-            r: 0.01,
-            period: 5,
-            moon: true,
-
-          },
-          {
-            name: 8,
-            orbitR: 0.25,
-            r: 0.05,
-            period: 2,
-            moon: true,
-          },
-
-        ],
-      },
-    ],
-  };
-  return planetSystem;
-}
 
 function getNumPlanets() {
   var count = 0;
@@ -1261,54 +1465,56 @@ function draw() {
 
   // background(245, 245, 255);
 
-  // background
-  var a = mouseY / height;
-  var topColor = [245, 245, 255];
-  var bottomColor = [245, 245, 255];
-  background(
-    bottomColor[0]*a + topColor[0]*(1-a), 
-    bottomColor[1]*a + topColor[1]*(1-a), 
-    bottomColor[2]*a + topColor[2]*(1-a)
-  );
+
 
   // t = frameCount / fps;
   t = (new Date().getTime() - startTime) / 1000;
 
-  fill(50,50,0);
-  rect(0, 0, 20, mouseY/8);
-  strokeWeight(20);
-  line(0, 0, 0, height/8);
-  noStroke();
   
-  planetScalar = mouseX/width + .3;
+  planetScalar = mouseX/width + .7;
 
 
   // UPDATE PLANET DATA STUFF
   updateAndDrawPlanets(systemRoot, false, false, true);
   updatePlanetOverlaps(systemRoot);
 
-  // DRAW PLANETS
-  push();
-  translate(centerX, centerY);
-  scale(vpR);
-  {
-    updateAndDrawPlanets(systemRoot, false, true, false);
-  }
-  pop();
+
 
   // DRAW RINGS AND LINES
   // stroke(226 * 0.6, 226 * 0.6, 224 * 0.6, 255 * 0.5);
   // ring colors based on mouseY
   var a = mouseY / height;
-  var topColor = [150, 80, 80];
-  var bottomColor = [80, 80, 150];
-  stroke(
-    bottomColor[0]*a + topColor[0]*(1-a), 
-    bottomColor[1]*a + topColor[1]*(1-a), 
-    bottomColor[2]*a + topColor[2]*(1-a),
-    255 * 0.75
-  );
-  strokeWeight(1/vpR);
+  if (a < .25)
+  {
+    a = .25;
+  }
+  else if (a > .75)
+  {
+    a = .75;
+  }
+  var topColor = [255, 0, 0];
+  var bottomColor = [0, 0, 255];
+  var white_offset = 100;
+
+  // background
+  var myR = bottomColor[0]*a + topColor[0]*(1-a) + white_offset;
+  if (myR > 255)
+  {
+    myR = 255;
+  }
+  var myG = bottomColor[1]*a + topColor[1]*(1-a) + white_offset;
+  if (myG > 255)
+  {
+    myG = 255;
+  }
+  var myB = bottomColor[2]*a + topColor[2]*(1-a) + white_offset;
+  if (myB > 255)
+  {
+    myB = 255;
+  }
+  background(myR, myG, myB);
+
+
   push();
   translate(centerX, centerY);
   scale(vpR);
@@ -1317,64 +1523,484 @@ function draw() {
     // RINGS
     updateAndDrawPlanets(systemRoot, true, false, false);
 
+
     // LINES
-    if (topline > 0)
+
+    for (var i = 0; i < 4; i++)
     {
-      // topline
-      strokeWeight(3/vpR);
-      stroke(getMyColor(topline));
-      line(0, 0, 0, -vpR);
-    }
-    
-    if (bottomline > 0)
-    {
-      // bottomline
-      strokeWeight(3/vpR);
-      stroke(getMyColor(bottomline));
-      line(0, 0, 0, vpR);
-    }
-    if (leftline > 0)
-    {
-      // vertical line
-      strokeWeight(3/vpR);
-      stroke(getMyColor(leftline));
-      line(0, 0, -vpR,0);
-    }
-    if (rightline > 0)
-    {
-      // vertical line
-      strokeWeight(3/vpR);
-      stroke(getMyColor(rightline));
-      line(0, 0,vpR, 0);
-    }
+      
+
+      //do the fading for the line
+
+      if ((theLines[i] > 0) && (theLinesPrev[i] === 0)) //new line starts appearing
+      {
+        lineFades[i] = 0;
+        lineFadeDirection[i] = 1;
+      }
+      if ((theLines[i] === 0) && (theLinesPrev[i] > 0)) //line should start disappearing
+      {
+        lineFadeDirection[i] = -1;
+      }
+      theLinesPrev[i] = theLines[i];
 
 
+      //print("lineFades[i] = " + lineFades[i]);
+      if (lineFadeDirection[i] != 0)
+      {
+        lineFades[i] = lineFades[i] + (lineFadeDirection[i] * fadeSpeed);
+        if (lineFades[i] > 255)
+        {
+          lineFades[i] = 255;
+          lineFadeDirection[i] = 0;
+        }
+        else if (lineFades[i] < 0)
+        {
+          lineFades[i] = 0;
+          lineFadeDirection[i] = 0;
+        }
+      }
+
+      //now draw the line
+      if (theLines[i] > 0)
+      {
+        //print("theLines[i] = " + theLines[i]);
+        strokeWeight(lineThickness/vpR);
+        lineColors[i] = theLines[i];
+        stroke(getMyColor(theLines[i], lineFades[i]));
+        if (i == 0)
+        {
+          line(0, 0, -vpR,0);
+        }
+        else if (i == 1)
+        {
+          line(0, 0,vpR, 0);
+        }
+        else if (i == 2)
+        {
+          line(0, 0, 0, -vpR);
+        }
+        else if (i == 3)
+        {
+          line(0, 0, 0, vpR);
+        }
+      }
+      else if ((theLines[i] == 0) && (lineFades[i] > 0))
+      {
+        strokeWeight(lineThickness/vpR);
+        stroke(getMyColor(lineColors[i], lineFades[i]));
+        if (i == 0)
+        {
+          line(0, 0, -vpR,0);
+        }
+        else if (i == 1)
+        {
+          line(0, 0,vpR, 0);
+        }
+        else if (i == 2)
+        {
+          line(0, 0, 0, -vpR);
+        }
+        else if (i == 3)
+        {
+          line(0, 0, 0, vpR);
+        }
+      }
+
+    }
+
+  }
+  pop();
+    // DRAW PLANETS
+  push();
+  translate(centerX, centerY);
+  scale(vpR);
+  {
+    updateAndDrawPlanets(systemRoot, false, true, false);
   }
   pop();
 }
 
 
-
-function getMyColor(whichColor)
+function getMyColor(whichColor, lineFade)
 {
   if (whichColor == 1)
   {
-    return color('#FFB300'); // yellow
+    //return color('#FFB300'); // yellow
+    return color(255,255,0,lineFade); // yellow
   }
   if (whichColor == 2)
   {
-    return color('#27A64C'); // green
+    //return color('#27A64C'); // green
+    return color(0,255,0,lineFade); // green
   }
   if (whichColor == 3)
   {
-    return color('#0067A5'); // blue
+    //return color('#0067A5'); // blue
+    return color(0,0,255,lineFade);
   }
   if (whichColor == 4)
   {
-    return color('#D5265B'); // red
+    //return color('#D5265B'); // red
+    return color(255,0,0,lineFade);
   }
     if (whichColor == 5)
   {
-    return color('#8F817F'); // gray
+    //return color('#8F817F'); // gray
+    return color(127,127,127,lineFade);
   }
+}
+
+
+function getPlanetSystem() {
+
+  // defines the solar system
+  // refreshed every frame for live reloading purposes - can be made static without other changes
+  planetSystem = planetSystem || {
+    name: "sun",
+    orbitR: 0,
+    r: 0.025,
+    period: 1,
+    numTicks: 0,
+    noTrail: true,
+    moon: false,
+    fade: 255,
+    fadeDir: 0,
+    rFade: 0,
+    rFadeDir:0,
+    orbiters: [
+      {
+        name: 1,
+        orbitR: 0.15,
+        r: 0.02,
+        period: 6,
+        numTicks: 1,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        moon: false,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+          {
+            name: 1,
+            orbitR: 0.15,
+            r: 0.02,
+            period: 9,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+
+          },
+          {
+            name: 1,
+            orbitR: 0.25,
+            r: 0.02,
+            period: 10,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+          },
+        ],
+      },
+      {
+        name: 2,
+        orbitR: 0.25,
+        r: 0.03,
+        period: 7,
+        numTicks: 1,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        moon: false,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+          {
+            name: 2,
+            orbitR: 0.15,
+            r: 0.02,
+            period: 8,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+
+          },
+          {
+            name: 2,
+            orbitR: 0.25,
+            r: 0.02,
+            period: 2,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+          },
+        ],
+
+      },
+      {
+        name: 3,
+        orbitR: 0.35,
+        r: 0.03,
+        period: 11,
+        numTicks: 1,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        moon: false,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+          {
+            name: 3,
+            orbitR: 0.1,
+            r: 0.02,
+            period: 7,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+
+          },
+          {
+            name: 3,
+            orbitR: 0.2,
+            r: 0.02,
+            period: 6,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+          },
+        ],
+
+      },
+      {
+        name: 4,
+        orbitR: 0.45,
+        r: 0.03,
+        period: 5,
+        moon: false,
+        noTrail: false,
+        numTicks: 2,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+
+           { 
+             name: 4,
+             orbitR: 0.1,
+             r: 0.02,
+             period: 2.4,
+             numTicks: 0,
+            noTrail: true,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+            
+           },
+        ],
+      },
+      {
+        name: 5,
+        orbitR: .55,
+        r: 0.02,
+        period: 10,
+        moon: false,
+        numTicks: 1,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+          {
+            name: 5,
+            orbitR: 0.1,
+            r: 0.02,
+            period: 5,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+
+          },
+          {
+            name: 5,
+            orbitR: 0.2,
+            r: 0.02,
+            period: 3,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+          },
+        ],
+      },
+      {
+        name: 6,
+        orbitR: .65,
+        r: 0.02,
+        period: 12,
+        numTicks: 1,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        moon: false,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+          {
+            name: 6,
+            orbitR: 0.1,
+            r: 0.02,
+            period: 13,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+
+          },
+          {
+            name: 6,
+            orbitR: 0.2,
+            r: 0.02,
+            period: 2,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+          },
+        ],
+      },
+      {
+        name: 7,
+        orbitR: .75,
+        r: 0.02,
+        period: 15,
+        numTicks: 1,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        moon: false,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+          {
+            name: 7,
+            orbitR: 0.1,
+            r: 0.02,
+            period: 12,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+
+          },
+          {
+            name: 7,
+            orbitR: 0.2,
+            r: 0.02,
+            period: 1,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+          },
+        ],
+      },
+      {
+        name: 8,
+        orbitR: .85,
+        r: 0.02,
+        period: 8,
+        numTicks: 1,
+        numCurrentTicks: 0,
+        tickInner: .01,
+        tickOuter: .01,
+        moon: false,
+        fade: 0,
+        fadeDir: 0,
+        rFade: 0,
+        rFadeDir:0,
+        tFade: 0,
+        tFadeDir:0,
+        orbiters: [
+          {
+            name: 8,
+            orbitR: 0.1,
+            r: 0.01,
+            period: 5,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+
+          },
+          {
+            name: 8,
+            orbitR: 0.25,
+            r: 0.05,
+            period: 2,
+            moon: true,
+            fade: 0,
+            fadeDir: 0,
+            rFade: 0,
+            rFadeDir:0,
+          },
+
+        ],
+      },
+    ],
+  };
+  return planetSystem;
 }
