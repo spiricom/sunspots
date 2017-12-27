@@ -73,7 +73,16 @@ var crystalSound;
 var numSounds = 4;
 var numBuffers = 2;
 
-var soundPositions = [[-350,30,0], [350,80,0], [0,0,-350],[0,-50,350], [-125,30,125], [125,80,125],[-125, 0, -125], [125, -50, -125]];
+var soundPositions = [
+  [-350,30,0], 
+  [350,80,0], 
+  [0,0,-350],
+  [0,-50,350], 
+  [-125,30,125], 
+  [125,80,125],
+  [-125, 0, -125], 
+  [125, -50, -125],
+];
 var ratios = [.5,.875,1.0, 1.14285714, 1.125, 1.11111111111,1.25,1.5, 1.375,2.6,1.6,2.0];
 //var ratios = [0.5,0.75,1.0,1.125];
 var sound = [];
@@ -203,8 +212,9 @@ var fixedRes = false;
 function init() {
   
   // CAMERA
-  camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
-  camera.position.set( 0, 25, 0 );
+  camera = new THREE.PerspectiveCamera( 160, window.innerWidth / window.innerHeight, 1, 10000 );
+  camera.position.set( 0, 0, 325 );
+  // camera.position.set( 0, 25, 0 );
 
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
@@ -235,12 +245,17 @@ function init() {
   document.body.appendChild(renderer.domElement);
 
   // controls
-  controls = new THREE.FirstPersonControls( camera, renderer.domElement );
+  // controls = new THREE.FirstPersonControls( camera, renderer.domElement );
 
-  controls.movementSpeed = 50;
-  controls.lookSpeed = 0.05;
-  controls.noFly = true;
-  controls.lookVertical = false;
+  // controls.movementSpeed = 50;
+  // controls.lookSpeed = 0.05;
+  // controls.noFly = true;
+  // controls.lookVertical = false;
+
+  controls = new THREE.TrackballControls( camera, renderer.domElement );
+  controls.noZoom = true;
+  controls.noPan = true;
+  controls.dynamicDampingFactor = 0.6;
 
   // SCREENSHOTS
   gl = renderer.getContext();  
@@ -282,9 +297,9 @@ function init() {
   }
 
   // light
-  var light = new THREE.DirectionalLight( getPaletteColor() );
-  light.position.set( 0, 0.5, .01 ).normalize();
-  scene.add( light );
+  // var light = new THREE.DirectionalLight( getPaletteColor() );
+  // light.position.set( 0, 0.5, .01 ).normalize();
+  // scene.add( light );
 
   //clipping planes
   localPlane = [
@@ -356,19 +371,19 @@ function init() {
   facePlaneMatrices = sphereFacePlanes.map( planeToMatrix );
 
   // crystal shared material stuff
-  var mapHeight = new THREE.TextureLoader().load( "images/Infinite-Level_02_Disp_NoSmoothUV-4096.jpg" );
-  mapHeight.anisotropy = 16;
-  mapHeight.repeat.set( 0.998, 0.998 );
-  mapHeight.offset.set( 0.001, 0.001 );
-  mapHeight.wrapS = mapHeight.wrapT = THREE.RepeatWrapping;
-  mapHeight.format = THREE.RGBFormat;
+  // var mapHeight = new THREE.TextureLoader().load( "images/Infinite-Level_02_Disp_NoSmoothUV-4096.jpg" );
+  // mapHeight.anisotropy = 16;
+  // mapHeight.repeat.set( 0.998, 0.998 );
+  // mapHeight.offset.set( 0.001, 0.001 );
+  // mapHeight.wrapS = mapHeight.wrapT = THREE.RepeatWrapping;
+  // mapHeight.format = THREE.RGBFormat;
 
   var sharedMaterialData = { 
     color: 0xffffff, 
     shininess: 10, 
-    displacementMap: mapHeight,
-    displacementScale: 5,
-    displacementBias: 2,
+    // displacementMap: mapHeight,
+    // displacementScale: 5,
+    // displacementBias: 2,
     opacity: 0.8,
     clipShadows: true,
   };
@@ -389,8 +404,8 @@ function init() {
     }, sharedMaterialData);
 
     material_sphere[i] = new THREE.MeshPhongMaterial( materialData );
-    material_sphere[i].castShadow = true;
-    material_sphere[i].receiveShadow = true; 
+    // material_sphere[i].castShadow = true;
+    // material_sphere[i].receiveShadow = true; 
 
     var crystalPos = new THREE.Vector3(soundPositions[i][0], soundPositions[i][1], soundPositions[i][2]);
 
@@ -403,14 +418,14 @@ function init() {
 
     // material for crystal cap (plane clipped to crystal)
 
-
     var capMaterialData = Object.assign({
-      side: THREE.FrontSide,
+      // side: THREE.FrontSide,
+      // side: THREE.BackSide,
+      side: THREE.DoubleSide,
     }, sharedMaterialData);
 
     var capMaterial = new THREE.MeshPhongMaterial( capMaterialData );
-    capMaterial.castShadow = true;
-    capMaterial.receiveShadow = true; 
+    // var capMaterial = crystalMesh.material; // uncomment for weird clipping stuff
     material_sphere[i].capMaterial = capMaterial;
 
     // clipping plane cap mesh
@@ -419,6 +434,7 @@ function init() {
     var planeAxis1 = clipPlane.normal.clone().cross(planeAxis0);
     var closestPointOnPlaneToOrigin = clipPlane.normal.clone().multiplyScalar(-clipPlane.constant);
 
+    // geometry just a big quad
     var capGeom = new THREE.Geometry();
     capGeom.vertices.push(
       closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
@@ -430,24 +446,25 @@ function init() {
       new THREE.Face3( 0, 1, 2 ),
       new THREE.Face3( 0, 2, 3 ) 
     );
+    capGeom.computeFaceNormals();
 
-    // var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
+    var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
 
-    // scene.add( newCapMesh );
-    // mesh[i].capMesh = newCapMesh;
+    scene.add( newCapMesh );
+    mesh[i].capMesh = newCapMesh;
 
-    // // CLOTHS 
-    // // MAIN CLOTHS
-    // var mainClothSize = 256;
-    // var group = new ClothBunch(4, fboWidth, fboHeight, clothTex, mainClothSize, {
-    //   // pinMode: "random",
-    //   // pinChance: 0.003,
-    //   // noRandomRot: true,
-    //   maxDist: (mainClothSize * 0.25)
-    // });
-    // group.pos.copy(crystalPos);
-    // group.colorScheme = "main";
-    // allClothGroups[i] = group;
+    // CLOTHS 
+    // MAIN CLOTHS
+    var mainClothSize = 256;
+    var group = new ClothBunch(4, fboWidth, fboHeight, null, mainClothSize, {
+      // pinMode: "random",
+      // pinChance: 0.003,
+      // noRandomRot: true,
+      maxDist: (mainClothSize * 0.25)
+    });
+    group.pos.copy(crystalPos);
+    group.colorScheme = "main";
+    allClothGroups[i] = group;
   }
 
 
@@ -483,7 +500,7 @@ var EnvelopeGenerator = (function(audioContext) {
 
         this.param.setValueAtTime(crystalSoundGain.gain.value, now);
         this.param.linearRampToValueAtTime(1, now + this.attackTime);
-        console.log("on! " + now);
+        // console.log("on! " + now);
       };
 
       EnvelopeGenerator.prototype.off = function() {
@@ -491,7 +508,7 @@ var EnvelopeGenerator = (function(audioContext) {
         this.param.cancelScheduledValues(now);
         this.param.setValueAtTime(crystalSoundGain.gain.value, now);
         this.param.linearRampToValueAtTime(0, now + this.releaseTime);
-        console.log("off! " + now);
+        // console.log("off! " + now);
       };
 
       EnvelopeGenerator.prototype.connect = function(param) {
@@ -754,9 +771,15 @@ function update() {
       material_sphere[i].emissive.g = val;
       material_sphere[i].emissive.b = val;
 
+      material_sphere[i].capMaterial.emissive.r = val;
+      material_sphere[i].capMaterial.emissive.g = val;
+      material_sphere[i].capMaterial.emissive.b = val;
+
       mesh[i].rotation.x += (val* valScalar);
       mesh[i].rotation.z += (val* valScalar);
       mesh[i].rotation.y += (val* valScalar);
+
+      mesh[i].updateMatrixWorld();
 
       // FIXME: these volumes end up slightly small, not sure why
       var transformedSphereFacePlanes = [];
@@ -768,14 +791,14 @@ function update() {
         transformedSphereFacePlanes[j] = translatedPlane;
       }
 
-      material_sphere[i].capMaterial.clippingPlanes = transformedSphereFacePlanes;
+      // material_sphere[i].capMaterial.clippingPlanes = transformedSphereFacePlanes;
 
-      // var clothBunch = allClothGroups[i];
-      // for (var j = 0; j < clothBunch.numCloths; j++) {
-      //   var cloth = clothBunch.cloths[j];
-      //   cloth.renderMaterial.clipping = true
-      //   cloth.renderMaterial.clippingPlanes = transformedSphereFacePlanes;
-      // }
+      var clothBunch = allClothGroups[i];
+      for (var j = 0; j < clothBunch.numCloths; j++) {
+        var cloth = clothBunch.cloths[j];
+        cloth.renderMaterial.clipping = true
+        cloth.renderMaterial.clippingPlanes = transformedSphereFacePlanes;
+      }
       
     }
     loopCount++;

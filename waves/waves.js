@@ -261,9 +261,6 @@ function render()
   if (mouseDown) {
     lastControlTime = time;
   }
-  console.log(lastControlTime);
-  console.log(time - lastControlTime);
-  console.log(mouseDown);
 
   if (time - lastControlTime > 5) {
     meshes[0].rotation.z += delta * 0.2;
