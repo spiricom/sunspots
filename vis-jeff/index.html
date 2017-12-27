@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+<head>
+	<title>st</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	
+  <link rel="stylesheet" type="text/css" href="fonts/times_italic/stylesheet.css">
+
+  <style type="text/css">
+    body {
+      overflow  : hidden;
+      padding   : 0;
+      margin    : 0;
+
+      font-family : timesitalic;
+    }
+
+    canvas {
+
+      /*image-rendering: optimizeSpeed;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: -o-crisp-edges;
+      image-rendering: pixelated;
+      -ms-interpolation-mode: nearest-neighbor;*/
+
+
+      width: 100% !important;
+      height: 100% !important;
+      position: fixed !important; 
+      top: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+    }
+  </style>
+
+	<!-- three.js and dev libs -->
+	<script src="../libs/three.js"></script>
+	<script src="three-libs/threejs/Detector.js"></script>
+	<script src="three-libs/threejs/Stats.js"></script>
+
+	<!-- THREEx -->
+	<script src="three-libs/threex/THREEx.screenshot.js"></script>
+	<script src="three-libs/threex/THREEx.FullScreen.js"></script>
+	<script src="three-libs/threex/THREEx.WindowResize.js"></script>
+	<!-- <script src="three-libs/threex.dragpancontrols.js"></script> -->
+	<script src="three-libs/TrackballControls.js"></script>
+
+	<!-- misc libs -->
+  <script src="three-libs/GeometryUtils.js"></script>
+
+  <!-- rendering stuff -->
+
+  <script src="js/CopyShader.js"></script>
+
+  <script src="js/EffectComposer.js"></script>
+  <script src="js/SSAARenderPass.js"></script>
+  <script src="js/RenderPass.js"></script>
+  <script src="js/MaskPass.js"></script>
+  <script src="js/ShaderPass.js"></script>
+
+
+  <!-- replace built-in triangulation with Earcut -->
+  <script src="three-libs/earcut.dev.js"></script>
+  <script>
+    THREE.ShapeUtils.triangulateShape = function ( contour, holes ) {
+
+      function removeDupEndPts( points ) {
+        var l = points.length;
+        if ( l > 2 && points[ l - 1 ].equals( points[ 0 ] ) ) {
+          points.pop();
+        }
+      }
+
+      function addContour( vertices, contour ) {
+        for ( var i = 0; i < contour.length; i ++ ) {
+          vertices.push( contour[ i ].x );
+          vertices.push( contour[ i ].y );
+        }
+      }
+
+      removeDupEndPts( contour );
+      holes.forEach( removeDupEndPts );
+
+      var vertices = [];
+      addContour( vertices, contour );
+      var holeIndices = [];
+      var holeIndex = contour.length;
+      for ( i = 0; i < holes.length; i ++ ) {
+        holeIndices.push( holeIndex );
+        holeIndex += holes[ i ].length;
+        addContour( vertices, holes[ i ] );
+      }
+
+      var result = earcut( vertices, holeIndices, 2 );
+      var grouped = [];
+      for ( var i = 0; i < result.length; i += 3 ) {
+        grouped.push( result.slice( i, i + 3 ) );
+      }
+
+      return grouped;
+
+    };
+    
+  </script>
+
+  <script id="vertexShader" type="x-shader/x-vertex">
+    varying vec2 vUv;
+    varying vec4 prevPos;
+    
+    uniform mat4 prevViewMatrix;
+    uniform mat4 prevModelMatrix;
+    
+    void main()
+    {
+      vUv = uv;
+      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+      
+      prevPos = projectionMatrix * prevModelMatrix * vec4( position, 1.0 );
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  </script>
+
+  <script id="quadVertexShader" type="x-shader/x-vertex">
+    varying vec2 vUv;
+    varying vec4 prevPos;
+
+    void main() {
+      vUv = uv;
+      gl_Position = vec4(position.xy, 0.0, 1.0);
+      prevPos = gl_Position;
+    }
+  </script>
+
+  <script id="fragmentShaderBasic" type="x-shader/x-fragment">
+    varying vec4 prevPos;
+    uniform sampler2D texture;
+
+    void main( void ) {
+      vec2 screenUv = prevPos.xy / prevPos.w * 0.5 + 0.5;
+      // vec2 screenUv = gl_FragCoord.xy / 512.0;
+
+      vec3 color = texture2D( texture, screenUv ).rgb;
+      gl_FragColor = vec4( color, 1.0 );
+
+      // gl_FragColor = vec4( screenUv, 0.0, 1.0 );
+    }
+  </script>
+
+  <script id="fragmentShader1" type="x-shader/x-fragment">
+    varying vec4 prevPos;
+    uniform sampler2D texture;
+
+    void main( void ) {
+      vec2 screenUv = prevPos.xy / prevPos.w * 0.5 + 0.5;
+
+      vec3 color = texture2D( texture, screenUv ).rgb;
+      gl_FragColor = vec4( color, 1.0 );
+    }
+  </script>
+
+</head>
+
+<body>
+
+  <!-- project scripts -->
+  <script src="js/ShaderLoader.js"></script>
+  <script src="ShaderSystem.js"></script>
+
+	<script src="index.js"></script>
+	
+  <!-- <div style="
+    position: fixed; /* or absolute */
+    top: 50%;
+    left: calc(50% - 10px);
+    /* bring your own prefixes */
+    transform: translate(-50%, -50%);
+
+    font-size: 128px;
+    /*color: rgba(0,0,0, 0.5);*/
+    color: white;
+    mix-blend-mode: overlay;
+  ">
+  </div> -->
+
+</body>
+
+</html>
