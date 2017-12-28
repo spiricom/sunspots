@@ -6,9 +6,8 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // CONFIG
 var audioEnabled = true;
 
-var fboWidth  = 60;
-var fboHeight = 60;
-var keepClothsCentered = true;
+var fboWidth  = 50;
+var fboHeight = 50;
 
 var initCameraDist = 500;
 
@@ -215,7 +214,7 @@ function init() {
   
   // CAMERA
   camera = new THREE.PerspectiveCamera( 160, window.innerWidth / window.innerHeight, 1, 10000 );
-  camera.position.set( 0, 0, 360);
+  camera.position.set( 0, 0, 370);
   // camera.position.set( 0, 25, 0 );
 
   var viewportWidth = window.innerWidth;
@@ -312,12 +311,25 @@ function init() {
   //clipping planes
   localPlane = [
     new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
-    new THREE.Plane( new THREE.Vector3( .5, - 1, .6), 0.8 ),
-    new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
-    new THREE.Plane( new THREE.Vector3( 0, -.6, 0 ), 0.7 ),
+    new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), -0.8 ),
+    // new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
+    // new THREE.Plane( new THREE.Vector3( .5, -1, -.9), 0.3 ),
+    // new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
+    new THREE.Plane( new THREE.Vector3( 1, -.6, 0 ), 0.7 ),
+    new THREE.Plane( new THREE.Vector3( 1, -.6, 0 ), 0.7 ),
   ];
   for (var i = 0; i < localPlane.length; i++) {
     localPlane[i].normalize();
+  }
+  //clipping planes
+  var areaPlanes = [
+    new THREE.Plane( new THREE.Vector3( 0, - 1, -.6 ), 0.8 ),
+    new THREE.Plane( new THREE.Vector3( .5, -1, -.9), 0.3 ),
+    new THREE.Plane( new THREE.Vector3( .5, 0, .9), 0.3 ),
+    new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
+  ];
+  for (var i = 0; i < areaPlanes.length; i++) {
+    areaPlanes[i].normalize();
   }
 
   // sky mesh
@@ -343,7 +355,7 @@ function init() {
   pMaterial = new THREE.PointsMaterial({
     color: particleColor,
     size: 5,
-    map: textureLoader.load("images/lensflare0_alpha_dot.png"),
+    // map: textureLoader.load("images/lensflare0_alpha_dot.png"),
     blending: THREE.AdditiveBlending,
     transparent: true,
     //depthWrite: false,
@@ -407,8 +419,8 @@ function init() {
 
   // crystals
   for (var i = 0; i < numSounds; i++) {
-    var clipPlane = localPlane[i % numSounds];
-    var clipPlanes = localPlane;
+    var clipPlane = localPlane[i % localPlane.length];
+    var areaPlane = areaPlanes[i % areaPlanes.length];
 
     // material for main crystal
     var materialData = Object.assign({
@@ -437,6 +449,9 @@ function init() {
       clippingPlanes: [ clipPlane ],
       // clippingPlanes: clipPlanes,
       side: THREE.BackSide,
+      blendEquation: THREE.ReverseSubtractEquation,
+      opacity: 0.8,
+      transparent: true,
       // side: THREE.DoubleSide,
       // color: 0x000000,
       map: clothTex,
@@ -455,17 +470,19 @@ function init() {
 
     var capMaterialData = Object.assign({
       // color: 0x000000,
-      map: clothTex,
+      // map: clothTex,
       // lights: false,
-      side: THREE.FrontSide,
+      // side: THREE.FrontSide,
       // side: THREE.BackSide,
-      // side: THREE.DoubleSide,
+      side: THREE.DoubleSide,
     }, sharedMaterialData);
 
     var unclippedCapMaterialData = Object.assign({
       // side: THREE.FrontSide,
       // side: THREE.BackSide,
       side: THREE.DoubleSide,
+      opacity: 1.0,
+      transparent: true,
     }, sharedMaterialData);
 
     // var capMaterial = new THREE.MeshBasicMaterial( capMaterialData );
@@ -479,9 +496,10 @@ function init() {
     // clipping plane cap mesh
     // for (var j = 0; j < numSounds; j++) {
       var arbitraryVec = new THREE.Vector3(3, 5, 7).normalize();
-      var planeAxis0 = clipPlanes[i].normal.clone().cross(arbitraryVec);
-      var planeAxis1 = clipPlanes[i].normal.clone().cross(planeAxis0);
-      var closestPointOnPlaneToOrigin = clipPlanes[i].normal.clone().multiplyScalar(-clipPlanes[i].constant);
+      var planeAxis0 = clipPlane.normal.clone().cross(arbitraryVec);
+      var planeAxis1 = clipPlane.normal.clone().cross(planeAxis0);
+      var closestPointOnPlaneToOrigin = clipPlane.normal.clone().multiplyScalar(-clipPlane.constant);
+
 
       // geometry just a big quad
       var capGeom = new THREE.Geometry();
@@ -512,9 +530,41 @@ function init() {
       );
       capGeom.uvsNeedUpdate = true;
 
+      var arbitraryVec = new THREE.Vector3(3, 5, 7).normalize();
+      var planeAxis0 = areaPlane.normal.clone().cross(arbitraryVec);
+      var planeAxis1 = areaPlane.normal.clone().cross(planeAxis0);
+      var closestPointOnPlaneToOrigin = areaPlane.normal.clone().multiplyScalar(-areaPlane.constant);
+      var capGeom2 = new THREE.Geometry();
+      capGeom2.vertices.push(
+        closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
+        closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
+        closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
+        closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
+      );
+      capGeom2.faces.push( 
+        new THREE.Face3( 0, 1, 2 ),
+        new THREE.Face3( 0, 2, 3 ) 
+      );
+      capGeom2.computeFaceNormals();
+
+      capGeom2.faceVertexUvs[0] = [];
+      capGeom2.faceVertexUvs[0].push(
+        [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(10, 0),
+          new THREE.Vector2(10, 10),
+        ],
+        [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(10, 10),
+          new THREE.Vector2(0, 10),
+        ],
+      );
+      capGeom2.uvsNeedUpdate = true;
+
       var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
 
-      var unclippedCapMesh = new THREE.Mesh( capGeom, unclippedCapMaterial );
+      var unclippedCapMesh = new THREE.Mesh( capGeom2, unclippedCapMaterial );
 
       scene.add( newCapMesh );
       // sceneStencilMask.add( newCapMesh );
@@ -535,8 +585,8 @@ function init() {
 
     clothRenderer.setSize(1000, 1000);
      
-    var mainClothSize = 300;
-    var group = new ClothBunch(4, fboWidth, fboHeight, null, mainClothSize, {
+    var mainClothSize = 600;
+    var group = new ClothBunch(3, fboWidth, fboHeight, null, mainClothSize, {
       // renderer: clothRenderer,
       // flatShading: true,
       // scene: sceneStencilClipped,
@@ -755,9 +805,19 @@ function update() {
       material_sphere[i].emissive.g = val;
       material_sphere[i].emissive.b = val;
 
+      material_sphere[i].innerMat.emissive.r = -val;
+      material_sphere[i].innerMat.emissive.g = -val;
+      material_sphere[i].innerMat.emissive.b = -val;
+
+      material_sphere[i].unclippedCapMaterial.opacity = 1 - val;
+
       material_sphere[i].unclippedCapMaterial.emissive.r = val;
       material_sphere[i].unclippedCapMaterial.emissive.g = val;
       material_sphere[i].unclippedCapMaterial.emissive.b = val;
+
+      material_sphere[i].capMaterial.emissive.r = val;
+      material_sphere[i].capMaterial.emissive.g = val;
+      material_sphere[i].capMaterial.emissive.b = val;
 
       mesh[i].rotation.x += (val* valScalar);
       mesh[i].rotation.z += (val* valScalar);
