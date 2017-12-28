@@ -310,27 +310,34 @@ function init() {
 
   //clipping planes
   localPlane = [
-    new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
-    new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), -0.8 ),
     // new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
+    // // new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
+    // // new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
     // new THREE.Plane( new THREE.Vector3( .5, -1, -.9), 0.3 ),
     // new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
-    new THREE.Plane( new THREE.Vector3( 1, -.6, 0 ), 0.7 ),
-    new THREE.Plane( new THREE.Vector3( 1, -.6, 0 ), 0.7 ),
+    // // new THREE.Plane( new THREE.Vector3( 1, -.6, 0 ), 0.7 ),
+    // new THREE.Plane( new THREE.Vector3( 1, -.6, 0 ), 0.7 ),
+    new THREE.Plane( new THREE.Vector3( 0, - 1, .6 ), 0.8 ),
+    new THREE.Plane( new THREE.Vector3( .5, - 1, .6), 0.8 ),
+    new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
+    new THREE.Plane( new THREE.Vector3( 0, -.6, 0 ), 0.7 ),
+
   ];
   for (var i = 0; i < localPlane.length; i++) {
     localPlane[i].normalize();
   }
-  //clipping planes
-  var areaPlanes = [
-    new THREE.Plane( new THREE.Vector3( 0, - 1, -.6 ), 0.8 ),
-    new THREE.Plane( new THREE.Vector3( .5, -1, -.9), 0.3 ),
-    new THREE.Plane( new THREE.Vector3( .5, 0, .9), 0.3 ),
-    new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
-  ];
-  for (var i = 0; i < areaPlanes.length; i++) {
-    areaPlanes[i].normalize();
-  }
+
+  // dividing planes
+  var areaPlanes = localPlane
+  // var areaPlanes = [
+  //   new THREE.Plane( new THREE.Vector3( 0, - 1, -.6 ), 0.8 ),
+  //   new THREE.Plane( new THREE.Vector3( .5, -1, -.9), 0.3 ),
+  //   new THREE.Plane( new THREE.Vector3( .5, 0, .9), 0.3 ),
+  //   new THREE.Plane( new THREE.Vector3( 1, .5, -.2 ), 1 ),
+  // ];
+  // for (var i = 0; i < areaPlanes.length; i++) {
+  //   areaPlanes[i].normalize();
+  // }
 
   // sky mesh
   var geoSky = new THREE.SphereGeometry( 1000, 48, 48 );
@@ -809,7 +816,7 @@ function update() {
       material_sphere[i].innerMat.emissive.g = -val;
       material_sphere[i].innerMat.emissive.b = -val;
 
-      material_sphere[i].unclippedCapMaterial.opacity = 1 - val;
+      material_sphere[i].unclippedCapMaterial.opacity = 1 - val*val;
 
       material_sphere[i].unclippedCapMaterial.emissive.r = val;
       material_sphere[i].unclippedCapMaterial.emissive.g = val;
