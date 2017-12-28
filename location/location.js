@@ -236,7 +236,7 @@ function init() {
     antialias: true,
     // logarithmicDepthBuffer: true,
     devicePixelRatio: window.devicePixelRatio,
-    preserveDrawingBuffer: true,
+    // preserveDrawingBuffer: true,
     // stencil: true,
     // gammaInput: true,
     // gammaOutput: true,
@@ -447,7 +447,8 @@ function init() {
     var crystalMeshInner = new THREE.Mesh( sphereGeom, material_sphere[i].innerMat );
     crystalMeshInner.position.copy(crystalPos);
     
-    sceneStencilMask.add( crystalMeshInner );
+    scene.add( crystalMeshInner );
+    // sceneStencilMask.add( crystalMeshInner );
     mesh[i].inner = crystalMeshInner;
 
     // material for crystal cap (plane clipped to crystal)
@@ -515,15 +516,30 @@ function init() {
 
       var unclippedCapMesh = new THREE.Mesh( capGeom, unclippedCapMaterial );
 
-      sceneStencilMask.add( newCapMesh );
+      scene.add( newCapMesh );
+      // sceneStencilMask.add( newCapMesh );
       scene.add( unclippedCapMesh );
       mesh[i].capMesh = newCapMesh;
     // }
 
-    // CLOTHS 
+    // CLOTHS
+    var clothRenderer = new THREE.WebGLRenderer({ 
+      antialias: true,
+      devicePixelRatio: window.devicePixelRatio,
+      preserveDrawingBuffer: true,
+    });
+    clothRenderer.autoClear = false;
+    clothRenderer.autoClearColor = false;
+    clothRenderer.autoClearDepth = false;
+    clothRenderer.localClippingEnabled = true;
+
+    clothRenderer.setSize(1000, 1000);
+     
     var mainClothSize = 300;
     var group = new ClothBunch(4, fboWidth, fboHeight, null, mainClothSize, {
-      flatShading: true,
+      // renderer: clothRenderer,
+      // flatShading: true,
+      // scene: sceneStencilClipped,
       // pinMode: "random",
       // pinChance: 0.003,
       // noRandomRot: true,
@@ -836,24 +852,25 @@ function update() {
   // renderer.clearColor();
 
   // enable stencil test
-  renderer.state.setStencilTest( true );
+  // renderer.state.setStencilTest( true );
 
   // config the stencil buffer to collect data for testing
-  renderer.state.setStencilFunc( gl.ALWAYS, 1, 0xff );
-  renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.REPLACE );
+  // renderer.state.setStencilFunc( gl.ALWAYS, 1, 0xff );
+  // renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.REPLACE );
 
   // render shape for stencil test
-  renderer.render( sceneStencilMask, camera );
+  // renderer.render( sceneStencilMask, camera );
 
   // set stencil buffer for testing
-  renderer.state.setStencilFunc( gl.EQUAL, 1, 0xff );
-  renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.KEEP );
+  // renderer.state.setStencilFunc( gl.EQUAL, 1, 0xff );
+  // renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.KEEP );
 
   // render inner crystal scene
-  renderer.render( sceneStencilClipped, camera );
+  // renderer.render( sceneStencilClipped, camera );
+  // renderer.render( scene, camera );
 
   // disable stencil test
-  renderer.state.setStencilTest( false );
+  // renderer.state.setStencilTest( false );
 
   // renderer.toneMappingExposure = Math.pow( bloomParams.exposure, 4.0 );
   // composer.render();
