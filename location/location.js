@@ -33,6 +33,8 @@ var allClothGroups = [];
 // VISUALS GLOBALS
 var gl;
 var scene;
+var sceneStencilMask;
+var sceneStencilClipped;
 var camera;
 var cameraFixed;
 var renderer;
@@ -213,7 +215,7 @@ function init() {
   
   // CAMERA
   camera = new THREE.PerspectiveCamera( 160, window.innerWidth / window.innerHeight, 1, 10000 );
-  camera.position.set( 0, 0, 325 );
+  camera.position.set( 0, 0, 360);
   // camera.position.set( 0, 25, 0 );
 
   var viewportWidth = window.innerWidth;
@@ -225,21 +227,27 @@ function init() {
 
   // SCENE
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0025 );
+  sceneStencilMask = new THREE.Scene();
+  sceneStencilClipped = new THREE.Scene();
+  scene.fog = new THREE.FogExp2( getPaletteColor(), 0.0045 );
 
   // RENDERER
   renderer = new THREE.WebGLRenderer({ 
     antialias: true,
     // logarithmicDepthBuffer: true,
     devicePixelRatio: window.devicePixelRatio,
-    // preserveDrawingBuffer: true,
-    gammaInput: true,
-    gammaOutput: true,
+    preserveDrawingBuffer: true,
+    // stencil: true,
+    // gammaInput: true,
+    // gammaOutput: true,
   });
+  renderer.autoClear = false;
+  renderer.autoClearColor = false;
+  renderer.autoClearDepth = false;
   renderer.localClippingEnabled = true;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.renderReverseSided = false;
-  renderer.toneMapping = THREE.LinearToneMapping;
+  // renderer.shadowMap.enabled = true;
+  // renderer.shadowMap.renderReverseSided = false;
+  // renderer.toneMapping = THREE.LinearToneMapping;
 
   renderer.setSize(viewportWidth, viewportHeight);
   document.body.appendChild(renderer.domElement);
@@ -313,7 +321,7 @@ function init() {
   }
 
   // sky mesh
-  var geoSky = new THREE.SphereGeometry( 1000, 32, 32 );
+  var geoSky = new THREE.SphereGeometry( 1000, 48, 48 );
   var matSky = new THREE.MeshPhongMaterial( { color: getPaletteColor(), side: THREE.DoubleSide } );
   var meshSky = new THREE.Mesh( geoSky, matSky );
   meshSky.position.set( 0, 0, 0 );
@@ -322,6 +330,8 @@ function init() {
   // sky light
   var hemiLight = new THREE.HemisphereLight( getPaletteColor());
   scene.add( hemiLight );
+  var hemiLight = new THREE.HemisphereLight( getPaletteColor());
+  sceneStencilMask.add( hemiLight );
   
 
   // particles
@@ -379,28 +389,33 @@ function init() {
   // mapHeight.format = THREE.RGBFormat;
 
   var sharedMaterialData = { 
-    color: 0xffffff, 
-    shininess: 10, 
+    // color: 0xffffff, 
+    // shininess: 10, 
     // displacementMap: mapHeight,
     // displacementScale: 5,
     // displacementBias: 2,
-    opacity: 0.8,
-    clipShadows: true,
+    // opacity: 0.8,
+    // clipShadows: true,
   };
 
   // cloth texture
   var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
-  clothTex.magFilter = THREE.LinearFilter;
-  clothTex.minFilter = THREE.LinearFilter;
+  clothTex.magFilter = THREE.Linear;
+  clothTex.minFilter = THREE.LinearMipMapLinearFilter;
+  clothTex.wrapS = THREE.RepeatWrapping;
+  clothTex.wrapT = THREE.RepeatWrapping;
 
   // crystals
   for (var i = 0; i < numSounds; i++) {
     var clipPlane = localPlane[i % numSounds];
+    var clipPlanes = localPlane;
 
     // material for main crystal
     var materialData = Object.assign({
       clippingPlanes: [ clipPlane ],
-      side: THREE.DoubleSide,
+      // clippingPlanes: clipPlanes,
+      side: THREE.FrontSide,
+      // side: THREE.BackSide,
     }, sharedMaterialData);
 
     material_sphere[i] = new THREE.MeshPhongMaterial( materialData );
@@ -416,47 +431,99 @@ function init() {
     scene.add( crystalMesh );
     mesh[i] = crystalMesh;
 
+    // inner crystal
+
+    var materialDataInner = Object.assign({
+      clippingPlanes: [ clipPlane ],
+      // clippingPlanes: clipPlanes,
+      side: THREE.BackSide,
+      // side: THREE.DoubleSide,
+      // color: 0x000000,
+      map: clothTex,
+    }, sharedMaterialData);
+
+    material_sphere[i].innerMat = new THREE.MeshPhongMaterial( materialDataInner );
+
+    var crystalMeshInner = new THREE.Mesh( sphereGeom, material_sphere[i].innerMat );
+    crystalMeshInner.position.copy(crystalPos);
+    
+    sceneStencilMask.add( crystalMeshInner );
+    mesh[i].inner = crystalMeshInner;
+
     // material for crystal cap (plane clipped to crystal)
 
     var capMaterialData = Object.assign({
+      // color: 0x000000,
+      map: clothTex,
+      // lights: false,
+      side: THREE.FrontSide,
+      // side: THREE.BackSide,
+      // side: THREE.DoubleSide,
+    }, sharedMaterialData);
+
+    var unclippedCapMaterialData = Object.assign({
       // side: THREE.FrontSide,
       // side: THREE.BackSide,
       side: THREE.DoubleSide,
     }, sharedMaterialData);
 
+    // var capMaterial = new THREE.MeshBasicMaterial( capMaterialData );
     var capMaterial = new THREE.MeshPhongMaterial( capMaterialData );
     // var capMaterial = crystalMesh.material; // uncomment for weird clipping stuff
+    var unclippedCapMaterial = new THREE.MeshPhongMaterial( unclippedCapMaterialData );
+    
     material_sphere[i].capMaterial = capMaterial;
+    material_sphere[i].unclippedCapMaterial = unclippedCapMaterial;
 
     // clipping plane cap mesh
-    var arbitraryVec = new THREE.Vector3(3, 5, 7).normalize();
-    var planeAxis0 = clipPlane.normal.clone().cross(arbitraryVec);
-    var planeAxis1 = clipPlane.normal.clone().cross(planeAxis0);
-    var closestPointOnPlaneToOrigin = clipPlane.normal.clone().multiplyScalar(-clipPlane.constant);
+    // for (var j = 0; j < numSounds; j++) {
+      var arbitraryVec = new THREE.Vector3(3, 5, 7).normalize();
+      var planeAxis0 = clipPlanes[i].normal.clone().cross(arbitraryVec);
+      var planeAxis1 = clipPlanes[i].normal.clone().cross(planeAxis0);
+      var closestPointOnPlaneToOrigin = clipPlanes[i].normal.clone().multiplyScalar(-clipPlanes[i].constant);
 
-    // geometry just a big quad
-    var capGeom = new THREE.Geometry();
-    capGeom.vertices.push(
-      closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
-      closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
-      closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
-      closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
-    );
-    capGeom.faces.push( 
-      new THREE.Face3( 0, 1, 2 ),
-      new THREE.Face3( 0, 2, 3 ) 
-    );
-    capGeom.computeFaceNormals();
+      // geometry just a big quad
+      var capGeom = new THREE.Geometry();
+      capGeom.vertices.push(
+        closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
+        closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
+        closestPointOnPlaneToOrigin.clone().add(planeAxis0.clone().add(planeAxis1).multiplyScalar(crystalRadius * 20)),
+        closestPointOnPlaneToOrigin.clone().sub(planeAxis0.clone().sub(planeAxis1).multiplyScalar(crystalRadius * 20)),
+      );
+      capGeom.faces.push( 
+        new THREE.Face3( 0, 1, 2 ),
+        new THREE.Face3( 0, 2, 3 ) 
+      );
+      capGeom.computeFaceNormals();
 
-    var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
+      capGeom.faceVertexUvs[0] = [];
+      capGeom.faceVertexUvs[0].push(
+        [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(10, 0),
+          new THREE.Vector2(10, 10),
+        ],
+        [
+          new THREE.Vector2(0, 0),
+          new THREE.Vector2(10, 10),
+          new THREE.Vector2(0, 10),
+        ],
+      );
+      capGeom.uvsNeedUpdate = true;
 
-    scene.add( newCapMesh );
-    mesh[i].capMesh = newCapMesh;
+      var newCapMesh = new THREE.Mesh( capGeom, capMaterial );
+
+      var unclippedCapMesh = new THREE.Mesh( capGeom, unclippedCapMaterial );
+
+      sceneStencilMask.add( newCapMesh );
+      scene.add( unclippedCapMesh );
+      mesh[i].capMesh = newCapMesh;
+    // }
 
     // CLOTHS 
-    // MAIN CLOTHS
-    var mainClothSize = 256;
+    var mainClothSize = 300;
     var group = new ClothBunch(4, fboWidth, fboHeight, null, mainClothSize, {
+      flatShading: true,
       // pinMode: "random",
       // pinChance: 0.003,
       // noRandomRot: true,
@@ -471,8 +538,6 @@ function init() {
   // AUDIO ////////////////////////
 
 
-
-
   // audio listener and context
   listener = new THREE.AudioListener();
   audioContext = THREE.AudioContext;
@@ -480,49 +545,49 @@ function init() {
 
 
 
-var EnvelopeGenerator = (function(audioContext) {
-      function EnvelopeGenerator() {
-        this.attackTime = 3.0;
-        this.releaseTime = 3.0;
-      };
+  var EnvelopeGenerator = (function(audioContext) {
+    function EnvelopeGenerator() {
+      this.attackTime = 3.0;
+      this.releaseTime = 3.0;
+    };
 
-      EnvelopeGenerator.prototype.trigger = function() {
-        now = audioContext.currentTime;
-        this.param.cancelScheduledValues(now);
-        this.param.setValueAtTime(0, now);
-        this.param.linearRampToValueAtTime(1, now + this.attackTime);
-        this.param.linearRampToValueAtTime(0, now + this.attackTime + this.releaseTime);
-      };
+    EnvelopeGenerator.prototype.trigger = function() {
+      now = audioContext.currentTime;
+      this.param.cancelScheduledValues(now);
+      this.param.setValueAtTime(0, now);
+      this.param.linearRampToValueAtTime(1, now + this.attackTime);
+      this.param.linearRampToValueAtTime(0, now + this.attackTime + this.releaseTime);
+    };
 
-      EnvelopeGenerator.prototype.on = function() {
-        now = audioContext.currentTime;
-        this.param.cancelScheduledValues(now);
+    EnvelopeGenerator.prototype.on = function() {
+      now = audioContext.currentTime;
+      this.param.cancelScheduledValues(now);
 
-        this.param.setValueAtTime(crystalSoundGain.gain.value, now);
-        this.param.linearRampToValueAtTime(1, now + this.attackTime);
-        // console.log("on! " + now);
-      };
+      this.param.setValueAtTime(crystalSoundGain.gain.value, now);
+      this.param.linearRampToValueAtTime(1, now + this.attackTime);
+      // console.log("on! " + now);
+    };
 
-      EnvelopeGenerator.prototype.off = function() {
-        now = audioContext.currentTime;
-        this.param.cancelScheduledValues(now);
-        this.param.setValueAtTime(crystalSoundGain.gain.value, now);
-        this.param.linearRampToValueAtTime(0, now + this.releaseTime);
-        // console.log("off! " + now);
-      };
+    EnvelopeGenerator.prototype.off = function() {
+      now = audioContext.currentTime;
+      this.param.cancelScheduledValues(now);
+      this.param.setValueAtTime(crystalSoundGain.gain.value, now);
+      this.param.linearRampToValueAtTime(0, now + this.releaseTime);
+      // console.log("off! " + now);
+    };
 
-      EnvelopeGenerator.prototype.connect = function(param) {
-        this.param = param;
-      };
+    EnvelopeGenerator.prototype.connect = function(param) {
+      this.param = param;
+    };
 
     return EnvelopeGenerator;
   })(audioContext);
 
 
+  // envelope
   envelope = new EnvelopeGenerator;
 
 
-  
   // convolver and stuff
   convolver = audioContext.createConvolver();
   var reverbGain = audioContext.createGain();
@@ -547,13 +612,8 @@ var EnvelopeGenerator = (function(audioContext) {
       }, function(e){"Error with decoding audio data" + e.err;});
   }
   ajaxRequest.send();
+
   
-
-
-
-
-
-
   // load crystal sounds
   var audioLoader = new THREE.AudioLoader();
 
@@ -605,98 +665,6 @@ function onResize() {
     composer.setSize( w, h );
     effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h );
   }
-}
-
-function getNearestCrystalIdx() {
-  var nearestIdx = -1;
-  var nearestDist = Infinity;
-  
-  for (var i = 0; i < numSounds; i++) {
-    var dist = mesh[i].position.distanceTo(camera.position);
-    if (dist <= nearestDist) {
-      nearestDist = dist;
-      nearestIdx = i;
-    }
-  }
-
-  return nearestIdx;
-}
-
-// returns distance from camera to surface of nearest crystal (including clipping plane)
-// negative distance means inside crystal
-// relies on correct face normals
-function getSignedDistanceToNearestCrystal() {
-  
-  var idx = getNearestCrystalIdx();
-  
-  var geom = mesh[idx].geometry;
-  var crystalPos = mesh[idx].position;
-  var crystalWorldMatrix = mesh[idx].matrixWorld;
-  var clipPlane = localPlane[idx];
-
-  var leastSignedDist = Infinity;
-
-  var cameraPos = camera.position;
-  var cameraPosArr = [cameraPos.x, cameraPos.y, cameraPos.z];
-
-  // get signed dist to mesh (ignoring clipping plane)
-  // by checking dist to each face
-  for (var faceIdx = 0; faceIdx < geom.faces.length; faceIdx++) {
-    var face = geom.faces[faceIdx];
-    
-    // get face vertices in world space
-    var v0 = geom.vertices[face.a].clone().applyMatrix4(crystalWorldMatrix);
-    var v0Arr = [v0.x, v0.y, v0.z];
-    
-    var v1 = geom.vertices[face.b].clone().applyMatrix4(crystalWorldMatrix);
-    var v1Arr = [v1.x, v1.y, v1.z];
-
-    var v2 = geom.vertices[face.c].clone().applyMatrix4(crystalWorldMatrix);
-    var v2Arr = [v2.x, v2.y, v2.z];
-    
-    var closestPt = [];
-
-    // get unsigned dist
-    var unsignedDist2 = ClosestPointOnTriangle(v0Arr, v1Arr, v2Arr, cameraPosArr, closestPt);
-    var unsignedDist = Math.sqrt(unsignedDist2);
-
-    // if it's new closest, get signed dist
-    if (unsignedDist < Math.abs(leastSignedDist)) {
-      var closestPtVec = new THREE.Vector3(closestPt[0], closestPt[1], closestPt[2]);
-      var vecToCamera = cameraPos.clone().sub(closestPtVec);
-      var signedDist = unsignedDist * (face.normal.dot(vecToCamera) > 0 ? 1 : -1);
-
-      leastSignedDist = signedDist;
-    }
-  }
-
-  // // if inside mesh, check against clipping plane
-  // if (leastSignedDist <= 0) {
-  //   // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
-  //   var unsignedDist = Math.abs(clipPlane.distanceToPoint(cameraPos));
-
-  //   var vecCrystalToCamera = camera.position.clone().sub(mesh[idx].position);
-
-  // FIXME this is incorrect since clip planes are in world coordssssssss
-  //   var outwardClipNormal = clipPlane.normal.clone().negate();
-
-  //   var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
-  //   var signedDist = unsignedDist * (outsideClip ? 1 : -1);
-
-  //   if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
-  //     leastSignedDist = signedDist
-  //   }
-  // }
-
-  return leastSignedDist;
-}
-
-function getSignedDistanceToNearestCrystalSphere() {
-
-  var idx = getNearestCrystalIdx();  
-  var signedDistToNearestCrystalSphere = mesh[idx].position.distanceTo(camera.position) - crystalRadius;
-
-  return signedDistToNearestCrystalSphere;
 }
 
 var avgVolumes = [];
@@ -771,13 +739,17 @@ function update() {
       material_sphere[i].emissive.g = val;
       material_sphere[i].emissive.b = val;
 
-      material_sphere[i].capMaterial.emissive.r = val;
-      material_sphere[i].capMaterial.emissive.g = val;
-      material_sphere[i].capMaterial.emissive.b = val;
+      material_sphere[i].unclippedCapMaterial.emissive.r = val;
+      material_sphere[i].unclippedCapMaterial.emissive.g = val;
+      material_sphere[i].unclippedCapMaterial.emissive.b = val;
 
       mesh[i].rotation.x += (val* valScalar);
       mesh[i].rotation.z += (val* valScalar);
       mesh[i].rotation.y += (val* valScalar);
+
+      mesh[i].inner.rotation.x = mesh[i].rotation.x;
+      mesh[i].inner.rotation.z = mesh[i].rotation.z;
+      mesh[i].inner.rotation.y = mesh[i].rotation.y;
 
       mesh[i].updateMatrixWorld();
 
@@ -791,14 +763,14 @@ function update() {
         transformedSphereFacePlanes[j] = translatedPlane;
       }
 
-      // material_sphere[i].capMaterial.clippingPlanes = transformedSphereFacePlanes;
+      material_sphere[i].capMaterial.clippingPlanes = transformedSphereFacePlanes;
 
-      var clothBunch = allClothGroups[i];
-      for (var j = 0; j < clothBunch.numCloths; j++) {
-        var cloth = clothBunch.cloths[j];
-        cloth.renderMaterial.clipping = true
-        cloth.renderMaterial.clippingPlanes = transformedSphereFacePlanes;
-      }
+      // var clothBunch = allClothGroups[i];
+      // for (var j = 0; j < clothBunch.numCloths; j++) {
+      //   var cloth = clothBunch.cloths[j];
+      //   cloth.renderMaterial.clipping = true
+      //   cloth.renderMaterial.clippingPlanes = transformedSphereFacePlanes;
+      // }
       
     }
     loopCount++;
@@ -852,11 +824,136 @@ function update() {
   }
 
   // render
-  renderer.render(scene, camera, null, true);
+  // renderer.render(scene, camera);
+
+  renderer.clear();
+
+  var gl = renderer.context;
+
+
+  // depth prepass
+  renderer.render( scene, camera );
+  // renderer.clearColor();
+
+  // enable stencil test
+  renderer.state.setStencilTest( true );
+
+  // config the stencil buffer to collect data for testing
+  renderer.state.setStencilFunc( gl.ALWAYS, 1, 0xff );
+  renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.REPLACE );
+
+  // render shape for stencil test
+  renderer.render( sceneStencilMask, camera );
+
+  // set stencil buffer for testing
+  renderer.state.setStencilFunc( gl.EQUAL, 1, 0xff );
+  renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.KEEP );
+
+  // render inner crystal scene
+  renderer.render( sceneStencilClipped, camera );
+
+  // disable stencil test
+  renderer.state.setStencilTest( false );
+
   // renderer.toneMappingExposure = Math.pow( bloomParams.exposure, 4.0 );
   // composer.render();
 }
 
+
+function getNearestCrystalIdx() {
+  var nearestIdx = -1;
+  var nearestDist = Infinity;
+  
+  for (var i = 0; i < numSounds; i++) {
+    var dist = mesh[i].position.distanceTo(camera.position);
+    if (dist <= nearestDist) {
+      nearestDist = dist;
+      nearestIdx = i;
+    }
+  }
+
+  return nearestIdx;
+}
+
+// returns distance from camera to surface of nearest crystal (including clipping plane)
+// negative distance means inside crystal
+// relies on correct face normals
+function getSignedDistanceToNearestCrystal() {
+  
+  return getSignedDistanceToNearestCrystalSphere();
+
+  // var idx = getNearestCrystalIdx();
+  
+  // var geom = mesh[idx].geometry;
+  // var crystalPos = mesh[idx].position;
+  // var crystalWorldMatrix = mesh[idx].matrixWorld;
+  // var clipPlane = localPlane[idx];
+
+  // var leastSignedDist = Infinity;
+
+  // var cameraPos = camera.position;
+  // var cameraPosArr = [cameraPos.x, cameraPos.y, cameraPos.z];
+
+  // // get signed dist to mesh (ignoring clipping plane)
+  // // by checking dist to each face
+  // for (var faceIdx = 0; faceIdx < geom.faces.length; faceIdx++) {
+  //   var face = geom.faces[faceIdx];
+    
+  //   // get face vertices in world space
+  //   var v0 = geom.vertices[face.a].clone().applyMatrix4(crystalWorldMatrix);
+  //   var v0Arr = [v0.x, v0.y, v0.z];
+    
+  //   var v1 = geom.vertices[face.b].clone().applyMatrix4(crystalWorldMatrix);
+  //   var v1Arr = [v1.x, v1.y, v1.z];
+
+  //   var v2 = geom.vertices[face.c].clone().applyMatrix4(crystalWorldMatrix);
+  //   var v2Arr = [v2.x, v2.y, v2.z];
+    
+  //   var closestPt = [];
+
+  //   // get unsigned dist
+  //   var unsignedDist2 = ClosestPointOnTriangle(v0Arr, v1Arr, v2Arr, cameraPosArr, closestPt);
+  //   var unsignedDist = Math.sqrt(unsignedDist2);
+
+  //   // if it's new closest, get signed dist
+  //   if (unsignedDist < Math.abs(leastSignedDist)) {
+  //     var closestPtVec = new THREE.Vector3(closestPt[0], closestPt[1], closestPt[2]);
+  //     var vecToCamera = cameraPos.clone().sub(closestPtVec);
+  //     var signedDist = unsignedDist * (face.normal.dot(vecToCamera) > 0 ? 1 : -1);
+
+  //     leastSignedDist = signedDist;
+  //   }
+  // }
+
+
+  // // if inside mesh, check against clipping plane
+  // if (leastSignedDist <= 0) {
+  //   // plane.distanceToPoint returns signed dist, but may be wrong way depending on how plane normal is (manually) defined
+  //   var unsignedDist = Math.abs(clipPlane.distanceToPoint(cameraPos));
+
+  //   var vecCrystalToCamera = camera.position.clone().sub(mesh[idx].position);
+
+  // FIXME this is incorrect since clip planes are in world coordssssssss
+  //   var outwardClipNormal = clipPlane.normal.clone().negate();
+
+  //   var outsideClip = outwardClipNormal.dot(vecCrystalToCamera);
+  //   var signedDist = unsignedDist * (outsideClip ? 1 : -1);
+
+  //   if (Math.abs(signedDist) < Math.abs(leastSignedDist)) {
+  //     leastSignedDist = signedDist
+  //   }
+  // }
+
+  return leastSignedDist;
+}
+
+function getSignedDistanceToNearestCrystalSphere() {
+
+  var idx = getNearestCrystalIdx();  
+  var signedDistToNearestCrystalSphere = mesh[idx].position.distanceTo(camera.position) - crystalRadius;
+
+  return signedDistToNearestCrystalSphere;
+}
 
 function whenLoaded()
 {

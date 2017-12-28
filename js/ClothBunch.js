@@ -22,8 +22,10 @@ function ClothBunch( numCloths, fboWidth, fboHeight, tex, sideLength, options ) 
     }
   }
 
+  this.scene = options.scene || scene;
+
   this.rootNode = new THREE.Object3D();
-  scene.add(this.rootNode);
+  this.scene.add(this.rootNode);
 
   this.cloths = [];
   this.clothRootNodes = [];
