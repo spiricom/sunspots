@@ -1,8 +1,8 @@
 "use strict";
 
 function VisAudio(camera) {
-
   // AUDIO VARS
+
   var convolver;
   var audioContext, listener;
   var soundsLoaded = 0;
@@ -20,11 +20,18 @@ function VisAudio(camera) {
   var waitTimes = [], prevTime = [], onOff = [];
   var FFTSize = 32;
   var halfFFT = FFTSize / 2;
+  var currentLocationInSoundBank = [];
+
+
+  var soundBanks = [["del1-", 284],["gro-", 350], ["del3-", 313], ["del2-", 400]];
+  //comment this in for a different soundworld
+  //var soundBanks = [["sub-", 284],["bas_-", 400], ["del1-", 400], ["del2-", 400]];
 
   var curDome = 0;
   var soundsPlaying = false;
   var loopCount = 0;
   var noiseSound;
+  var soundStepSize = 15;
 
   var domeMaxGain = .05;
 
@@ -46,20 +53,20 @@ function VisAudio(camera) {
     }
   }
 
-
   const WORLD_WIDTH = 30, WORLD_DEPTH = 30;
 
   const REVERB_SOUND_FILE = './reverbs/BX20E103.wav';
   const PAN_MODEL = 'HRTF';
 
   const NUMBER_OF_SOUND_SOURCES = 4;
+  const NUMBER_OF_SOUND_BANKS = 4;
   const SOUND_POSITIONS = [[-15000,0,15000], [15000,0,15000], [15000,0,-15000],[-15000,0,-15000], [-15000,30,15000], [15000,80,15000],[-5000, 0, -5000], [5000, -50, -5000]];
 
   const REVERB_GAIN = .02;
   const REF_DIST = 9000;
 
   const WAIT_MAX = 2.0;
-  const WAIT_OFFSET = 1.0;
+  const WAIT_OFFSET = .1;
   const RANDOM_VOLUME = 1;
   const MAX_VOLUME = .09;
   const ANALYSER_DIVISOR = 4;
@@ -69,13 +76,11 @@ function VisAudio(camera) {
 
   const GUI_ENABLED = false;
 
-  // window.onload = function() {
   init();
-  // };
 
   function init()
   {
-
+    
     debugAudioLog("initializing!");
     if (AUDIO_ENABLED) {
       initAudioElements();
@@ -89,12 +94,15 @@ function VisAudio(camera) {
   function render()
   {
     requestAnimationFrame(render);
+      //if (paused) return;
 
     if (AUDIO_ENABLED) {
         renderAudio();
     }
     renderVideo();
+    //console.log("hi");
    }
+
 
   ////////////////////////////////////////////////////////////////////////////////////////////////
   //     AUDIO STUFF
@@ -160,7 +168,10 @@ function VisAudio(camera) {
     }
     ajaxRequest.send();
 
-
+    for (var i = 0; i < NUMBER_OF_SOUND_BANKS; i++)
+    {
+      currentLocationInSoundBank[i] = Math.floor(Math.random() * soundBanks[i][1]);
+    }
     // Setup each of the sound sources
 
     curSoundSource = 0;
@@ -171,15 +182,18 @@ function VisAudio(camera) {
       
     }
 
+
+
   }
 
   function renderVideo() {
 
-    if (soundsPlaying)
+    if (soundsPlaying == true)
     {
       for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
       {
         if (!analysers[i]) continue;
+
         freqVariables[i] = analysers[i].getAverageFrequency()/ANALYSER_DIVISOR;
         analysers[i].getFrequencyData();
         var FFTMax = 0;
@@ -191,7 +205,7 @@ function VisAudio(camera) {
           }
         }
         ampVariables[i] = FFTMax;
-        debugAudioLog("ampVariables[" + i + "] = " + FFTMax);
+        //debugAudioLog("ampVariables[" + i + "] = " + FFTMax);
       }
     }
   }
@@ -208,17 +222,29 @@ function VisAudio(camera) {
         {
           if (waitTimes[i] < (now - prevTime[i]))
           {
-            // Play a random sound from this soundsource
-           
-            waitTimes[i] = playRandomSound(i); // playRandomSound returns the duration of the loaded sample
-            ////waitTimes[i] = ((Math.random() * WAIT_MAX) + WAIT_OFFSET);
-            prevTime[i] = now;
+             
+             if (onOff[i])
+             {
+              // Play a sound from this soundsource chosen by random walk
+             
+              waitTimes[i] = playRandomSound(i); // playRandomSound returns the duration of the loaded sample
+            }
+            else
+            {
+              onOff[i] = true;
+              waitTimes[i] = ((Math.random() * WAIT_MAX) + WAIT_OFFSET);
+              //console.log(waitTimes[i]);
+
+            }
+              prevTime[i] = now;
           }
         }
       }
       loopCount++;
     }  
   }
+
+
 
 
   // Choose, load, and play a random sound file in the given source index
@@ -236,39 +262,37 @@ function VisAudio(camera) {
     curSoundSource = soundSourceIndex;
     var now = audioContext.currentTime;
 
-    var maxIndex;
     var minIndex = 10; // The soundfile indices start at 1
     var fileType = '.mp3';
     var randomFile = './vis_sounds/'; // Our sound bits are in the /sounds directory
 
-    // Decide if picking from 'L' or 'R' sampleset
-    if (soundSourceIndex  % 3 === 0) {
-      randomFile += 'sub-';
-      maxIndex = 284; // There are 118 L sound bits from our split up soundfile
-    } else if (soundSourceIndex  % 3 == 1){
-      randomFile += 'bas_-';
-      maxIndex = 1163; // There are 198 R sound bits from our split up soundfile`
-    }
-    else
-    {
-      randomFile += 'del1-';
-      maxIndex = 852; // There are 198 R sound bits from our split up soundfile`
-    }
+    // Decide which sampleset to pick from
+    var whichBank = soundSourceIndex % NUMBER_OF_SOUND_BANKS;
 
-    // Get the soundfile number, append it and the filetype
-    randomFile += Math.floor(Math.random() * (maxIndex - minIndex + 1)) + minIndex;
+    var maxIndex = soundBanks[whichBank][1]; //retrieve the maximum sound index from the array's second element
+
+    randomFile += soundBanks[whichBank][0]; //retrieve the name of the file prefix from the array's first element
+
+    currentLocationInSoundBank[whichBank] += Math.floor((Math.random() * soundStepSize) - (soundStepSize * .5));
+      debugAudioLog(currentLocationInSoundBank[whichBank]);
+      if ((currentLocationInSoundBank[whichBank] < minIndex) || (currentLocationInSoundBank[whichBank] > maxIndex))
+      {
+        currentLocationInSoundBank[whichBank] = Math.floor((Math.random() * maxIndex - minIndex + 1) + minIndex);
+    }
+     // Get the soundfile number, append it and the filetype
+    randomFile += currentLocationInSoundBank[whichBank];
     randomFile += fileType;
     curSoundFile = randomFile;
 
+
     if (RANDOM_VOLUME)
     {
-      // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
+
 
       var newVolume = Math.random() * MAX_VOLUME + 0.000000001;
-      //("newVolume is " + newVolume + " for Current Source " + curSoundSource);
+
       soundGains[curSoundSource].gain.setTargetAtTime(newVolume, now, 0.5);
 
-      //debugAudioLog(soundGains[curSoundSource].gain.value);
     }
 
     if (loadedSounds[curSoundFile] === undefined)
@@ -312,8 +336,8 @@ function VisAudio(camera) {
     // Add the sound to the object map
     loadedSounds[curSoundFile] = sounds[index];
     sounds[index].play();
-      //debugAudioLog(curSoundSource);
-    //curSoundSource++;
+    onOff[index] = Math.round(Math.random()); // 
+
     return buffer.duration;
   }
 
@@ -336,7 +360,7 @@ function VisAudio(camera) {
 
         prevTime[i] = now;
         waitTimes[i] = ((Math.random() * WAIT_MAX) + WAIT_OFFSET);
-        onOff[i] = Math.round(Math.random()); // NOTE(drew) was used in original but isn't now?
+        onOff[i] = Math.round(Math.random()); // 
 
         if (RANDOM_VOLUME)
         {
@@ -348,7 +372,7 @@ function VisAudio(camera) {
         else
         {
           // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
-          soundGains[i].gain.value = MAX_VOLUME + 0.000000001;
+          soundGains[i].gain.setTargetAtTime(0.000000001, now, 0.5);
         }
         soundsPlaying = true;
       }
@@ -386,7 +410,6 @@ function VisAudio(camera) {
       //debugAudioLog(curSoundSource);
     curSoundSource++;
   }
-
 
   return {
     freqVariables: freqVariables,
