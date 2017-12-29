@@ -35433,6 +35433,12 @@
 
 		},
 
+		getBufferLength: function ( value ) {
+
+			return this.source.buffer.duration;
+
+		},
+
 		play: function () {
 
 			if ( this.isPlaying === true ) {
@@ -35731,6 +35737,9 @@
 			this.panner.maxDistance = value;
 
 		},
+
+
+
 
 		updateMatrixWorld: ( function () {
 

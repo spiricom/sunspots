@@ -31,8 +31,8 @@ body {
 	/*padding: 120px;*/
 	width: 92vw;
 	height: 92vw;
-	min-width: 770px;
-	min-height: 770px;
+	min-width: 600px;
+	min-height: 600px;
 	position: fixed;
 	top: 50vh;
 	left: 50vw;
@@ -46,9 +46,6 @@ body {
 	}
 }
 
-@media (max-width: 770px) {
-}
-
 .justified-character {
 	/*display: list-item;*/
 }
@@ -60,12 +57,18 @@ body {
 	align: justify;
 	-moz-text-align-last: justify;
 	text-align-last: justify;
-	max-width: 400px;
-	min-width: 376px;
+	max-width: 41vw;
+	min-width: 41vw;
   -webkit-transition: color 0.2s ease-in-out;
   -moz-transition: color 0.2s ease-in-out;
   -o-transition: color 0.2s ease-in-out;
   transition: color 0.2s ease-in-out;
+}
+@media screen and (min-aspect-ratio: 1/1) {
+  #title {
+    max-width: 41vh;
+    min-width: 41vh;
+  }
 }
 
 ul {
@@ -77,21 +80,22 @@ li {
   /* inline block hack for IE 6&7 */
   zoom: 1;
   *display: inline;
-  padding: 4px;
+  padding: 4px 0px;
 }
 
 .title-line {
 	font-size: 0;
 }
 .title-line li {
-	font-size: 36px;
+  font-size: 4.5vw;
+	/*font-size: 36px;*/
+}
+@media screen and (min-aspect-ratio: 1/1) {
+  .title-line li {
+    font-size: 4.5vh;
+  }
 }
 
-@media (min-width: 770px) {
-	.title-line li {
-		/*font-size: 82px;*/
-	}
-}
 .row-container {
 
 	display: flex;
@@ -199,14 +203,13 @@ li {
 }
 
 .box .row {
-	padding: 40px 100px;
+	padding: 4vw 10vw;
 }
 
-@media (max-width: 1000px) {
-	.box .row {
-		padding: 40px 60px;
-    padding-left: 80px;
-	}
+@media screen and (min-aspect-ratio: 1/1) {
+  .box .row {
+    padding: 4vh 10vh;
+  }
 }
 
 .box .row.header {
@@ -229,8 +232,14 @@ li {
 
 
 .content {
-  font-size: 22px;
+  font-size: 2.6vw;
+  max-font-size: 36px;
   line-height: 1.6;
+}
+@media screen and (min-width: 900px) {
+  .content {
+     font-size: 26px;
+  }
 }
 
 .content a {

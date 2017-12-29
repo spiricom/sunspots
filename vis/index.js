@@ -12,6 +12,8 @@ var renderer;
 
 var shaderSystem;
 
+var audioSystem;
+
 var composer, copyPass, ssaaRenderPass;
 
 var camera;
@@ -67,8 +69,9 @@ function init(){
   shaderSystem = ShaderSystem(renderer, updateFragDefines);
 
 
-
   camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+
+  audioSystem = VisAudio(camera);
   
   scene = new THREE.Scene();
   bgScene = new THREE.Scene();
