@@ -20,7 +20,7 @@ var halfFFT = FFTSize / 2;
 var currentLocationInSoundBank = [];
 
 
-var soundBanks = [["del1-", 284],["gro-", 400], ["del3-", 400], ["del2-", 400]];
+var soundBanks = [["del1-", 284],["gro-", 350], ["del3-", 313], ["del2-", 400]];
 //comment this in for a different soundworld
 //var soundBanks = [["sub-", 284],["bas_-", 400], ["del1-", 400], ["del2-", 400]];
 
@@ -43,7 +43,7 @@ var meshes = [];
 var camera, controls, scene, renderer, uniforms;
 
 
-var debugAudioMode = true;
+var debugAudioMode = false;
 function debugAudioLog(val) {
   if (debugAudioMode) {
     console.log(val);
@@ -263,7 +263,7 @@ function renderAudio() {
 	        {
 	        	onOff[i] = true;
 	        	waitTimes[i] = ((Math.random() * WAIT_MAX) + WAIT_OFFSET);
-	        	console.log(waitTimes[i]);
+	        	//console.log(waitTimes[i]);
 
 	        }
 	          prevTime[i] = now;
@@ -304,7 +304,7 @@ function playRandomSound(soundSourceIndex)
   randomFile += soundBanks[whichBank][0]; //retrieve the name of the file prefix from the array's first element
 
   currentLocationInSoundBank[whichBank] += Math.floor((Math.random() * soundStepSize) - (soundStepSize * .5));
-    console.log(currentLocationInSoundBank[whichBank]);
+    debugAudioLog(currentLocationInSoundBank[whichBank]);
   	if ((currentLocationInSoundBank[whichBank] < minIndex) || (currentLocationInSoundBank[whichBank] > maxIndex))
   	{
   		currentLocationInSoundBank[whichBank] = Math.floor((Math.random() * maxIndex - minIndex + 1) + minIndex);
