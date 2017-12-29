@@ -23,7 +23,12 @@ function VisAudio(camera) {
   var currentLocationInSoundBank = [];
 
 
-  var soundBanks = [["del1-", 284],["gro-", 350], ["del3-", 313], ["del2-", 400]];
+  var soundBanks = [
+    ["del1-", 284],
+    ["gro-", 350], 
+    ["del3-", 313], 
+    ["del2-", 400]
+  ];
   //comment this in for a different soundworld
   //var soundBanks = [["sub-", 284],["bas_-", 400], ["del1-", 400], ["del2-", 400]];
 
@@ -159,12 +164,12 @@ function VisAudio(camera) {
     ajaxRequest.onload = function() {
       var audioData = ajaxRequest.response;
       audioContext.decodeAudioData(audioData, function(buffer) {
-          SpringReverbBuffer = buffer;
-          convolver.buffer = SpringReverbBuffer;
-          convolver.connect(reverbGain);
-          reverbGain.connect(audioContext.destination);
-          whenLoaded();
-        }, function(e) {"Error with decoding audio data" + e.err;});
+        SpringReverbBuffer = buffer;
+        convolver.buffer = SpringReverbBuffer;
+        convolver.connect(reverbGain);
+        reverbGain.connect(audioContext.destination);
+        whenLoaded();
+      }, function(e) {"Error with decoding audio data" + e.err;});
     }
     ajaxRequest.send();
 
@@ -223,8 +228,8 @@ function VisAudio(camera) {
           if (waitTimes[i] < (now - prevTime[i]))
           {
              
-             if (onOff[i])
-             {
+            if (onOff[i])
+            {
               // Play a sound from this soundsource chosen by random walk
              
               waitTimes[i] = playRandomSound(i); // playRandomSound returns the duration of the loaded sample
@@ -236,7 +241,7 @@ function VisAudio(camera) {
               //console.log(waitTimes[i]);
 
             }
-              prevTime[i] = now;
+            prevTime[i] = now;
           }
         }
       }
@@ -318,7 +323,7 @@ function VisAudio(camera) {
     
     var index = curSoundSource;
 
-      // Create a new sound so we can have a new sound buffer
+    // Create a new sound so we can have a new sound buffer
     sounds[index] = new THREE.PositionalAudio( listener );
     // sounds[index].setPanningModel(PAN_MODEL);
     sounds[index].setFilter(soundGains[index]);

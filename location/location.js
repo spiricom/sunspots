@@ -6,8 +6,8 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 // CONFIG
 var audioEnabled = true;
 
-var fboWidth  = 50;
-var fboHeight = 50;
+var fboWidth  = 30;
+var fboHeight = 30;
 
 var initCameraDist = 500;
 
@@ -21,9 +21,9 @@ var bloomParams = {
   projection: 'normal',
   background: false,
   exposure: 1.0,
-  bloomThreshold: 0.25,
-  bloomStrength: 0.2,
-  bloomRadius: 0.1,
+  bloomThreshold: 0.91,
+  bloomStrength: 0.1,
+  bloomRadius: 0.83,
 };
 
 // CONTAINERS
@@ -214,7 +214,7 @@ function init() {
   
   // CAMERA
   camera = new THREE.PerspectiveCamera( 160, window.innerWidth / window.innerHeight, 1, 10000 );
-  camera.position.set( 0, 0, 370);
+  camera.position.set( 0, 0, 740);
   // camera.position.set( 0, 25, 0 );
 
   var viewportWidth = window.innerWidth;
@@ -232,7 +232,7 @@ function init() {
 
   // RENDERER
   renderer = new THREE.WebGLRenderer({ 
-    antialias: true,
+    // antialias: true,
     // logarithmicDepthBuffer: true,
     devicePixelRatio: window.devicePixelRatio,
     // preserveDrawingBuffer: true,
@@ -240,9 +240,9 @@ function init() {
     // gammaInput: true,
     // gammaOutput: true,
   });
-  renderer.autoClear = false;
-  renderer.autoClearColor = false;
-  renderer.autoClearDepth = false;
+  // renderer.autoClear = false;
+  // renderer.autoClearColor = false;
+  // renderer.autoClearDepth = false;
   renderer.localClippingEnabled = true;
   // renderer.shadowMap.enabled = true;
   // renderer.shadowMap.renderReverseSided = false;
@@ -282,7 +282,7 @@ function init() {
   composer.setSize(viewportWidth, viewportHeight);
   composer.addPass(renderScenePass);
   composer.addPass(effectFXAA);
-  composer.addPass(bloomPass);
+  // composer.addPass(bloomPass);
   composer.addPass(copyShader);
   renderer.gammaInput = true;
 
@@ -340,7 +340,7 @@ function init() {
   // }
 
   // sky mesh
-  var geoSky = new THREE.SphereGeometry( 1000, 48, 48 );
+  var geoSky = new THREE.SphereGeometry( 1600, 48, 48 );
   var matSky = new THREE.MeshPhongMaterial( { color: getPaletteColor(), side: THREE.DoubleSide } );
   var meshSky = new THREE.Mesh( geoSky, matSky );
   meshSky.position.set( 0, 0, 0 );
@@ -362,9 +362,9 @@ function init() {
   pMaterial = new THREE.PointsMaterial({
     color: particleColor,
     size: 5,
-    // map: textureLoader.load("images/lensflare0_alpha_dot.png"),
+    map: textureLoader.load("images/lensflare0_alpha_dot.png"),
     blending: THREE.AdditiveBlending,
-    transparent: true,
+    // transparent: true,
     //depthWrite: false,
   });
   pMaterial.alphaTest = 0.5;
@@ -441,7 +441,7 @@ function init() {
     // material_sphere[i].castShadow = true;
     // material_sphere[i].receiveShadow = true; 
 
-    var crystalPos = new THREE.Vector3(soundPositions[i][0], soundPositions[i][1], soundPositions[i][2]);
+    var crystalPos = new THREE.Vector3(soundPositions[i][0] * 2, soundPositions[i][1] * 2, soundPositions[i][2] * 2);
 
     // main crystal mesh
     var crystalMesh = new THREE.Mesh( sphereGeom, material_sphere[i] );
@@ -458,7 +458,7 @@ function init() {
       side: THREE.BackSide,
       blendEquation: THREE.ReverseSubtractEquation,
       opacity: 0.8,
-      transparent: true,
+      // transparent: true,
       // side: THREE.DoubleSide,
       // color: 0x000000,
       map: clothTex,
@@ -593,7 +593,7 @@ function init() {
     clothRenderer.setSize(1000, 1000);
      
     var mainClothSize = 600;
-    var group = new ClothBunch(3, fboWidth, fboHeight, null, mainClothSize, {
+    var group = new ClothBunch(2, fboWidth, fboHeight, null, mainClothSize, {
       // renderer: clothRenderer,
       // flatShading: true,
       // scene: sceneStencilClipped,
@@ -697,7 +697,7 @@ function init() {
     sound[i].setPanningModel(panModel);
     sound[i].setFilter(soundGain[i]);
     sound[i].setRolloffFactor(2);
-    sound[i].setRefDistance(5000);
+    sound[i].setRefDistance(10000);
     mesh[i].add( sound[i] );
     //pointLight[i] = new THREE.PointLight( 0xffffff, .1 );
     //mesh[i].add( pointLight[i] );
@@ -906,16 +906,17 @@ function update() {
     controls.update(delta);
   }
 
+  renderer.clear();
+  
   // render
   // renderer.render(scene, camera);
 
-  renderer.clear();
 
-  var gl = renderer.context;
+  // var gl = renderer.context;
 
 
   // depth prepass
-  renderer.render( scene, camera );
+  // renderer.render( scene, camera );
   // renderer.clearColor();
 
   // enable stencil test
@@ -939,8 +940,8 @@ function update() {
   // disable stencil test
   // renderer.state.setStencilTest( false );
 
-  // renderer.toneMappingExposure = Math.pow( bloomParams.exposure, 4.0 );
-  // composer.render();
+  renderer.toneMappingExposure = Math.pow( bloomParams.exposure, 4.0 );
+  composer.render();
 }
 
 
