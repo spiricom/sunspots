@@ -18,7 +18,12 @@ var waitTimes = [], prevTime = [], onOff = [];
 var FFTSize = 32;
 var halfFFT = FFTSize / 2;
 var currentLocationInSoundBank = [];
-var soundBanks = [["sub-", 284],["bas_-", 400], ["del1-", 400], ["del2-", 400]];
+
+
+var soundBanks = [["del1-", 284],["gro-", 400], ["del3-", 400], ["del2-", 400]];
+//comment this in for a different soundworld
+//var soundBanks = [["sub-", 284],["bas_-", 400], ["del1-", 400], ["del2-", 400]];
+
 var curDome = 0;
 var soundsPlaying = false;
 var loopCount = 0;
