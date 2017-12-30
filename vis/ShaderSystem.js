@@ -5,7 +5,7 @@ if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
 
 var ShaderSystem = function(renderer, updateFragDefines) {
-  // NOTE: WHEN DEPLOYING:
+  // NOTE: DISABLE WHEN DEPLOYING:
   var LIVE_UPDATE = true;
 
   var shadersDir = "./glsl/";
@@ -230,6 +230,14 @@ var ShaderSystem = function(renderer, updateFragDefines) {
       type: 'f',
       value: 44100,
     },
+    u_control0: { type: 'f', value: 0, },
+    u_control1: { type: 'f', value: 0, },
+    u_control2: { type: 'f', value: 0, },
+    u_control3: { type: 'f', value: 0, },
+    u_control4: { type: 'f', value: 0, },
+    u_control5: { type: 'f', value: 0, },
+    u_control6: { type: 'f', value: 0, },
+    u_control7: { type: 'f', value: 0, },
   };
   // Mouse position in - 1 to 1
   // TODO convert to pixels, set (x, y) every frame and (z, w) every frame button is down
@@ -525,11 +533,22 @@ var ShaderSystem = function(renderer, updateFragDefines) {
     time = fragUniforms.iGlobalTime.value;
   }
 
+  function setUniform(name, val) {
+    if (!fragUniforms[name]) {
+      fragUniforms[name] = {
+        type: 'f',
+        value: val,
+      };
+    }
+    fragUniforms[name].value = val;
+  }
+
   // LOAD SHADERS AND INIT
   shaderLoader = new ShaderLoader();
   shaderLoader.loadShaders(shadersToLoad, shadersDir, init);
 
   // exports
+  object.setUniform = setUniform;
   object.updateAndRender = updateAndRender;
   object.fragDefines = fragDefines;
   object.getRenderTarget = getRenderTarget;

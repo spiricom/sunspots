@@ -27,7 +27,7 @@ function VisAudio(camera) {
     ["del1-", 284],
     ["gro-", 350], 
     ["del3-", 313], 
-    ["del2-", 400]
+    ["del2-", 400],
   ];
   //comment this in for a different soundworld
   //var soundBanks = [["sub-", 284],["bas_-", 400], ["del1-", 400], ["del2-", 400]];

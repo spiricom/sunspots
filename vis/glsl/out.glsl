@@ -1,10 +1,19 @@
 
 
+uniform float u_control0;
+uniform float u_control1;
+uniform float u_control2;
+uniform float u_control3;
+uniform float u_control4;
+uniform float u_control5;
+uniform float u_control6;
+uniform float u_control7;
+
 // will be multiplied by pixelRatio
 // #define NUM_TILES (4.0 * vec2(1.0, 1.0 / (16.0 / 9.0)))
 #define NUM_TILES 1.0
 
-// #define DEBUG_DRAW
+#define DEBUG_DRAW
 // #define DRAW_BLACK_AND_WHITE
 
 #define WAVE iChannel0
@@ -111,6 +120,7 @@ void main(){
     // color = mixColor(color, vec3(92.0, 232.0, 134.0) / 255.0, tSamp.g);
     // color = mixColor(color, vec3(102.0, 203.0, 255.0) / 255.0, tSamp.b);
 
+    // color.r = u_control4;
     tSamp.rgb = color;
   }
 

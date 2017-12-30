@@ -1,15 +1,38 @@
+uniform float u_control0;
+uniform float u_control1;
+uniform float u_control2;
+uniform float u_control3;
+uniform float u_control4;
+uniform float u_control5;
+uniform float u_control6;
+uniform float u_control7;
 
-// float forceMult = 8.0;
-float forceMult = 3.2;
+// float FORCE_MULT = 8.0;
+// float FORCE_MULT = 3.2;
+
+float getForceMult() {
+  float fm = (3.2 - 1.0 - clamp((u_control2 * (u_control6 * 0.1 + 1.0) - 0.0), 0.0, 99.0) * 0.01);
+
+  float sgn = fm > 0.0 ? 1.0 : -1.0;
+
+  fm += 2.0 * sgn;
+
+  return iFrame < 60 ? 3.2 : fm;
+}
+
+
+#define FORCE_MULT getForceMult()
+
+
 
 // #define FOCUS_COEFF 0.5
 // #define FOCUS_COEFF 0.9
-#define FOCUS_COEFF 0.9
+#define FOCUS_COEFF (iFrame < 60 ? 0.9 : (0.9 - 0.3 + clamp((u_control0 * (u_control4 * 0.1 + 1.0) - 0.0), 0.0, 99.0) * 0.02))
 
 // #define WAVE_FOCUS_COEFF 1.0
 #define WAVE_FOCUS_COEFF 1.0001
 
-#define WAVE_FOCUS_COEFF_2 1.0//24
+#define WAVE_FOCUS_COEFF_2 (iFrame < 60 ? 1.0 : 1.0 + clamp(u_control1 - 0.0, 0.0, 99.0) * 0.00001)
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
 vec3 rgb2hsv(vec3 c) {
@@ -40,7 +63,7 @@ vec4 update(vec2 uv) {
     
 
   vec4 fSamp = texture(iChannel2, uv);
-  vec2 force = (fSamp.rg) * forceMult;
+  vec2 force = (fSamp.rg) * FORCE_MULT;
   vec4 colorSamp = texture(iChannel0, uv + force / dims);
   vec4 wSamp = texture(iChannel1, (uv + force / dims) * WAVE_FOCUS_COEFF);
 

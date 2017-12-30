@@ -1,6 +1,15 @@
 
-// float vFlow = 0.15;
-float vFlow = 0.00;
+uniform float u_control0;
+uniform float u_control1;
+uniform float u_control2;
+uniform float u_control3;
+uniform float u_control4;
+uniform float u_control5;
+uniform float u_control6;
+uniform float u_control7;
+
+// float V_FLOW = 0.15;
+#define V_FLOW (0.00)
 
 vec2 baseForce = vec2(0.0, 0.1);
 
@@ -9,7 +18,7 @@ vec2 baseForce = vec2(0.0, 0.1);
 
 
 // #define NOISE_MULT 0.5
-#define NOISE_MULT 1.2
+#define NOISE_MULT (1.2)
 
 // float WAVE_GRADIENT_MULT = 2.025;
 #define WAVE_GRADIENT_MULT 4.025
@@ -21,7 +30,8 @@ float noiseScale = 1.0 / 128.0;
 
 // use for destabilization
 // careful, big values make final output scroll
-vec2 noiseScroll = vec2(0, -1.5);
+// #define noiseScroll vec2(0.0 + u_control5 * 0.0002, -1.5 + u_control2 * 0.0002)
+#define noiseScroll vec2(0.0, -1.5)
 
 // must be an integer when multiplied with dims
 #define noisePeriod (noiseScale / 2.0)
@@ -564,7 +574,7 @@ vec4 update(vec2 uv) {
   vec2 d[4];
   d[0] = vec2(-1.0, 0.0);
   d[1] = vec2(0.0, -1.0);
-  d[2] = vec2(1.0, vFlow);
+  d[2] = vec2(1.0, V_FLOW);
   d[3] = vec2(-0.0, 1.0);
 
   vec2 gradient = vec2(0.0);
@@ -573,7 +583,7 @@ vec4 update(vec2 uv) {
     gradient += waveSample.rg * d[i];
   }
 
-  vec2 noiseOff = vec2(0, iGlobalTime*0.1) * noiseScroll;
+  vec2 noiseOff = vec2(iGlobalTime*0.1) * noiseScroll;
   vec2 noiseVal = vec2(
     psnoise_fbm(fragCoord.xy / 2.0 * noiseScale + noiseOff, dims * noisePeriod),
     psnoise_fbm(fragCoord.xy * noiseScale + noiseOff + 123.4, dims * noisePeriod)

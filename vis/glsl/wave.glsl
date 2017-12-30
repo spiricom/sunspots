@@ -1,14 +1,22 @@
 
+uniform float u_control0;
+uniform float u_control1;
+uniform float u_control2;
+uniform float u_control3;
+uniform float u_control4;
+uniform float u_control5;
+uniform float u_control6;
+uniform float u_control7;
 
 // lower numbers give bigger color splotches
 // higher numbers increase speed
 // #define COLOR_SAMP_MULT 1.0
-#define COLOR_SAMP_MULT 10.0
+#define COLOR_SAMP_MULT (10.0)
 
 // controls speed
 // numbers around 0.1 grant full inversions
 // #define TIME_MULT 0.000001
-#define TIME_MULT 0.1
+#define TIME_MULT (0.1)
 
 // higher numbers more uniform and vertically scrolling
 // #define OFFSET_MULT 1.0

@@ -3,6 +3,7 @@
 // config
 var fontPath = "fonts/Times_Italic.typeface.json";
 var statsEnabled = false;
+var skin3dEnabled = false;
 
 // misc globals
 var stats;
@@ -147,47 +148,62 @@ function update() {
 function render() {
 
   if (shaderSystem.initialized) {
-    shaderSystem.updateAndRender();
 
-    var rts = shaderSystem.getRenderTarget(2);
-    var prevViewMatrix = camera.matrixWorld.clone();
-    
-    for (var i = 0; i < objs.length; i++) {
-      var obj = objs[i];
-
-
-      // obj.rotation.x -= 0.01;
-      // obj.rotation.y -= 0.01;
-      // obj.rotation.z -= 0.01;
-
-      obj.material.uniforms.texture.value = rts[2][1].texture;
-      obj.material.uniforms.prevViewMatrix.value = prevViewMatrix;
-
-      obj.material.uniforms.prevModelMatrix.value = obj.modelViewMatrix.clone();
+    // uniforms from audio
+    var numSounds = audioSystem.numSoundSources;
+    for (var i = 0; i < numSounds; i++) {
+      shaderSystem.setUniform("u_control" + i, audioSystem.ampVariables[i]);
+    }
+    for (var i = 0; i < numSounds; i++) {
+      var idx = i + numSounds;
+      shaderSystem.setUniform("u_control" + idx, audioSystem.freqVariables[i]);
     }
 
-    theta += 0.2;
-    // camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
-    // camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
-    // camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
-    camera.lookAt( scene.position );
+    // update shadersystem
+    shaderSystem.updateAndRender();
 
-    controls.update();
-    camera.updateMatrixWorld();
+    // skinned 3d stuff
+    if (skin3dEnabled) {
+      var rts = shaderSystem.getRenderTarget(2);
+      var prevViewMatrix = camera.matrixWorld.clone();
+      
+      for (var i = 0; i < objs.length; i++) {
+        var obj = objs[i];
 
-    renderer.autoClear = false;
 
-    // renderer.clear();
-    // renderer.render( bgScene, camera );
-    // renderer.render( scene, camera );
+        // obj.rotation.x -= 0.01;
+        // obj.rotation.y -= 0.01;
+        // obj.rotation.z -= 0.01;
 
-    renderer.clearTarget(rts[2][0]);
-    renderer.render( bgScene, camera, rts[2][0] );
-    renderer.render( scene, camera, rts[2][0] );
+        obj.material.uniforms.texture.value = rts[2][1].texture;
+        obj.material.uniforms.prevViewMatrix.value = prevViewMatrix;
 
-    var temp = rts[2][0];
-    rts[2][0] = rts[2][1];
-    rts[2][1] = temp;
+        obj.material.uniforms.prevModelMatrix.value = obj.modelViewMatrix.clone();
+      }
+
+      theta += 0.2;
+      // camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
+      // camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
+      // camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
+      camera.lookAt( scene.position );
+
+      controls.update();
+      camera.updateMatrixWorld();
+
+      renderer.autoClear = false;
+
+      // renderer.clear();
+      // renderer.render( bgScene, camera );
+      // renderer.render( scene, camera );
+
+      renderer.clearTarget(rts[2][0]);
+      renderer.render( bgScene, camera, rts[2][0] );
+      renderer.render( scene, camera, rts[2][0] );
+
+      var temp = rts[2][0];
+      rts[2][0] = rts[2][1];
+      rts[2][1] = temp;
+    }
   }
 
 }
