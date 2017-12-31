@@ -18,10 +18,10 @@ vec2 baseForce = vec2(0.0, 0.1);
 
 
 // #define NOISE_MULT 0.5
-#define NOISE_MULT (1.2)
+#define NOISE_MULT (1.4)
 
 // float WAVE_GRADIENT_MULT = 2.025;
-#define WAVE_GRADIENT_MULT 4.025
+#define WAVE_GRADIENT_MULT 3.025
 
 
 // bigger scale for lower freq
@@ -30,7 +30,7 @@ float noiseScale = 1.0 / 128.0;
 
 // use for destabilization
 // careful, big values make final output scroll
-// #define noiseScroll vec2(0.0 + u_control5 * 0.0002, -1.5 + u_control2 * 0.0002)
+// #define noiseScroll  (iFrame < 60 ? vec2(0.0, -1.5) : vec2(0.0 + u_control6 * 0.002, -1.5 + u_control2 * 0.0004))
 #define noiseScroll vec2(0.0, -1.5)
 
 // must be an integer when multiplied with dims

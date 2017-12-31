@@ -16,14 +16,15 @@ uniform float u_control7;
 // controls speed
 // numbers around 0.1 grant full inversions
 // #define TIME_MULT 0.000001
-#define TIME_MULT (0.1)
+#define TIME_MULT (0.05)
 
 // higher numbers more uniform and vertically scrolling
 // #define OFFSET_MULT 1.0
-#define OFFSET_MULT 1.0
+// #define OFFSET_MULT (1.0 - u_control3 * 0.01 + 0.1)
+#define OFFSET_MULT (1.0)
 
 // #define CENTER_SIN_MULT 0.01
-#define CENTER_SIN_MULT 0.0001
+#define CENTER_SIN_MULT (0.0001 + clamp(u_control3*u_control7 - 0.0, 0.0, 1.0) * 0.0002)
 // #define CENTER_SIN_MULT 0.0
 
 void main() {

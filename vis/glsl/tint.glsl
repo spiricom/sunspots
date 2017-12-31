@@ -11,11 +11,11 @@ uniform float u_control7;
 // float FORCE_MULT = 3.2;
 
 float getForceMult() {
-  float fm = (3.2 - 1.0 - clamp((u_control2 * (u_control6 * 0.1 + 1.0) - 0.0), 0.0, 99.0) * 0.01);
+  float fm = (1.3 - clamp(((u_control2*u_control6 - u_control3*u_control7) * 0.1), -10.0, 10.0) * 0.12);
 
   float sgn = fm > 0.0 ? 1.0 : -1.0;
 
-  fm += 2.0 * sgn;
+  fm += 3.0 * sgn;
 
   return iFrame < 60 ? 3.2 : fm;
 }
@@ -27,12 +27,12 @@ float getForceMult() {
 
 // #define FOCUS_COEFF 0.5
 // #define FOCUS_COEFF 0.9
-#define FOCUS_COEFF (iFrame < 60 ? 0.9 : (0.9 - 0.3 + clamp((u_control0 * (u_control4 * 0.1 + 1.0) - 0.0), 0.0, 99.0) * 0.02))
+#define FOCUS_COEFF (iFrame < 60 ? 0.9 : (0.9 - 0.3 + clamp(((u_control0+u_control1-u_control2) * ((u_control4+u_control5-u_control6) * 0.1 + 1.0) - 0.0), 0.0, 99.0) * 0.007))
 
 // #define WAVE_FOCUS_COEFF 1.0
 #define WAVE_FOCUS_COEFF 1.0001
 
-#define WAVE_FOCUS_COEFF_2 (iFrame < 60 ? 1.0 : 1.0 + clamp(u_control1 - 0.0, 0.0, 99.0) * 0.00001)
+#define WAVE_FOCUS_COEFF_2 (iFrame < 60 ? 1.0 : 1.0 + clamp((u_control1+u_control5) - 0.0, 0.0, 99.0) * 0.00001)
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
 vec3 rgb2hsv(vec3 c) {
