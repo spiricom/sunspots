@@ -3,12 +3,15 @@
 // config
 var fontPath = "fonts/Times_Italic.typeface.json";
 var statsEnabled = false;
-var skin3dEnabled = false;
+var skin3dEnabled = true;
 
 // misc globals
 var stats;
 
-var scene, bgScene;
+var scene;
+var bgScene;
+var frontScene;
+
 var renderer;
 
 var shaderSystem;
@@ -36,6 +39,7 @@ var mouseXOnMouseDown = 0;
 var radius = 100, theta = 0;
 
 var objs = [];
+var frontSceneObjs = [];
 ///////////////
 
 init();
@@ -76,6 +80,7 @@ function init(){
   
   scene = new THREE.Scene();
   bgScene = new THREE.Scene();
+  frontScene = new THREE.Scene();
   
   var light = new THREE.DirectionalLight( 0xffffff, 1 );
   light.position.set( 1, 1, 1 ).normalize();
@@ -92,31 +97,63 @@ function init(){
     side: THREE.DoubleSide,
   });
 
-  var lambertMat = new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } );
+  var lambertMat = new THREE.MeshNormalMaterial( { 
+    // color: Math.random() * 0x303030,
+    side: THREE.DoubleSide,
+  } );
 
-  // var geometry = new THREE.BoxBufferGeometry( 600, 600, 600 );
-  var geometry = new THREE.SphereBufferGeometry( 600 );
+  var geometry = new THREE.BoxBufferGeometry( 1, 1, 1 );
+  // var geometry = new THREE.SphereBufferGeometry( 1 );
 
   // var object = new THREE.Mesh( geometry, mat.clone() );
   // scene.add( object );
   // objs.push(object);
 
-  for ( var i = 0; i < 7; i ++ ) {
+  {
     var object = new THREE.Mesh( geometry, mat.clone() );
-    // var object = new THREE.Mesh( geometry, lambertMat );
-    object.position.x = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
-    object.position.z = (Math.random()*0.4+0.6 * (Math.random() < 0.5 ? -1 : 1)) * 600;
-    object.position.y = (Math.random()*0.3+0.7) * 600;
-    object.rotation.x = Math.random() * 2 * Math.PI;
-    object.rotation.y = Math.random() * 2 * Math.PI;
-    object.rotation.z = Math.random() * 2 * Math.PI;
-    object.scale.x = 0.8;
-    object.scale.y = 0.8;
-    object.scale.z = 0.8;
+    object.position.y = 53;
+    // object.position.x = 53;
+    object.scale.x = 100;
+    object.scale.y = 100;
+    object.scale.z = 100;
+    scene.add( object );
+    objs.push(object);
+  }
+  {
+    var object = new THREE.Mesh( geometry, mat.clone() );
+    object.position.y = -55;
+    // object.position.x = 53;
+    object.scale.x = 100;
+    object.scale.y = 100;
+    object.scale.z = 100;
+    object.rotation.x = 0.30;
+    scene.add( object );
+    objs.push(object);
+  }
+  // {
+  //   var object = new THREE.Mesh( geometry, mat.clone() );
+  //   object.position.y = -10;
+  //   object.position.x = 40;
+  //   object.position.z = 40;
+  //   object.scale.x = 20;
+  //   object.scale.y = 100;
+  //   object.scale.z = 20;
+  //   scene.add( object );
+  //   objs.push(object);
+  // }
+  {
+    var object = new THREE.Mesh( geometry, mat.clone() );
+    object.position.x = -10;
+    object.position.y = 40;
+    object.position.z = 40;
+    object.scale.x = 20;
+    object.scale.y = 100;
+    object.scale.z = 20;
     scene.add( object );
     objs.push(object);
   }
 
+  // screen quad
   var quad = new THREE.Mesh(
     new THREE.PlaneGeometry(2, 2),
     new THREE.ShaderMaterial({
@@ -128,10 +165,40 @@ function init(){
   );
   bgScene.add(quad);
 
+  // controls
   controls = new THREE.TrackballControls( camera, renderer.domElement );
   camera.position.z = 20;
   controls.noZoom = true;
   controls.noPan = true;
+
+  // front scene
+  var basicMat = new THREE.MeshNormalMaterial({
+    color: new THREE.Color(455, 455, 455),
+    // transparent: true,
+    // opacity: 0.4,
+  });
+
+  var cutGeometry = new THREE.BoxBufferGeometry( 1, 1, 1, 1, 1, 1 );
+  for ( var i = 0; i < 700; i ++ ) {
+    var object = new THREE.Mesh( cutGeometry, basicMat );
+    // var object = new THREE.Mesh( cutGeometry, lambertMat );
+
+    object.position.x = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 12;
+    object.position.y = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 12;
+    object.position.z = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 12;
+
+    // object.rotation.x = Math.random() * 2 * Math.PI;
+    // object.rotation.y = Math.random() * 2 * Math.PI;
+    object.rotation.z = Math.random() * 2 * Math.PI;
+
+    object.scale.x = 0.4 * Math.random() + 0.4;
+    object.scale.y = 0.5;
+    object.scale.z = 0.5;
+    
+    frontSceneObjs.push(object)
+    scene.add( object );
+  }
+
 
   // setInterval(update, 1 / 30 * 1000);
   update();
@@ -159,8 +226,32 @@ function render() {
       shaderSystem.setUniform("u_control" + idx, audioSystem.freqVariables[i]);
     }
 
+    // var numFrontObjs = frontSceneObjs.length;
+    // for (var i = 0; i < numFrontObjs; i++) {
+    //   var obj = frontSceneObjs[i];
+    //   obj.material.opacity *= 0.995;
+    // }
+
+    // {
+    //   var a = audioSystem.ampVariables[3];
+    //   var f = audioSystem.freqVariables[3];
+    //   if (f) {
+        
+    //     var idx = Math.floor(f * 1);
+
+    //     var obj = frontSceneObjs[idx % numFrontObjs];
+
+    //     obj.material.opacity += a;
+    //   }
+    // }
+
+
     // update shadersystem
     shaderSystem.updateAndRender();
+
+    renderer.clearDepth();
+    renderer.render( frontScene, camera );
+
 
     // skinned 3d stuff
     if (skin3dEnabled) {
@@ -170,11 +261,6 @@ function render() {
       for (var i = 0; i < objs.length; i++) {
         var obj = objs[i];
 
-
-        // obj.rotation.x -= 0.01;
-        // obj.rotation.y -= 0.01;
-        // obj.rotation.z -= 0.01;
-
         obj.material.uniforms.texture.value = rts[2][1].texture;
         obj.material.uniforms.prevViewMatrix.value = prevViewMatrix;
 
@@ -182,19 +268,12 @@ function render() {
       }
 
       theta += 0.2;
-      // camera.position.x = radius * Math.sin( THREE.Math.degToRad( theta ) );
-      // camera.position.y = radius * Math.sin( THREE.Math.degToRad( theta ) );
-      // camera.position.z = radius * Math.cos( THREE.Math.degToRad( theta ) );
       camera.lookAt( scene.position );
 
       controls.update();
       camera.updateMatrixWorld();
 
       renderer.autoClear = false;
-
-      // renderer.clear();
-      // renderer.render( bgScene, camera );
-      // renderer.render( scene, camera );
 
       renderer.clearTarget(rts[2][0]);
       renderer.render( bgScene, camera, rts[2][0] );

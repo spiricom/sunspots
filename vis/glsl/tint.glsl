@@ -11,13 +11,14 @@ uniform float u_control7;
 // float FORCE_MULT = 3.2;
 
 float getForceMult() {
-  float fm = (1.3 - clamp(((u_control2*u_control6 - u_control3*u_control7) * 0.1), -10.0, 10.0) * 0.12);
+  float fm = (1.3 + clamp(u_control2 - 100.0, 0.0, 100.0) * 0.52);
 
   float sgn = fm > 0.0 ? 1.0 : -1.0;
 
-  fm += 3.0 * sgn;
+  fm += 3.2 * sgn;
 
   return iFrame < 60 ? 3.2 : fm;
+  // return 30.2;
 }
 
 

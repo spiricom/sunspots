@@ -130,7 +130,7 @@
 
     void main() {
       vUv = uv;
-      gl_Position = vec4(position.xy, 0.0, 1.0);
+      gl_Position = vec4(position.x, 1.0 - position.y, 0.0, 1.0);
       prevPos = gl_Position;
     }
   </script>
