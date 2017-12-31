@@ -11,7 +11,7 @@ uniform float u_control7;
 // float FORCE_MULT = 3.2;
 
 float getForceMult() {
-  float fm = (1.3 + clamp(u_control2 - 100.0, 0.0, 100.0) * 0.52);
+  float fm = (1.3 + clamp(u_control2 - 140.0, 0.0, 100.0) * 0.52);
 
   float sgn = fm > 0.0 ? 1.0 : -1.0;
 

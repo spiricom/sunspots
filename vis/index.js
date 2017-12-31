@@ -74,7 +74,7 @@ function init(){
   shaderSystem = ShaderSystem(renderer, updateFragDefines);
 
 
-  camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 10000 );
+  camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
 
   audioSystem = VisAudio(camera);
   
@@ -172,31 +172,46 @@ function init(){
   controls.noPan = true;
 
   // front scene
-  var basicMat = new THREE.MeshNormalMaterial({
-    color: new THREE.Color(455, 455, 455),
-    // transparent: true,
-    // opacity: 0.4,
-  });
 
-  var cutGeometry = new THREE.BoxBufferGeometry( 1, 1, 1, 1, 1, 1 );
+  var normalMat = new THREE.MeshNormalMaterial({});
+
+  var cutGeometry = new THREE.BoxBufferGeometry( 0.5, 0.5, 0.5, 1, 1, 1 );
+  // var cutGeometry = new THREE.TetrahedronBufferGeometry( 0.5 );
+  // var cutGeometry = new THREE.SphereBufferGeometry( 1, 4, 4 );
+  // var cutGeometry = new THREE.PlaneBufferGeometry( 1, 4, 4 );
+  
   for ( var i = 0; i < 700; i ++ ) {
-    var object = new THREE.Mesh( cutGeometry, basicMat );
-    // var object = new THREE.Mesh( cutGeometry, lambertMat );
+    var basicMat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(Math.random(), Math.random(), Math.random()),
+    });
 
-    object.position.x = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 12;
-    object.position.y = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 12;
-    object.position.z = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 12;
+    object.basicMat = basicMat;
+    object.normalMat = normalMat;
+    var object = new THREE.Mesh( cutGeometry, normalMat );
 
-    // object.rotation.x = Math.random() * 2 * Math.PI;
-    // object.rotation.y = Math.random() * 2 * Math.PI;
+    object.position.x = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 13;
+    object.position.y = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 13;
+    object.position.z = (Math.random() * (Math.random() < 0.5 ? -1 : 1)) * 13;
+
+    object.rotation.x = Math.random() * 2 * Math.PI;
+    object.rotation.y = Math.random() * 2 * Math.PI;
     object.rotation.z = Math.random() * 2 * Math.PI;
 
-    object.scale.x = 0.4 * Math.random() + 0.4;
-    object.scale.y = 0.5;
-    object.scale.z = 0.5;
+    // object.scale.x = 0.4 * Math.random() + 10.4;
+    // object.scale.y = 0.03;
+    // object.scale.z = 0.03;
     
+    object.baseScaleX = object.scale.x;
+
     frontSceneObjs.push(object)
     scene.add( object );
+
+    object.basicClone = new THREE.Mesh( cutGeometry, basicMat );
+    
+    object.basicClone.position.copy( object.position );
+    object.basicClone.rotation.copy( object.rotation );
+
+    scene.add( object.basicClone );
   }
 
 
@@ -212,6 +227,7 @@ function update() {
   if (stats) stats.update();
 }
 
+
 function render() {
 
   if (shaderSystem.initialized) {
@@ -226,24 +242,43 @@ function render() {
       shaderSystem.setUniform("u_control" + idx, audioSystem.freqVariables[i]);
     }
 
-    // var numFrontObjs = frontSceneObjs.length;
-    // for (var i = 0; i < numFrontObjs; i++) {
-    //   var obj = frontSceneObjs[i];
-    //   obj.material.opacity *= 0.995;
-    // }
-
-    // {
-    //   var a = audioSystem.ampVariables[3];
-    //   var f = audioSystem.freqVariables[3];
-    //   if (f) {
+    var numFrontObjs = frontSceneObjs.length;
+    var a = audioSystem.ampVariables[2];
+    var f = audioSystem.freqVariables[2];
+    
+    if (f) {
+      for (var i = 0; i < numFrontObjs; i++) {
+        var obj = frontSceneObjs[i];
         
-    //     var idx = Math.floor(f * 1);
+        var newScale = a * 0.06;
 
-    //     var obj = frontSceneObjs[idx % numFrontObjs];
+        newScale = newScale*newScale;
 
-    //     obj.material.opacity += a;
-    //   }
-    // }
+        newScale += 1;
+        
+        // newScale = obj.scale.x * 0.8 + newScale * 0.2;
+        obj.scale.x = Math.max(newScale, 1);
+        
+        var invOtherScale = Math.pow(newScale, 2);
+        
+        invOtherScale = Math.min(Math.max(invOtherScale, 0.2), 30);
+
+        var otherScale = 1 / invOtherScale;
+
+        obj.scale.y = otherScale;
+        obj.scale.z = otherScale;
+
+        obj.basicClone.scale.copy(obj.scale);
+        if (newScale > 6.0) {
+          obj.basicClone.material.visible = true;
+          obj.material.visible = false;
+        }
+        else {
+          obj.basicClone.material.visible = false;
+          obj.material.visible = true;          
+        }
+      }
+    }
 
 
     // update shadersystem
