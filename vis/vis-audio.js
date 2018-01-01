@@ -24,13 +24,14 @@ function VisAudio(camera) {
 
 
   var soundBanks = [
-    ["del1-", 284],
-    ["del2-", 400],
-    ["del3-", 313], 
+    ["bas_-", 1163],
+    //["bas_-", 1163],
+    //["bas_-", 1163], 
     // ["del1-", 284],
     // ["gro-", 350], 
     // ["bas_-", 400], 
-    // ["sub-", 284],
+     ["bas_-", 1163],
+    ["gro-", 400],
     ["sub-", 284],
     // ["sub-", 284],
     // ["sub-", 284],
@@ -74,14 +75,14 @@ function VisAudio(camera) {
   const REVERB_SOUND_FILE = './reverbs/BX20E103.wav';
   const PAN_MODEL = 'HRTF';
 
-  const NUMBER_OF_SOUND_SOURCES = 4;
+  const NUMBER_OF_SOUND_SOURCES =3 ;
   const NUMBER_OF_SOUND_BANKS = 4;
-  const SOUND_POSITIONS = [[-15000,0,15000], [15000,0,15000], [15000,0,-15000],[-15000,0,-15000], [-15000,30,15000], [15000,80,15000],[-5000, 0, -5000], [5000, -50, -5000]];
+  const SOUND_POSITIONS = [[-15,0,15], [15,0,15], [15,0,-15],[-15,0,-15], [-15,30,15], [15,80,15],[-5, 0, -5], [5, -5, -5]];
 
   const REVERB_GAIN = .02;
   const REF_DIST = 9000;
 
-  const WAIT_MAX = 2.0;
+  const WAIT_MAX = 3.0;
   const WAIT_OFFSET = .1;
   const RANDOM_VOLUME = 1;
   const MAX_VOLUME = .09;
@@ -230,6 +231,15 @@ function VisAudio(camera) {
   function renderAudio() {
     var now = audioContext.currentTime;
     
+    for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
+    {
+      if (meshes[i] != null)
+        {
+          meshes[i].updateMatrixWorld();
+        }
+    }
+
+
     if (soundsPlaying)
     {
       if ((loopCount % 2) === 0)
@@ -264,7 +274,6 @@ function VisAudio(camera) {
 
 
   // Choose, load, and play a random sound file in the given source index
-  //TODO: I want to make this do more of a random walk instead of a straight up random insanity thing
   function playRandomSound(soundSourceIndex) 
   {
     if (soundSourceIndex > 3) {
@@ -294,7 +303,7 @@ function VisAudio(camera) {
       if ((currentLocationInSoundBank[whichBank] < minIndex) || (currentLocationInSoundBank[whichBank] > maxIndex))
       {
         currentLocationInSoundBank[whichBank] = Math.floor((Math.random() * maxIndex - minIndex + 1) + minIndex);
-    }
+      }
      // Get the soundfile number, append it and the filetype
     randomFile += currentLocationInSoundBank[whichBank];
     randomFile += fileType;
@@ -347,7 +356,7 @@ function VisAudio(camera) {
     var newplaybackRate = (Math.random() + .5);
     sounds[index].setPlaybackRate(newplaybackRate);
     sounds[index].panner.connect(convolver);
-    meshes[index+10].add(sounds[index]);
+    meshes[index].add(sounds[index]);
     sounds[index].connect(analysers[index]);
     // Add the sound to the object map
     loadedSounds[curSoundFile] = sounds[index];
@@ -407,8 +416,8 @@ function VisAudio(camera) {
     sounds[index].setFilter(soundGains[index]);
     // sounds[index].setRolloffFactor(2);
 
-    meshes[index+10] = new THREE.Mesh(sphere, material_spheres[index] );
-    meshes[index+10].position.set( SOUND_POSITIONS[index][0], SOUND_POSITIONS[index][1], SOUND_POSITIONS[index][2] );
+    meshes[index] = new THREE.Mesh(sphere, material_spheres[index] );
+    meshes[index].position.set( SOUND_POSITIONS[index][0], SOUND_POSITIONS[index][1], SOUND_POSITIONS[index][2] );
     //scene.add( meshes[index+10] );
 
     sounds[index].setBuffer(buffer);
@@ -417,7 +426,7 @@ function VisAudio(camera) {
     sounds[index].startTime = 0;
     sounds[index].setPlaybackRate(1);
     sounds[index].panner.connect(convolver);
-    meshes[index+10].add(sounds[index]);
+    meshes[index].add(sounds[index]);
     analysers[index] = new THREE.AudioAnalyser(sounds[index], FFTSize);
     
     // Add the sound to the object map

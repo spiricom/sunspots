@@ -14,7 +14,7 @@ uniform float u_control7;
 #define NUM_TILES 1.0
 
 // #define DEBUG_DRAW
-// #define DRAW_BLACK_AND_WHITE
+ //#define DRAW_BLACK_AND_WHITE
 
 #define WAVE iChannel0
 #define FORCE iChannel1
@@ -108,18 +108,19 @@ void main(){
     // palettization:
     vec3 color = vec3(0.0);
 
-    // color = mixColor(color, vec3(191.0, 42.0, 42.0) / 255.0, tSamp.r);
-    // color = mixColor(color, vec3(242.0, 199.0, 119.0) / 255.0, tSamp.g);
-    // color = mixColor(color, vec3(9.0, 33.0, 64.0) / 255.0, tSamp.b);
+     color = mixColor(color, vec3(255,250,244) / 255.0, tSamp.r);
+     color = mixColor(color, vec3(255,255,255) / 255.0, tSamp.g);
+     color = mixColor(color, vec3(255,255,255) / 255.0, tSamp.b);
 
-    color += vec3(191.0, 42.0, 42.0) / 255.0 * tSamp.r;
-    color += vec3(242.0, 199.0, 119.0) / 255.0 * tSamp.g;
-    color += vec3(9.0, 33.0, 64.0) / 255.0 * tSamp.b;
+    //color += vec3(191.0, 42.0, 42.0) / 255.0 * tSamp.r;
+    //color += vec3(242.0, 199.0, 119.0) / 255.0 * tSamp.g;
+    //color += vec3(9.0, 33.0, 64.0) / 255.0 * tSamp.b;
 
-    // color = mixColor(color, vec3(255.0, 129.0, 171.0) / 255.0, tSamp.r);
-    // color = mixColor(color, vec3(92.0, 232.0, 134.0) / 255.0, tSamp.g);
-    // color = mixColor(color, vec3(102.0, 203.0, 255.0) / 255.0, tSamp.b);
-
+     //color = mixColor(color, vec3(239.0,88.0,19.0) / 255.0, tSamp.r);
+     //color = mixColor(color, vec3(70.0,75.0,79.0) / 255.0, tSamp.g);
+     //color = mixColor(color, vec3(14.0,214.0,237.0) / 255.0, tSamp.b);
+//color = mixColor(color, vec3(191.0, 42.0, 42.0) / 255.0, tSamp.r);
+//color = mixColor(color, vec3(9.0, 33.0, 64.0) / 255.0, tSamp.b);
     // color.r = u_control4;
     tSamp.rgb = color;
   }
