@@ -175,8 +175,8 @@ function init(){
 
   var normalMat = new THREE.MeshNormalMaterial({});
 
-  var cutGeometry = new THREE.BoxBufferGeometry( 0.5, 0.5, 0.5, 1, 1, 1 );
-  // var cutGeometry = new THREE.TetrahedronBufferGeometry( 0.5 );
+  //var cutGeometry = new THREE.BoxBufferGeometry( 0.5, 0.5, 0.5, 1, 1, 1 );
+   var cutGeometry = new THREE.TetrahedronBufferGeometry( 0.5 );
   // var cutGeometry = new THREE.SphereBufferGeometry( 1, 4, 4 );
   // var cutGeometry = new THREE.PlaneBufferGeometry( 1, 4, 4 );
   
