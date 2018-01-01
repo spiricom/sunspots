@@ -17,7 +17,7 @@
 
 body {
 	/*background-color: rgb(254, 254, 254);*/
-	background-color: rgb(51, 53, 48);
+	background-color: rgb(46, 49, 43);
 	font-family: sans-serif;
 	font-size: 42px;
 	margin: 0;
@@ -29,24 +29,14 @@ body {
 
 	background-color: rgb(254, 254, 254);
 	/*padding: 120px;*/
-	width: 92vw;
-	height: 92vw;
-	min-width: 770px;
-	min-height: 770px;
+	width: 92vmin;
+	height: 92vmin;
+	min-width: 600px;
+	min-height: 600px;
 	position: fixed;
 	top: 50vh;
 	left: 50vw;
 	transform: translateX(-50%) translateY(-50%);
-}
-
-@media screen and (min-aspect-ratio: 1/1) {
-	#cover {
-		width: 92vh;
-		height: 92vh;
-	}
-}
-
-@media (max-width: 770px) {
 }
 
 .justified-character {
@@ -60,8 +50,10 @@ body {
 	align: justify;
 	-moz-text-align-last: justify;
 	text-align-last: justify;
-	max-width: 400px;
-	min-width: 376px;
+	max-width: 45vmin;
+	min-width: 45vmin;
+  line-height: 0.7;
+  margin-bottom: 3%;
   -webkit-transition: color 0.2s ease-in-out;
   -moz-transition: color 0.2s ease-in-out;
   -o-transition: color 0.2s ease-in-out;
@@ -77,21 +69,17 @@ li {
   /* inline block hack for IE 6&7 */
   zoom: 1;
   *display: inline;
-  padding: 4px;
+  padding: 4px 0px;
 }
 
 .title-line {
 	font-size: 0;
 }
 .title-line li {
-	font-size: 36px;
+  font-size: 5vmin;
+	/*font-size: 36px;*/
 }
 
-@media (min-width: 770px) {
-	.title-line li {
-		/*font-size: 82px;*/
-	}
-}
 .row-container {
 
 	display: flex;
@@ -199,14 +187,9 @@ li {
 }
 
 .box .row {
-	padding: 40px 100px;
+	padding: 4vmin 10vmin;
 }
 
-@media (max-width: 1000px) {
-	.box .row {
-		padding: 40px 40px;
-	}
-}
 
 .box .row.header {
   flex: 0 1 auto;
@@ -228,8 +211,13 @@ li {
 
 
 .content {
-  font-size: 22px;
+  font-size: 2.6vmin;
   line-height: 1.6;
+}
+@media screen and (min-width: 1200px) {
+  .content {
+     font-size: 26px;
+  }
 }
 
 .content a {
@@ -275,9 +263,10 @@ li {
 
 .cover-inner {
 	z-index: -300;
-	margin: 120px;
+	margin: 2vmin;
 	background-color: rgb(185, 204, 200);
 }
+
 
 </style>
 
@@ -291,7 +280,7 @@ li {
 			<!-- <img                        class="cover-image landscape" src="index-static/images/default.png"/> -->
 			<img id="cover-image-drape" class="cover-image fg landscape" src="index-static/images/drape.png"/>
 			<img id="cover-image-waves" class="cover-image fg landscape" src="index-static/images/waves-3.png"/>
-			<img id="cover-image-locat" class="cover-image fg landscape" src="index-static/images/location.png"/>
+      <img id="cover-image-locat" class="cover-image fg landscape" src="index-static/images/location.png"/>
 		</div>
 
 		<div class="box">
@@ -306,37 +295,95 @@ li {
 				<a class="scene-link" id="link-drape" href="drape">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE A &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Drape</a>
 				<br>
 				<a class="scene-link" id="link-waves" href="waves">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE B &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Waves</a>
-				<br>
-				<a class="scene-link" id="link-locat" href="location">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE C &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Location</a>
+        <br>
+        <a class="scene-link" id="link-locat" href="location">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE C &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Location</a>
+				<!-- <br>
+				<a class="scene-link" id="link-locat" href="vis">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE D &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Test</a> -->
 			</div>
 
 
 			<div class="row footer">
 				<div id="title">
-					<div class="title-line">
-						<li>J</li>
-						<li>E</li>
-						<li>F</li>
-						<li>F</li>
-						<li>&nbsp;</li>
-						<li>S</li>
-						<li>N</li>
-						<li>Y</li>
-						<li>D</li>
-						<li>E</li>
-						<li>R</li>
-					</div>
+ 
+          
+          <div class="title-line">
+            <li>S</li>
+            <li>U</li>
+            <li>N</li>
+            <li>S</li>
+            <li>P</li>
+            <li>O</li>
+            <li>T</li>
+            <li>S</li>
+          </div>
 
-					<div class="title-line">
-						<li>S</li>
-						<li>U</li>
-						<li>N</li>
-						<li>S</li>
-						<li>P</li>
-						<li>O</li>
-						<li>T</li>
-						<li>S</li>
-					</div>
+          <div class="title-line">
+            <li style="font-size:2.5vmin;">V</li>
+            <li style="font-size:2.5vmin;">I</li>
+            <li style="font-size:2.5vmin;">R</li>
+            <li style="font-size:2.5vmin;">T</li>
+            <li style="font-size:2.5vmin;">U</li>
+            <li style="font-size:2.5vmin;">A</li>
+            <li style="font-size:2.5vmin;">L</li>
+          <!-- </div> -->
+          <!-- <div class="title-line"> -->
+            <li>&nbsp;</li>
+            <li style="font-size:2.5vmin;">I</li>
+            <li style="font-size:2.5vmin;">N</li>
+            <li style="font-size:2.5vmin;">S</li>
+            <li style="font-size:2.5vmin;">T</li>
+            <li style="font-size:2.5vmin;">A</li>
+            <li style="font-size:2.5vmin;">L</li>
+            <li style="font-size:2.5vmin;">L</li>
+            <li style="font-size:2.5vmin;">A</li>
+            <li style="font-size:2.5vmin;">T</li>
+            <li style="font-size:2.5vmin;">I</li>
+            <li style="font-size:2.5vmin;">O</li>
+            <li style="font-size:2.5vmin;">N</li>
+          </div>
+
+          <div style="
+            font-size: 2.5vmin;
+            font-style: italic;
+            text-align: right;
+            text-align-last: right;
+            line-height: 1.3;
+            margin-top: 4.5%;
+            /*margin-left: 10%;*/
+            margin-right: 0.5%;
+          ">
+            Jeff Snyder | Drew Wallace | 2018
+          </div>
+
+<!-- 
+          <div class="title-line">
+            <li style="font-size:2.5vw;">J</li>
+            <li style="font-size:2.5vw;">E</li>
+            <li style="font-size:2.5vw;">F</li>
+            <li style="font-size:2.5vw;">F</li>
+            <li style="font-size:2.5vw;">&nbsp;</li>
+            <li style="font-size:2.5vw;">S</li>
+            <li style="font-size:2.5vw;">N</li>
+            <li style="font-size:2.5vw;">Y</li>
+            <li style="font-size:2.5vw;">D</li>
+            <li style="font-size:2.5vw;">E</li>
+            <li style="font-size:2.5vw;">R</li>
+          </div>
+
+ 					<div class="title-line">
+						<li style="font-size:2.5vw;">D</li>
+						<li style="font-size:2.5vw;">R</li>
+						<li style="font-size:2.5vw;">E</li>
+						<li style="font-size:2.5vw;">W</li>
+						<li style="font-size:2.5vw;">&nbsp;</li>
+						<li style="font-size:2.5vw;">W</li>
+						<li style="font-size:2.5vw;">A</li>
+            <li style="font-size:2.5vw;">L</li>
+						<li style="font-size:2.5vw;">L</li>
+						<li style="font-size:2.5vw;">A</li>
+						<li style="font-size:2.5vw;">C</li>
+						<li style="font-size:2.5vw;">E</li>
+					</div> -->
 				</div>
 			</div>
 
