@@ -29,21 +29,14 @@ body {
 
 	background-color: rgb(254, 254, 254);
 	/*padding: 120px;*/
-	width: 92vw;
-	height: 92vw;
+	width: 92vmin;
+	height: 92vmin;
 	min-width: 600px;
 	min-height: 600px;
 	position: fixed;
 	top: 50vh;
 	left: 50vw;
 	transform: translateX(-50%) translateY(-50%);
-}
-
-@media screen and (min-aspect-ratio: 1/1) {
-	#cover {
-		width: 92vh;
-		height: 92vh;
-	}
 }
 
 .justified-character {
@@ -57,18 +50,14 @@ body {
 	align: justify;
 	-moz-text-align-last: justify;
 	text-align-last: justify;
-	max-width: 41vw;
-	min-width: 41vw;
+	max-width: 45vmin;
+	min-width: 45vmin;
+  line-height: 0.7;
+  margin-bottom: 3%;
   -webkit-transition: color 0.2s ease-in-out;
   -moz-transition: color 0.2s ease-in-out;
   -o-transition: color 0.2s ease-in-out;
   transition: color 0.2s ease-in-out;
-}
-@media screen and (min-aspect-ratio: 1/1) {
-  #title {
-    max-width: 41vh;
-    min-width: 41vh;
-  }
 }
 
 ul {
@@ -87,13 +76,8 @@ li {
 	font-size: 0;
 }
 .title-line li {
-  font-size: 4.5vw;
+  font-size: 5vmin;
 	/*font-size: 36px;*/
-}
-@media screen and (min-aspect-ratio: 1/1) {
-  .title-line li {
-    font-size: 4.5vh;
-  }
 }
 
 .row-container {
@@ -203,14 +187,9 @@ li {
 }
 
 .box .row {
-	padding: 4vw 10vw;
+	padding: 4vmin 10vmin;
 }
 
-@media screen and (min-aspect-ratio: 1/1) {
-  .box .row {
-    padding: 4vh 10vh;
-  }
-}
 
 .box .row.header {
   flex: 0 1 auto;
@@ -232,11 +211,10 @@ li {
 
 
 .content {
-  font-size: 2.6vw;
-  max-font-size: 36px;
+  font-size: 2.6vmin;
   line-height: 1.6;
 }
-@media screen and (min-width: 900px) {
+@media screen and (min-width: 1200px) {
   .content {
      font-size: 26px;
   }
@@ -285,9 +263,10 @@ li {
 
 .cover-inner {
 	z-index: -300;
-	margin: 20px;
+	margin: 2vmin;
 	background-color: rgb(185, 204, 200);
 }
+
 
 </style>
 
@@ -325,45 +304,86 @@ li {
 
 			<div class="row footer">
 				<div id="title">
+ 
+          
           <div class="title-line">
-            <li>J</li>
-            <li>E</li>
-            <li>F</li>
-            <li>F</li>
-            <li>&nbsp;</li>
             <li>S</li>
+            <li>U</li>
             <li>N</li>
-            <li>Y</li>
-            <li>D</li>
-            <li>E</li>
-            <li>R</li>
+            <li>S</li>
+            <li>P</li>
+            <li>O</li>
+            <li>T</li>
+            <li>S</li>
           </div>
 
-<!-- 					<div class="title-line">
-						<li>D</li>
-						<li>R</li>
-						<li>E</li>
-						<li>W</li>
-						<li>&nbsp;</li>
-						<li>W</li>
-						<li>A</li>
-            <li>L</li>
-						<li>L</li>
-						<li>A</li>
-						<li>C</li>
-						<li>E</li>
-					</div>
- -->
-					<div class="title-line">
-						<li>S</li>
-						<li>U</li>
-						<li>N</li>
-						<li>S</li>
-						<li>P</li>
-						<li>O</li>
-						<li>T</li>
-						<li>S</li>
-					</div>
+          <div class="title-line">
+            <li style="font-size:2.5vmin;">V</li>
+            <li style="font-size:2.5vmin;">I</li>
+            <li style="font-size:2.5vmin;">R</li>
+            <li style="font-size:2.5vmin;">T</li>
+            <li style="font-size:2.5vmin;">U</li>
+            <li style="font-size:2.5vmin;">A</li>
+            <li style="font-size:2.5vmin;">L</li>
+          <!-- </div> -->
+          <!-- <div class="title-line"> -->
+            <li>&nbsp;</li>
+            <li style="font-size:2.5vmin;">I</li>
+            <li style="font-size:2.5vmin;">N</li>
+            <li style="font-size:2.5vmin;">S</li>
+            <li style="font-size:2.5vmin;">T</li>
+            <li style="font-size:2.5vmin;">A</li>
+            <li style="font-size:2.5vmin;">L</li>
+            <li style="font-size:2.5vmin;">L</li>
+            <li style="font-size:2.5vmin;">A</li>
+            <li style="font-size:2.5vmin;">T</li>
+            <li style="font-size:2.5vmin;">I</li>
+            <li style="font-size:2.5vmin;">O</li>
+            <li style="font-size:2.5vmin;">N</li>
+          </div>
+
+          <div style="
+            font-size: 2.5vmin;
+            font-style: italic;
+            text-align: right;
+            text-align-last: right;
+            line-height: 1.3;
+            margin-top: 5%;
+            /*margin-left: 10%;*/
+            margin-right: 0.5%;
+          ">
+            Jeff Snyder | Drew Wallace | 2018
+          </div>
+
+<!-- 
+          <div class="title-line">
+            <li style="font-size:2.5vw;">J</li>
+            <li style="font-size:2.5vw;">E</li>
+            <li style="font-size:2.5vw;">F</li>
+            <li style="font-size:2.5vw;">F</li>
+            <li style="font-size:2.5vw;">&nbsp;</li>
+            <li style="font-size:2.5vw;">S</li>
+            <li style="font-size:2.5vw;">N</li>
+            <li style="font-size:2.5vw;">Y</li>
+            <li style="font-size:2.5vw;">D</li>
+            <li style="font-size:2.5vw;">E</li>
+            <li style="font-size:2.5vw;">R</li>
+          </div>
+
+ 					<div class="title-line">
+						<li style="font-size:2.5vw;">D</li>
+						<li style="font-size:2.5vw;">R</li>
+						<li style="font-size:2.5vw;">E</li>
+						<li style="font-size:2.5vw;">W</li>
+						<li style="font-size:2.5vw;">&nbsp;</li>
+						<li style="font-size:2.5vw;">W</li>
+						<li style="font-size:2.5vw;">A</li>
+            <li style="font-size:2.5vw;">L</li>
+						<li style="font-size:2.5vw;">L</li>
+						<li style="font-size:2.5vw;">A</li>
+						<li style="font-size:2.5vw;">C</li>
+						<li style="font-size:2.5vw;">E</li>
+					</div> -->
 				</div>
 			</div>
 
