@@ -142,22 +142,27 @@ void main(){
     float amp = u_control0 + u_control1 + u_control2;
     amp /= 3.0;
 
-    float m0 = pow(u_control0 * 0.03, 1.9) * 0.1 + 0.0;
-    float m1 = pow(u_control1 * 0.015, 1.9) * 0.15 + 0.0;
-    float m2 = pow(u_control2 * 0.03, 2.2) * 0.2 + 0.0;
+    float minBrightnessMult = 0.7;
+    float mbm = minBrightnessMult;
 
-    // m0 = 1.0;
-    // m1 = 1.0;
-    // m2 = 1.0;
+    float m0 = pow(u_control0 * 0.03, 1.9) * 0.1;
+    float m1 = pow(u_control1 * 0.02, 1.9) * 0.15;
+    float m2 = pow(u_control2 * 0.03, 2.2) * 0.2;
+
+    // m0 = 0.0;
+    // m1 = 0.0;
+    // m2 = 0.0;
 
     float v = 
-      m0 * tSamp.r * 0.1126 + 
-      m1 * tSamp.g * 0.5152 + 
-      m2 * tSamp.b * 0.0722;
+      (m0+mbm) * tSamp.r * 0.2126 + 
+      (m1+mbm) * tSamp.g * 0.3152 + 
+      (m2+mbm) * tSamp.b * 0.0722;
     color = vec3(v);
+
+    float maxMult = max(max(m0, m1), m2);
+    color = clamp(color, 0.0, maxMult + 0.3);
+
     // color = vec3(v) * 0.5 + color;
-
-
 
     // color = color * 0.5+ vec3(v) * 0.5;
 

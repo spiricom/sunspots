@@ -197,6 +197,7 @@ function init(){
     object.rotation.y = Math.random() * 2 * Math.PI;
     object.rotation.z = Math.random() * 2 * Math.PI;
 
+    object.baseScale = 1.0;
     // object.scale.x = 0.4 * Math.random() + 10.4;
     // object.scale.y = 0.03;
     // object.scale.z = 0.03;
