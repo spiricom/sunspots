@@ -59,9 +59,6 @@ function VisAudio(camera) {
   var audioContext;
 
   var meshes = [];
-  //video vars
-  var camera, controls, scene, renderer, uniforms;
-
 
   var debugAudioMode = false;
   function debugAudioLog(val) {

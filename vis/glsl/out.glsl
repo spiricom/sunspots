@@ -108,20 +108,62 @@ void main(){
     // palettization:
     vec3 color = vec3(0.0);
 
-     color = mixColor(color, vec3(255,250,244) / 255.0, tSamp.r);
-     color = mixColor(color, vec3(255,255,255) / 255.0, tSamp.g);
-     color = mixColor(color, vec3(255,255,255) / 255.0, tSamp.b);
+    // color = mixColor(color, vec3(255,250,244) / 255.0, tSamp.r);
+    // color = mixColor(color, vec3(255,255,255) / 255.0, tSamp.g);
+    // color = mixColor(color, vec3(255,255,255) / 255.0, tSamp.b);
 
-    //color += vec3(191.0, 42.0, 42.0) / 255.0 * tSamp.r;
-    //color += vec3(242.0, 199.0, 119.0) / 255.0 * tSamp.g;
-    //color += vec3(9.0, 33.0, 64.0) / 255.0 * tSamp.b;
+    // color = mixColor(color, vec3(0.1, 0.1, 0.2), tSamp.r);
+    // color = mixColor(color, vec3(0.8, 0.0, 0.0), tSamp.g);
+    // color = mixColor(color, vec3(0.9, 0.98, 0.98), tSamp.b);
 
-     //color = mixColor(color, vec3(239.0,88.0,19.0) / 255.0, tSamp.r);
-     //color = mixColor(color, vec3(70.0,75.0,79.0) / 255.0, tSamp.g);
-     //color = mixColor(color, vec3(14.0,214.0,237.0) / 255.0, tSamp.b);
-//color = mixColor(color, vec3(191.0, 42.0, 42.0) / 255.0, tSamp.r);
-//color = mixColor(color, vec3(9.0, 33.0, 64.0) / 255.0, tSamp.b);
-    // color.r = u_control4;
+
+    // color += 0.5*m0 * vec3(191.0, 42.0, 42.0) / 255.0 * tSamp.r;
+    // color += 0.5*m1 * vec3(242.0, 199.0, 119.0) / 255.0 * tSamp.g;
+    // color += 0.5*m2 * vec3(9.0, 33.0, 64.0) / 255.0 * tSamp.b;
+
+    // color = mixColor(color, vec3(239.0,88.0,19.0) / 255.0, tSamp.r);
+    // color = mixColor(color, vec3(70.0,75.0,79.0) / 255.0, tSamp.g);
+    // color = mixColor(color, vec3(14.0,214.0,237.0) / 255.0, tSamp.b);
+
+    // color = mixColor(color, vec3(191.0, 42.0, 42.0) / 255.0, tSamp.r);
+    // color = mixColor(color, vec3(9.0, 33.0, 64.0) / 255.0, tSamp.b);
+    
+
+    // color = mixColor(color, vec3(30, 32, 30) / 255.0, tSamp.r);
+    // color = mixColor(color, vec3(10, 10, 10) / 255.0, tSamp.g);
+    // color = mixColor(color, vec3(10, 10, 10) / 255.0, tSamp.b);
+    
+    color = mixColor(color, vec3(30, 12, 6) / 255.0*3.0, tSamp.r);
+    color = mixColor(color, vec3(14, 50, 80) / 255.0*3.0, tSamp.g);
+    color = mixColor(color, vec3(20, 10, 16) / 255.0*3.0, tSamp.b);
+
+    // float v = pow(tSamp.r * 0.2126 + tSamp.g * 0.7152 + tSamp.b * 0.0722, 1.5);
+    
+    float amp = u_control0 + u_control1 + u_control2;
+    amp /= 3.0;
+
+    float m0 = pow(u_control0 * 0.03, 1.9) * 0.1 + 0.0;
+    float m1 = pow(u_control1 * 0.015, 1.9) * 0.15 + 0.0;
+    float m2 = pow(u_control2 * 0.03, 2.2) * 0.2 + 0.0;
+
+    // m0 = 0.7;
+    // m1 = 0.7;
+    // m2 = 0.7;
+
+    float v = 
+      m0 * tSamp.r * 0.1126 + 
+      m1 * tSamp.g * 0.5152 + 
+      m2 * tSamp.b * 0.0722;
+    color = vec3(v);
+    // color = vec3(v) * 0.5 + color;
+
+
+
+    // color = color * 0.5+ vec3(v) * 0.5;
+
+    color = pow(color, vec3(2.5));
+    color = clamp(color, 0.0, 1.0);
+
     tSamp.rgb = color;
   }
 
