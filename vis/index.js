@@ -203,6 +203,12 @@ function init(){
     
     object.baseScaleX = object.scale.x;
 
+    object.velocity = new THREE.Vector3(
+      (Math.random() * 2 - 1) * 0.01,
+      (Math.random() * 2 - 1) * 0.01,
+      (Math.random() * 2 - 1) * 0.01
+      );
+
     frontSceneObjs.push(object)
     scene.add( object );
 
@@ -246,7 +252,7 @@ function render() {
     var a = audioSystem.ampVariables[2];
     var f = audioSystem.freqVariables[2];
     
-    if (f) {
+    if (f !== undefined) {
       for (var i = 0; i < numFrontObjs; i++) {
         var obj = frontSceneObjs[i];
         
@@ -277,6 +283,35 @@ function render() {
           obj.basicClone.material.visible = false;
           obj.material.visible = true;          
         }
+
+        // movement update
+        // wrap around space
+        if (obj.position.y < -20) {
+          obj.position.y = 20;
+        }
+        if (obj.position.x < -20) {
+          obj.position.x = 20;
+        }
+        if (obj.position.z < -20) {
+          obj.position.z = 20;
+        }
+        if (obj.position.y > 20) {
+          obj.position.y = -20;
+        }
+        if (obj.position.x > 20) {
+          obj.position.x = -20;
+        }
+        if (obj.position.z > 20) {
+          obj.position.z = -20;
+        }
+        
+        obj.velocity.x += (Math.random() * 2 - 1) * 0.0001;
+        obj.velocity.y += (Math.random() * 2 - 1) * 0.0001;
+        obj.velocity.z += (Math.random() * 2 - 1) * 0.0001;
+
+        obj.position.add(obj.velocity.clone().multiplyScalar(otherScale));
+
+        obj.basicClone.position.copy( obj.position );
       }
     }
 

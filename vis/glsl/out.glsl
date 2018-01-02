@@ -146,9 +146,9 @@ void main(){
     float m1 = pow(u_control1 * 0.015, 1.9) * 0.15 + 0.0;
     float m2 = pow(u_control2 * 0.03, 2.2) * 0.2 + 0.0;
 
-    // m0 = 0.7;
-    // m1 = 0.7;
-    // m2 = 0.7;
+    m0 = 1.0;
+    m1 = 1.0;
+    m2 = 1.0;
 
     float v = 
       m0 * tSamp.r * 0.1126 + 
