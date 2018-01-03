@@ -188,25 +188,19 @@ void main() {
   vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
   vWorldPosition = worldPosition.xyz;
   vUv = uv;
-
-  // mat4 normMat = inverse(transpose(modelMatrix));
-
-  // vec3 
   //gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 
   // get a turbulent 3d noise using the normal, normal to high freq
-  // noise = 10.0 *  -.10 * turbulence( turbulencescalar * normal + time * 3.0);
+  noise = 10.0 *  -.10 * turbulence( turbulencescalar * normal  + time);
   //noise = 10 *  -.01 * turbulence( .5 * normal  + time);
   
   // get a 3d noise using the position, low frequency
-
-  float b = bscalar * pnoise( positionscalar * position + vec3(time), vec3( 100.0 ) );
-  // float b = bscalar * pnoise( positionscalar * worldPosition.xyz, vec3( 100.0 ) );
+  float b = bscalar * pnoise( positionscalar * position, vec3( 100.0 ) );
   // compose both noises
-  // float displacement = -amp * noise + b;
-  float displacement = -amp * b;
+  float displacement = - amp * noise + b;
   
   // move the position along the normal and transform it
   vec3 newPosition = position + normal * displacement;
   gl_Position = projectionMatrix * modelViewMatrix * vec4( newPosition, 1.0 );
+
 }

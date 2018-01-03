@@ -1,5 +1,15 @@
 "use strict";
 
+// waves fixes
+
+// Once I got the gain of the audio back under control, I narrowed down the source of the audio glitches. The random clicks are happening because of some processing when rendering the wave cloths. Commenting out 
+// var waveMagUnif = testCloths[j].cloths[0].renderUniforms.waveMag;
+// makes the clicks go away (but also ruins the cloth effect, of course). 
+
+// I tried lowering the resolution of the cloths (I think it actually looks really nice with a lower cloth resolution and flat shading turned on, check out the version I pushed), but the clicks are still there, even with very low resolution cloths. Any ideas what the issue might be? Is there anything in your code that could be really heavy and interrupt the audio? 
+
+// When you get a chance to check it out, let me know what you find. 
+
 // MISC VARS
 
 var DEVMODE = true;
@@ -24,12 +34,10 @@ var paused = false;
 // VISUALS VARS
 
 var camera, controls, scene, renderer, uniforms;
-var bgScene;
-var quadScene;
-var bgQuad;
-var renderTarget;
-var renderTarget2;
+var controlledCamera;
 var fixedCamera;
+var renderTarget;
+var scene2;
 
 var waveMagnitudes = [2,5,6,7];
 var skyMat = [];
@@ -46,6 +54,19 @@ var guiParams = {
 };
 
 // CONTROLS VARS
+var moveSpeed = 30;
+var runningEnabled = DEVMODE;
+
+var pointerLocked = false;
+var running = false;
+var moveForward = false;
+var moveBackward = false;
+var moveLeft = false;
+var moveRight = false;
+var moveUp = false;
+var moveDown = false;
+var canJump = false;
+
 var prevTickTime = performance.now();
 var velocity = new THREE.Vector3();
 
@@ -201,7 +222,9 @@ window.onload = function() {
   var sl = new ShaderLoader();
   sl.loadShaders({
     posNoise_vert : "",
+    posNoise_vert_wavesplanes : "",
     posNoise_frag : "",
+    posNoise_frag_discard : "",
 
     posUpdate_vert : "",
     posUpdate_frag : "",
@@ -232,7 +255,6 @@ function init()
   if (AUDIO_ENABLED) {
     initAudioElements();
   }
-  initControlElements();
 
   // Listen for window resizing
   window.addEventListener('resize', onWindowResize, false);
@@ -240,47 +262,12 @@ function init()
   render();
 }
 
-var lastControlTime = -999;
-
-var mouseDown = 0;
-
 // updates and renders
 function render()
 {
   requestAnimationFrame(render);
+
   if (paused) return;
-
-  var time = performance.now() / 1000;
-  // var delta = ( time - prevTickTime ) / 1000;
-
-  var delta = clock.getDelta();
-  controls.update();
-
-  prevTickTime = time;
-  
-  if (mouseDown) {
-    lastControlTime = time;
-  }
-
-  if (time - lastControlTime > 5) {
-    meshes[0].rotation.z += delta * 0.2;
-  }
-
-  meshes[1].rotation.z = camera.rotation.z;
-  meshes[2].rotation.z = camera.rotation.y;
-  meshes[3].rotation.z = camera.rotation.x;
-
-  // var quat = new THREE.Quaternion();
-  // meshes[0].setRotationFromQuaternion( camera.quaternion.clone() );
-  // meshes[1].setRotationFromQuaternion( camera.quaternion.clone() );
-  // meshes[2].setRotationFromQuaternion( camera.quaternion.clone() );
-  // meshes[3].setRotationFromQuaternion( camera.quaternion.clone() );
-  
-  // meshes[1].setRotationFromQuaternion( meshes[1].quaternion.clone().multiply(camera.quaternion.clone() ));
-
-  // meshes[0].setRotationFromQuaternion( camera.quaternion.clone().multiply(camera.quaternion.clone()).multiply(camera.quaternion.clone().slerp(quat, 0.9) ));
-  // meshes[1].setRotationFromQuaternion( camera.quaternion.clone().slerp(quat, 0.99).multiply(camera.quaternion.clone()) );
-  // meshes[2].setRotationFromQuaternion( camera.quaternion.clone().conjugate() );
 
   // audio
   if (AUDIO_ENABLED) {
@@ -333,30 +320,10 @@ function HSVtoRGB(h, s, v) {
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-function initControlElements()
-{
-  controls = new THREE.TrackballControls( camera, renderer.domElement );
-  controls.noZoom = true;
-  controls.noPan = true;
-}
-
 function initVisualElements()
 {
-  // CAMERA
-  camera = new THREE.PerspectiveCamera( 18, window.innerWidth / window.innerHeight, 4000, 20000 );
-  camera.position.set( 0, 0, 6000 );
-  camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-  fixedCamera = new THREE.PerspectiveCamera( 8, window.innerWidth / window.innerHeight, 4000, 20000 );
-  fixedCamera.position.set( 0, 0, 6000 );
-  fixedCamera.lookAt(new THREE.Vector3(0, 0, 0));
-
-  // SCENES
-  bgScene = new THREE.Scene();
-  quadScene = new THREE.Scene();
-  scene = new THREE.Scene();
   
-  // RENDERER 
+  // RENDERER //////////////////////////
   renderer = new THREE.WebGLRenderer({ 
     antialias: true,
     preserveDrawingBuffer: true,
@@ -364,9 +331,8 @@ function initVisualElements()
     gammaOutput: true,
     // logarithmicDepthBuffer: true,
   });
-  
-  // renderer.autoClearColor = false;
-  renderer.autoClear = false;
+  renderer.setClearColor( getRandomPaletteColor() );
+  // renderer.autoClear = false;
   renderer.localClippingEnabled = true;
 
   renderer.setPixelRatio( window.devicePixelRatio );
@@ -375,30 +341,47 @@ function initVisualElements()
 
   document.body.appendChild( renderer.domElement );
 
-  renderer.domElement.addEventListener("mousedown", function() { 
-    ++mouseDown;
-  });
-  renderer.domElement.addEventListener("mouseup", function() {
-    --mouseDown;
+
+  // CAMERA
+  camera = new THREE.PerspectiveCamera( 84, window.innerWidth / window.innerHeight, 1000, 140000 );
+  // camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 50000, 100000 );
+
+  camera.position.set( 0, 0, 0 );
+  // camera.position.set( 0, 0, 103000 );
+  // camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  // controlledCamera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 1000, 100000 );
+  
+  // fixedCamera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 40000, 70000 );
+  // fixedCamera.position.set( 0, -50000, 0 );
+  // fixedCamera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  controls = new THREE.TrackballControls( camera, renderer.domElement );
+  // controls.target = new THREE.Vector3(0, 10000, 0);
+  controls.target.copy( camera.position );
+  controls.target.x += 200;
+  controls.noZoom = true;
+  controls.noPan = true;
+
+  renderTarget = new THREE.WebGLRenderTarget(2048, 2048, {
+    // magFilter: THREE.LinearFilter,
+    // minFilter: THREE.LinearMipMapLinearFilter,
+    magFilter: THREE.NearestFilter,
+    minFilter: THREE.NearestFilter,
   });
 
+  // SCENES
+  scene = new THREE.Scene();
+  scene2 = new THREE.Scene();
+  
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
-  
-  // render target
-  renderTarget = new THREE.WebGLRenderTarget(1024, 1024, {
-    magFilter: THREE.NearestFilter,
-    minFilter: THREE.NearestFilter,
-  });
-  renderTarget2 = new THREE.WebGLRenderTarget(1024, 1024, {
-    magFilter: THREE.NearestFilter,
-    minFilter: THREE.NearestFilter,
-  });
+
  
-  // LIGHTS 
+  // LIGHTS //////////////////////////
   scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.001 );
 
-  // DOMES 
+  // DOMES //////////////////////////
   var skyGeo = [];
   var dome = [];
   for (var j = 0; j <= NUMBER_OF_DOMES; j++)
@@ -413,130 +396,83 @@ function initVisualElements()
       exponent:    { value: 0.6 },
       time: {type: "f", value: 0.0 },
       amp: {type: "f", value: 500.0 },
-      bscalar: {type: "f", value: -5.0 },
-      positionscalar: {type: "f", value: 0.0 },
-      turbulencescalar: {type: "f", value: 0.0 }
+      // bscalar: {type: "f", value: -25.0 },
+      bscalar: {type: "f", value: -getDomeRadius(j) * 0.0018 },
+      positionscalar: {type: "f", value: .05 },
+      turbulencescalar: {type: "f", value: .5 }
     };
     skyGeo[j] = new THREE.IcosahedronGeometry( getDomeRadius(j), 3 );
+    // skyGeo[j] = new THREE.CylinderGeometry( getDomeRadius(j), getDomeRadius(j), getDomeRadius(j)*2, 30 );
+    // skyGeo[j] = new THREE.TorusKnotGeometry( getDomeRadius(j), getDomeRadius(j)*0.5 );
 
     skyMat[j] = new THREE.ShaderMaterial({ 
       vertexShader: ShaderLoader.get( "posNoise_vert" ), 
-      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+      fragmentShader: ShaderLoader.get( "posNoise_frag_discard" ), 
       uniforms: uniforms,
-      side: THREE.BackSide, 
+      side: THREE.DoubleSide,
+      // side: THREE.BackSide, 
     });
+
+    // skyMat[j] = new THREE.MeshBasicMaterial({ 
+    //   map: renderTarget.texture,
+    //   side: THREE.BackSide, 
+    // });
+
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
-    dome[j].position.y = -300;
-    // scene.add( dome[j] );
+    // dome[j].position.y = -300;
+
+    dome[j].color = topColor;
+    
+    scene.add( dome[j] );
   }
 
-  // WAVES 
+  // WAVES //////////////////////////
   var geometry = [];
-  for (j = 0; j < NUMBER_OF_WAVES+2; j++)
-  {
-    geometry[j] = new THREE.PlaneGeometry( 2000, 2000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
-    // geometry[j] = new THREE.BoxGeometry( 1000, 1000, 1000, WORLD_WIDTH, WORLD_DEPTH, WORLD_WIDTH );
-    // geometry[j] = new THREE.IcosahedronGeometry( 1000, 4 );
+  for (j = 0; j < NUMBER_OF_WAVES; j++) {
     
-    // geometry[j].rotateX(Math.random() * 3.14 );
-    // geometry[j].rotateY(Math.random() * 3.14 );
-    // geometry[j].rotateZ(Math.random() * 3.14 );
 
-    // geometry[j].rotateX( - Math.PI / 2 );
-    // geometry[j].rotateY(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
-    geometry[j].rotateZ(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
 
-    // debugAudioLog(dome[j].material.uniforms.topColor.value);
-    var col = j < NUMBER_OF_DOMES ? new THREE.Color(dome[j].material.uniforms.topColor.value) : getRandomThreePaletteColor();
-    
-    uniforms = {
-      topColor:    { value: col },
-      bottomColor: { value: col },
+    for (var k = 0; k < 1; k++) {
 
-      offset:      { value: 1 }, //0
-      exponent:    { value: 0.6 },//.6
-      time: {type: "f", value: 0.1 },
-      amp: {type: "f", value: 0.5 },  //500
-      bscalar: {type: "f", value: -3 }, //-5
-      positionscalar: {type: "f", value: 0.5 },
-      turbulencescalar: {type: "f", value: 0.5 },
-    };
+      var newGeom = new THREE.PlaneGeometry( 100000, 100000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
+      newGeom.rotateX( - Math.PI / 2 );
+      newGeom.rotateY(Math.random() * 3.14 );
+      
+      // newGeom.rotateZ( k );
+      // newGeom.rotateX( k );
+      
+      geometry.push(newGeom)
 
-    debugAudioLog("here");
-    material[j] = new THREE.ShaderMaterial({ 
-      vertexShader: ShaderLoader.get( "posNoise_vert" ), 
-      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
-      uniforms: uniforms, 
-      side: THREE.DoubleSide,
-      colorWrite: j != 0,
-    });
-    meshes[j] = new THREE.Mesh( geometry[j], material[j] );
-    scene.add( meshes[j] );
-    // meshes[j].position.set(0, 1500, 0);
-  }
+      var domeColor = dome[j].color;
 
-  // BG RENDER QUAD
-  bgQuad = new THREE.Mesh(
-    new THREE.PlaneGeometry(2, 2),
-    new THREE.ShaderMaterial({
-      vertexShader: document.getElementById("quadVertexShader").textContent,
-      fragmentShader: document.getElementById("fragmentShaderBasic").textContent,
-      // depthWrite: false,
-      // depthTest: false,
-      uniforms: {
-        texture: { type: 't', },
-        // prevViewMatrix: { type: 'm4', },
-        // prevModelMatrix: { type: 'm4', },
-      },
-    })
-  );
-  bgScene.add(bgQuad);
-  // quadScene.add(bgQuad);
+      uniforms = {
+        topColor:    { value: new THREE.Color(domeColor) },
+        bottomColor: { value: new THREE.Color(domeColor) },
 
-  renderer.setClearColor( dome[1].material.uniforms.topColor.value );
-  renderer.clear();
-  renderer.clearTarget(renderTarget);
+        offset:      { value: 1 }, //0
+        exponent:    { value: 0.6 },//.6
+        time: {type: "f", value: 0.1 },
+        amp: {type: "f", value: 1.0 },  //500
+        bscalar: {type: "f", value: -15.0 }, //-5
+        positionscalar: {type: "f", value: 0.05 },
+        turbulencescalar: {type: "f", value: 0.5 },
+      };
 
-  // extra sphere waves
-  for (j = 0; j < NUMBER_OF_WAVES; j++)
-  {
-    // var geo = new THREE.PlaneGeometry( 2000, 2000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
-    // var geo = new THREE.BoxGeometry( 1000, 1000, 100, WORLD_WIDTH, WORLD_DEPTH, WORLD_WIDTH * 0.1 );
-    var geo = new THREE.IcosahedronGeometry( 1000, 4 );
-    
-    // geo.rotateX(Math.random() * 3.14 );
-    // geo.rotateY(Math.random() * 3.14 );
-    // geo.rotateZ(Math.random() * 3.14 );
+      var newMaterial = new THREE.ShaderMaterial({ 
+        vertexShader: ShaderLoader.get( "posNoise_vert_wavesplanes" ), 
+        fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+        uniforms: uniforms, 
+        side: THREE.DoubleSide,
+      });
+      material.push(newMaterial);
 
-    // geo.rotateX( - Math.PI / 2 );
-    // geo.rotateY(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
-    geo.rotateZ(j / NUMBER_OF_WAVES * 3.14 * 0.5 );
-
-    debugAudioLog(dome[j].material.uniforms.topColor.value);
-    
-    uniforms = {
-      topColor:    { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
-      bottomColor: { value: new THREE.Color(dome[j].material.uniforms.topColor.value) },
-
-      offset:      { value: 1 }, //0
-      exponent:    { value: 0.6 },//.6
-      time: {type: "f", value: 0.1 },
-      amp: {type: "f", value: 0.5 },  //500
-      bscalar: {type: "f", value: -3 }, //-5
-      positionscalar: {type: "f", value: 0.5 },
-      turbulencescalar: {type: "f", value: 0.5 },
-    };
-
-    material[j+NUMBER_OF_WAVES] = new THREE.ShaderMaterial({ 
-      vertexShader: ShaderLoader.get( "posNoise_vert" ), 
-      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
-      uniforms: uniforms, 
-      side: THREE.DoubleSide,
-    });
-    // meshes[j] = new THREE.Mesh( geo, material[j+NUMBER_OF_WAVES] );
-    
-    // bgScene.add( meshes[j] );
-    // meshes[j].position.set(0, 1500, 0);
+      var newMesh = new THREE.Mesh( newGeom, newMaterial );
+      newMesh.position.set(0, 3000, 0);
+      
+      meshes.push( newMesh );
+      scene.add( newMesh );
+      // scene2.add( new THREE.Mesh( newGeom, newMaterial ) );
+    }
   }
 }
 
@@ -563,7 +499,8 @@ function getDomeRadius(domeIdx) {
     return 0;
   }
   else if (domeIdx < NUMBER_OF_DOMES) {
-    return 4000*(domeIdx+1) + 500;
+    return 12000*(domeIdx+1) + 20000;
+    // return 4000*(domeIdx+1) + 500;
   }
   else {
     return 16000 * 1.3 * 1.6 * 2;
@@ -573,54 +510,48 @@ function getDomeRadius(domeIdx) {
 // NOTE: call AFTER renderAudio()
 function renderVisuals() {
 
-  for (var j = 0; j < NUMBER_OF_WAVES; j++)
+  // controls
+  var time = performance.now();
+  var delta = ( time - prevTickTime ) / 1000;
+
+  var delta = clock.getDelta();
+  controls.update(delta);
+
+  prevTickTime = time;
+
+  // camera.position.copy( controls.lastPosition );
+
+
+
+  // Update the ceiling visualizers
+  for (var i = 0; i < material.length; i++)
   {
-    // Update the ceiling visualizers
-    // for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
-    for (var i = 0; i < NUMBER_OF_WAVES; i++)
-    {
-      // Ensure we don't try use an analyser for a sound not yet loaded
-      if (analysers[i] != undefined)
-      {
-        waveMagnitudes[i] = analysers[i].getAverageFrequency()/ANALYSER_DIVISOR;
-        if (i == 1)
-        {
-          //debugAudioLog(waveMagnitudes[i]);
-        }
-      }
-      else {
-        waveMagnitudes[i] = 1;
-      }
-      material[i].uniforms.time.value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
-      material[i+NUMBER_OF_WAVES].uniforms.time.value = material[i].uniforms.time.value
-      //material[j].uniforms.bscalar.value = waveMagnitude[j] * 1 + 50;
-      material[i].uniforms.amp.value = -(waveMagnitudes[i] * 0.5 + 4 + Math.random()*.1);
-      material[i+NUMBER_OF_WAVES].uniforms.amp.value = material[i].uniforms.amp.value;
+    // Ensure we don't try use an analyser for a sound not yet loaded
+    var analyser = analysers[i % analysers.length];
+    if (analyser != undefined) {
+      waveMagnitudes[i] = analyser.getAverageFrequency()/ANALYSER_DIVISOR;
     }
+    else {
+      waveMagnitudes[i] = 1;
+    }
+
+    material[i].uniforms[ 'time' ].value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
+    material[i].uniforms[ 'amp' ].value = (waveMagnitudes[i] * 1 + 50) + (Math.random()*.0001);
   }
 
 
-  for (var j = 0; j < NUMBER_OF_DOMES+1; j++)
-  {
-    skyMat[j].uniforms.time.value = .000025 * (j + 1) *( Date.now() - start );
+  for (var j = 0; j < skyMat.length; j++) {
+    skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
   }
 
 
   // RENDER
-  renderer.clearDepth();
-  renderer.clearStencil();
-  renderer.clearTarget(renderTarget, false, true, true);
+  renderer.clear();
 
-  // renderer.render(scene, fixedCamera);
+  // renderer.render(scene, fixedCamera, renderTarget);
+  // renderer.render(scene2, camera);
 
-  renderer.render(scene, fixedCamera, renderTarget);
-  bgQuad.material.uniforms.texture.value = renderTarget.texture;
-  
-  renderer.clearDepth();
-  renderer.render(bgScene, camera);
-  
-  // bgQuad.material.uniforms.texture.value = renderTarget2.texture;
-  // renderer.render(quadScene, camera);
+  renderer.render(scene, camera);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -688,21 +619,21 @@ function initAudioElements() {
 
   // Create central noise sound and add it to the scene via noiseMesh
   var noiseMesh = new THREE.Mesh(sphere, material_spheres[0]);
-  noiseMesh.position.set(0, 0, 0);
+  noiseMesh.position.set(0, 10000, 0);
+  noiseMesh.updateMatrixWorld();
+
   //scene.add(noiseMesh);
-  noiseSound = new THREE.PositionalAudio(listener);
+  // noiseSound = new THREE.PositionalAudio(listener);
 
   // noiseSound.setPanningModel(PAN_MODEL);
-  noiseSound.setFilter(soundGains[i]);
-  debugAudioLog("rolloff = 7");
+  // noiseSound.setFilter(soundGains[0]);
   //noiseSound.setRefDistance(10000);
-  noiseSound.setRolloffFactor(7);
-  noiseMesh.add(noiseSound);
+  // noiseSound.setRolloffFactor(7);
+  // noiseMesh.add(noiseSound);
 
   // Setup each of the sound source
 
-  
-  audioLoader.load(NOISE_SOUND_FILE, noiseLoader);
+  // audioLoader.load(NOISE_SOUND_FILE, noiseLoader);
 
   curSoundSource = 0;
   for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
@@ -738,7 +669,7 @@ function renderAudio() {
   
   for (var i = 0; i < NUMBER_OF_DOMES; i++)
   { 
-    // if (i == whichDome[0])
+    if (i == whichDome[0])
     {
       if (whichDome[1] > .5)
       {
@@ -750,11 +681,13 @@ function renderAudio() {
       }
       
     }
-    // else
-    // {
-    //   domeGains[i].gain.value = 0.0;
-    // }
-  }  
+    else
+    {
+      domeGains[i].gain.value = 0.0;
+    }
+  }
+  
+  
 }
 
 // Choose, load, and play a random sound file in the given source index
@@ -829,7 +762,9 @@ function firstBufferLoader(buffer)
   sounds[index].startTime = 0;
   sounds[index].setPlaybackRate(1);
   sounds[index].panner.connect(convolver);
-    meshes[index+10].add(sounds[index]);
+  
+  meshes[index+10].add(sounds[index]);
+
   analysers[index] = new THREE.AudioAnalyser(sounds[index], 32);
   // Add the sound to the object map
   loadedSounds[curSoundFile] = sounds[index];
@@ -856,8 +791,10 @@ function bufferReloader(buffer)
   sounds[index].startTime = 0;
   sounds[index].setPlaybackRate(1);
   sounds[index].panner.connect(convolver);
-    meshes[index+10].add(sounds[index]);
-    sounds[index].connect(analysers[index]);
+  
+  meshes[index+10].add(sounds[index]);
+
+  sounds[index].connect(analysers[index]);
   // Add the sound to the object map
   loadedSounds[curSoundFile] = sounds[index];
   sounds[index].play();
