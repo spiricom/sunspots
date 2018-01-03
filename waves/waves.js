@@ -541,7 +541,7 @@ function renderVisuals() {
 
 
   for (var j = 0; j < skyMat.length; j++) {
-    skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) *( Date.now() - start );
+    skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) * ( Date.now() - start ) + waveMagnitudes[j % waveMagnitudes.length] * 0.01;
   }
 
 
@@ -623,7 +623,7 @@ function initAudioElements() {
   noiseMesh.updateMatrixWorld();
 
   //scene.add(noiseMesh);
-  // noiseSound = new THREE.PositionalAudio(listener);
+  noiseSound = new THREE.PositionalAudio(listener);
 
   // noiseSound.setPanningModel(PAN_MODEL);
   // noiseSound.setFilter(soundGains[0]);
@@ -633,7 +633,7 @@ function initAudioElements() {
 
   // Setup each of the sound source
 
-  // audioLoader.load(NOISE_SOUND_FILE, noiseLoader);
+  audioLoader.load(NOISE_SOUND_FILE, noiseLoader);
 
   curSoundSource = 0;
   for (var i = 0; i < NUMBER_OF_SOUND_SOURCES; i++)
