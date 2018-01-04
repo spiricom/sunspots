@@ -53,6 +53,8 @@ var guiParams = {
   bloomRadius: 0.9,
 };
 
+
+var centerY = 0;
 // CONTROLS VARS
 var moveSpeed = 30;
 var runningEnabled = DEVMODE;
@@ -346,7 +348,7 @@ function initVisualElements()
   camera = new THREE.PerspectiveCamera( 84, window.innerWidth / window.innerHeight, 1000, 140000 );
   // camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 50000, 100000 );
 
-  camera.position.set( 0, 0, 0 );
+  camera.position.set( 0, centerY, 0 );
   // camera.position.set( 0, 0, 103000 );
   // camera.lookAt(new THREE.Vector3(0, 0, 0));
 
@@ -419,7 +421,7 @@ function initVisualElements()
     // });
 
     dome[j] = new THREE.Mesh( skyGeo[j], skyMat[j] );
-    // dome[j].position.y = -300;
+    dome[j].position.y = centerY;
 
     dome[j].color = topColor;
     
@@ -467,7 +469,7 @@ function initVisualElements()
       material.push(newMaterial);
 
       var newMesh = new THREE.Mesh( newGeom, newMaterial );
-      newMesh.position.set(0, 3000, 0);
+      newMesh.position.set(0, 3000 + centerY, 0);
       
       meshes.push( newMesh );
       scene.add( newMesh );
@@ -626,10 +628,10 @@ function initAudioElements() {
   noiseSound = new THREE.PositionalAudio(listener);
 
   // noiseSound.setPanningModel(PAN_MODEL);
-  // noiseSound.setFilter(soundGains[0]);
+  noiseSound.setFilter(soundGains[0]);
   //noiseSound.setRefDistance(10000);
-  // noiseSound.setRolloffFactor(7);
-  // noiseMesh.add(noiseSound);
+  noiseSound.setRolloffFactor(14);
+  noiseMesh.add(noiseSound);
 
   // Setup each of the sound source
 

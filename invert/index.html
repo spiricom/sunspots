@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 <head>
-	<title>st</title>
+	<title>Sunspots - Invert</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	
@@ -33,6 +33,32 @@
       bottom: 0 !important;
       left: 0 !important;
       right: 0 !important;
+    }
+
+
+    .home-button {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 30px;
+      height: 30px;
+      
+      line-height: 30px;
+      text-align: center;
+      font-size: 18px;
+      text-decoration: none;
+
+      color: rgba(255, 255, 255, 0.1);
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+
+      -webkit-transition: all 0.2s ease-in-out;
+      -moz-transition: all 0.2s ease-in-out;
+      -o-transition: all 0.2s ease-in-out;
+      transition: all 0.2s ease-in-out;
+    }
+    .home-button:hover {
+      border-color: rgba(255, 255, 255, 1);
+      color: rgba(255, 255, 255, 1);
     }
   </style>
 
@@ -173,6 +199,12 @@
   <script src="vis-audio.js"></script>
 	<script src="index.js"></script>
 	
+
+  <a class="home-button" href="/index.html">
+      <!-- <i class="fa fa-home"></i> -->
+      ⌂
+  </a>
+  
   <!-- <div style="
     position: fixed; /* or absolute */
     top: 50%;

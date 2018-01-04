@@ -153,6 +153,10 @@ void main(){
     // m1 = 0.0;
     // m2 = 0.0;
 
+    m0 *= 1.3;
+    m1 *= 1.3;
+    m2 *= 1.3;
+
     float v = 
       (m0+mbm) * tSamp.r * 0.2126 + 
       (m1+mbm) * tSamp.g * 0.3152 + 
@@ -162,11 +166,12 @@ void main(){
     float maxMult = max(max(m0, m1), m2);
     color = clamp(color, 0.0, maxMult + 0.3);
 
+    color = pow(color, vec3(2.5));
+
     // color = vec3(v) * 0.5 + color;
 
     // color = color * 0.5+ vec3(v) * 0.5;
 
-    color = pow(color, vec3(2.5));
     color = clamp(color, 0.0, 1.0);
 
     tSamp.rgb = color;
