@@ -191,11 +191,11 @@ const WORLD_WIDTH = 30, WORLD_DEPTH = 30;
 // AUDIO CONSTANTS
 
 const REVERB_SOUND_FILE = './reverbs/BX20E103.wav';
-const NOISE_SOUND_FILE = './sounds/synthnoise.ogg';
+const NOISE_SOUND_FILE = './sounds/intercom.ogg';
 const myDomeSounds = ["sounds/intercom.ogg","sounds/intercom_treble.ogg","sounds/intercom_highpass.ogg","sounds/intercom.ogg"];
 
 
-const PAN_MODEL = 'equalpower';
+const PAN_MODEL = 'HRTF';
 
 const NUMBER_OF_SOUND_SOURCES = 4;
 const SOUND_POSITIONS = [[-15000,0,15000], [15000,0,15000], [15000,0,-15000],[-15000,0,-15000], [-15000,30,15000], [15000,80,15000],[-5000, 0, -5000], [5000, -50, -5000]];
@@ -559,6 +559,7 @@ function renderVisuals() {
 ////////////////////////////////////////////////////////////////////////////////////////////////
 //     AUDIO STUFF
 ////////////////////////////////////////////////////////////////////////////////////////////////
+var noiseGain;
 
 // Initialize the (all important) audio elements of the piece
 function initAudioElements() {
@@ -583,6 +584,7 @@ function initAudioElements() {
   {
     soundGains[i] = audioContext.createGain();
   }
+  noiseGain = audioContext.createGain();
   // Create an audio loader for the piece and load the noise sound into it
   audioLoader = new THREE.AudioLoader();
   for (var i = 0; i < NUMBER_OF_DOMES; i++)
@@ -621,16 +623,18 @@ function initAudioElements() {
 
   // Create central noise sound and add it to the scene via noiseMesh
   var noiseMesh = new THREE.Mesh(sphere, material_spheres[0]);
-  noiseMesh.position.set(0, 10000, 0);
+  noiseMesh.position.set(300, 10000, 5000);
   noiseMesh.updateMatrixWorld();
 
   //scene.add(noiseMesh);
   noiseSound = new THREE.PositionalAudio(listener);
 
   // noiseSound.setPanningModel(PAN_MODEL);
-  noiseSound.setFilter(soundGains[0]);
+
+  noiseSound.setFilter(noiseGain);
+  noiseGain.gain.value = 0.005;
   //noiseSound.setRefDistance(10000);
-  noiseSound.setRolloffFactor(14);
+  noiseSound.setRolloffFactor(1);
   noiseMesh.add(noiseSound);
 
   // Setup each of the sound source
@@ -859,7 +863,9 @@ function whenLoaded()
       if (RANDOM_VOLUME)
       {
         // BUG NOTE: Directly setting gain.value (like this) does not work in the p5.editor
+
         soundGains[i].gain.value = Math.random() * MAX_VOLUME + 0.0000001;
+        
       }
       else
       {
