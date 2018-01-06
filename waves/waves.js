@@ -100,6 +100,8 @@ var sphere;
   
 var material_spheres;
 
+var noiseGain;
+
 // VISUALS CONSTANTS
 const NUMBER_OF_WAVES = 4;
 const NUMBER_OF_DOMES = 4;
@@ -191,11 +193,12 @@ const WORLD_WIDTH = 30, WORLD_DEPTH = 30;
 // AUDIO CONSTANTS
 
 const REVERB_SOUND_FILE = './reverbs/BX20E103.wav';
-const NOISE_SOUND_FILE = './sounds/synthnoise.ogg';
+const NOISE_SOUND_FILE = './sounds/intercom.ogg';
 const myDomeSounds = ["sounds/intercom.ogg","sounds/intercom_treble.ogg","sounds/intercom_highpass.ogg","sounds/intercom.ogg"];
 
 
-const PAN_MODEL = 'equalpower';
+const PAN_MODEL = 'HRTF';
+
 
 const NUMBER_OF_SOUND_SOURCES = 4;
 const SOUND_POSITIONS = [[-15000,0,15000], [15000,0,15000], [15000,0,-15000],[-15000,0,-15000], [-15000,30,15000], [15000,80,15000],[-5000, 0, -5000], [5000, -50, -5000]];
@@ -478,23 +481,6 @@ function initVisualElements()
   }
 }
 
-// returns 2-element array containing:
-//   index of smallest dome camera is inside of (starting at 0)
-//   float between 0 and 1 indicated how far through the current shell the camera is
-function getCurrentDomeAroundCamera() {
-  // HACK need to get position from controls, which camera inherits from
-  // var camDist = controls.getObject().position.length();
-  var camDist = camera.position.length();
-  for (var i = 0; i < NUMBER_OF_DOMES; i++) {
-    var radius = getDomeRadius(i);
-    if (radius > camDist) {
-      var prevRadius = getDomeRadius(i-1);
-      var alpha = (camDist - prevRadius) / (radius - prevRadius);
-      return [i, alpha];
-    }
-  }
-  return [NUMBER_OF_DOMES, 0]; // outside of outermost dome
-}
 
 function getDomeRadius(domeIdx) {
   if (domeIdx < 0) {
@@ -585,16 +571,8 @@ function initAudioElements() {
   }
   // Create an audio loader for the piece and load the noise sound into it
   audioLoader = new THREE.AudioLoader();
-  for (var i = 0; i < NUMBER_OF_DOMES; i++)
-  {
-    domeGains[i] = audioContext.createGain();
-    domeGains[i].connect(audioContext.destination);
-    domeSounds[i] = audioContext.createBufferSource();
-    audioLoader.load(myDomeSounds[i], domeSoundLoader);
-    
-    domeGains[i].gain.value = 0.0;
-  }
-  
+
+  noiseGain = audioContext.createGain();
   convolver = audioContext.createConvolver();
   var reverbGain = audioContext.createGain();
   // grab audio track via XHR for convolver node
@@ -621,18 +599,19 @@ function initAudioElements() {
 
   // Create central noise sound and add it to the scene via noiseMesh
   var noiseMesh = new THREE.Mesh(sphere, material_spheres[0]);
-  noiseMesh.position.set(0, 10000, 0);
+  noiseMesh.position.set(3000, 10000, 6000);
   noiseMesh.updateMatrixWorld();
 
   //scene.add(noiseMesh);
   noiseSound = new THREE.PositionalAudio(listener);
 
   // noiseSound.setPanningModel(PAN_MODEL);
-  noiseSound.setFilter(soundGains[0]);
+  noiseSound.setFilter(noiseGain);
   //noiseSound.setRefDistance(10000);
-  noiseSound.setRolloffFactor(14);
+  noiseSound.setRolloffFactor(1);
   noiseMesh.add(noiseSound);
 
+  noiseGain.gain.value = .01;
   // Setup each of the sound source
 
   audioLoader.load(NOISE_SOUND_FILE, noiseLoader);
@@ -666,27 +645,6 @@ function renderAudio() {
       }
     }
     loopCount++;
-  }
-  var whichDome = getCurrentDomeAroundCamera();
-  
-  for (var i = 0; i < NUMBER_OF_DOMES; i++)
-  { 
-    if (i == whichDome[0])
-    {
-      if (whichDome[1] > .5)
-      {
-        domeGains[i].gain.value = (1.0 - whichDome[1]) * domeMaxGain;
-      }
-      else
-      {
-        domeGains[i].gain.value = whichDome[1] * domeMaxGain;
-      }
-      
-    }
-    else
-    {
-      domeGains[i].gain.value = 0.0;
-    }
   }
   
   
@@ -818,22 +776,6 @@ function noiseLoader(buffer)
 }
 
 
-// Loader function for THREE.js to load audio, specifically for the noise source
-function domeSoundLoader(buffer)
-{
-  
-  var i = curDome;
-  curDome++;
-  domeSounds[i].buffer = buffer;
-  debugAudioLog(domeSounds[i]);
-  domeSounds[i].loop = true;
-  domeSounds[i].startTime = (Math.random()*((buffer.length / 44100) - 6));
-  domeSounds[i].playbackRate.value = (Math.random() * .3) + .1;
-  domeSounds[i].connect(domeGains[i]); //noise not connected for now
-  domeSounds[i].start(); 
-  
-  //whenLoaded();
-}
 
 
 // Called when noise and the convolver are loaded
