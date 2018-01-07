@@ -444,7 +444,7 @@ function initVisualElements()
   var dome = [];
   for (var j = 0; j <= NUMBER_OF_DOMES; j++)
   {
-    var detailLevel = j <= 1 ? 3 : 4;
+    var detailLevel = j <= 2 ? 3 : 4;
     skyGeo[j] = new THREE.IcosahedronBufferGeometry( getDomeRadius(j), detailLevel );
     // skyGeo[j] = new THREE.CylinderGeometry( getDomeRadius(j), getDomeRadius(j), getDomeRadius(j)*2, 30 );
     // skyGeo[j] = new THREE.TorusKnotGeometry( getDomeRadius(j), getDomeRadius(j)*0.5 );
