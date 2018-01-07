@@ -34,19 +34,25 @@ var paused = false;
 // VISUALS VARS
 
 var camera, controls, scene, renderer, uniforms;
+var gl;
 var controlledCamera;
 var fixedCamera;
 var renderTarget;
-var scene2;
+var stencilMaskedScene;
+var stencilMaskScene;
+
+var particles;
+var particleSystem;
+var particleBounds;
+
 
 var waveMagnitudes = [2,5,6,7];
 var skyMat = [];
 var meshes = [];
 var material = [];
-var effectFXAA, bloomPass, renderScene, renderLowLodScene;
-var composer;
 
-var guiParams = {
+var effectFXAA, bloomPass, renderScenePass, composer;
+var bloomParams = {
   exposure: 1.0,
   bloomThreshold: 0.59,
   bloomStrength: 0.26,
@@ -261,6 +267,25 @@ function init()
     initAudioElements();
   }
 
+  // TUNING GUI
+  if (GUI_ENABLED) {
+    var gui = new dat.GUI();
+
+    gui.add( bloomParams, 'exposure', 0.1, 2 );
+    gui.add( bloomParams, 'bloomThreshold', 0.0, 1.0 ).onChange( function(value) {
+        bloomPass.threshold = Number(value);
+    });
+    gui.add( bloomParams, 'bloomStrength', 0.0, 3.0 ).onChange( function(value) {
+        bloomPass.strength = Number(value);
+    });
+    gui.add( bloomParams, 'bloomRadius', 0.0, 1.0 ).onChange( function(value) {
+        bloomPass.radius = Number(value);
+    });
+    gui.open();
+  }
+
+
+
   // Listen for window resizing
   window.addEventListener('resize', onWindowResize, false);
   debugAudioLog("equalpower");
@@ -287,6 +312,8 @@ function resizeWindow(w, h) {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   renderer.setSize( w, h );
+  composer.setSize( w, h );
+  effectFXAA.uniforms['resolution'].value.set(1 / w, 1 / h );
 }
 
 // Properly handle window resizing
@@ -331,59 +358,133 @@ function initVisualElements()
   // RENDERER //////////////////////////
   renderer = new THREE.WebGLRenderer({ 
     antialias: true,
-    preserveDrawingBuffer: true,
+    // preserveDrawingBuffer: true,
+    stencil: true,
     gammaInput: true,
     gammaOutput: true,
     // logarithmicDepthBuffer: true,
   });
   renderer.setClearColor( getRandomPaletteColor() );
-  // renderer.autoClear = false;
+  renderer.autoClear = false;
   renderer.localClippingEnabled = true;
 
   renderer.setPixelRatio( window.devicePixelRatio );
   renderer.setSize( window.innerWidth, window.innerHeight );
   THREEx.Screenshot.bindKey(renderer);
 
-  document.body.appendChild( renderer.domElement );
+  gl = renderer.getContext();
 
+  document.body.appendChild( renderer.domElement );
 
   // CAMERA
   camera = new THREE.PerspectiveCamera( 84, window.innerWidth / window.innerHeight, 1000, 140000 );
-  // camera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 50000, 100000 );
-
   camera.position.set( 0, centerY, 0 );
-  // camera.position.set( 0, 0, 103000 );
-  // camera.lookAt(new THREE.Vector3(0, 0, 0));
-
-  // controlledCamera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 1000, 100000 );
-  
-  // fixedCamera = new THREE.PerspectiveCamera( 74, window.innerWidth / window.innerHeight, 40000, 70000 );
-  // fixedCamera.position.set( 0, -50000, 0 );
-  // fixedCamera.lookAt(new THREE.Vector3(0, 0, 0));
 
   controls = new THREE.TrackballControls( camera, renderer.domElement );
-  // controls.target = new THREE.Vector3(0, 10000, 0);
   controls.target.copy( camera.position );
   controls.target.x += 200;
   controls.noZoom = true;
   controls.noPan = true;
 
-  renderTarget = new THREE.WebGLRenderTarget(2048, 2048, {
-    // magFilter: THREE.LinearFilter,
-    // minFilter: THREE.LinearMipMapLinearFilter,
-    magFilter: THREE.NearestFilter,
-    minFilter: THREE.NearestFilter,
-  });
+  // renderTarget = new THREE.WebGLRenderTarget(2048, 2048, {
+  //   // magFilter: THREE.LinearFilter,
+  //   // minFilter: THREE.LinearMipMapLinearFilter,
+  //   magFilter: THREE.NearestFilter,
+  //   minFilter: THREE.NearestFilter,
+  // });
 
   // SCENES
   scene = new THREE.Scene();
-  scene2 = new THREE.Scene();
+  stencilMaskedScene = new THREE.Scene();
+  stencilMaskScene = new THREE.Scene();
   
   var viewportWidth = window.innerWidth;
   var viewportHeight = window.innerHeight;
 
+  // POST FX /////////
+  renderScenePass = new THREE.RenderPass(stencilMaskedScene, camera);
+
+  effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+  effectFXAA.uniforms['resolution'].value.set(1 / viewportWidth, 1 / viewportHeight );
+
+  var copyShader = new THREE.ShaderPass(THREE.CopyShader);
+  copyShader.renderToScreen = true;
+
+  bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(viewportWidth, viewportHeight), 1.5, 0.2, 0.85);
+  composer = new THREE.EffectComposer(renderer);
+  composer.setSize(viewportWidth, viewportHeight);
+
+  // composer.addPass({
+  //   setSize: function() { },
+  //   render: function() {
+  //     renderer.state.setStencilTest( false );
+  //   }
+  // });
+  composer.addPass(renderScenePass);
+  composer.addPass(effectFXAA);
+  composer.addPass(bloomPass);
+  // composer.addPass({
+  //   setSize: function() { },
+  //   render: function() {
+  //     renderer.state.setStencilTest( true );
+  //   }
+  // });
+  composer.addPass(copyShader);
+  renderer.gammaInput = true;
+
+  // STARS //////////////////////////
+
+  particles = new THREE.Geometry();
+      
+  var textureLoader = new THREE.TextureLoader();
+  var particleColor = getRandomPaletteColor();
+  
+  var particleMap = textureLoader.load("images/lens.png");
+  particleMap.magFilter = THREE.Linear;
+  particleMap.minFilter = THREE.LinearMipMapLinearFilter;
+
+  particleBounds = 2000;
+
+  var pMaterial = new THREE.PointsMaterial({
+    color: particleColor,
+    size: 20,
+    map: particleMap,
+    transparent: true,
+    // opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    // transparent: true,
+    //depthWrite: false,
+  });
+  // pMaterial.alphaTest = 0.5;
+  
+  for (var p = 0; p < 5000; p++) {
+    var pX = (Math.random()*2-1) * particleBounds,
+        pY = (Math.random()*2-1) * particleBounds,
+        pZ = (Math.random()*2-1) * particleBounds;
+    
+    var particle = new THREE.Vector3(pX, pY, pZ);
+
+    particle.velocity = new THREE.Vector3(
+      (Math.random()*2-1) * 0,
+      (Math.random()*2-1) * 0,
+      (Math.random()*2-1) * 0
+      );
+
+    particles.vertices.push(particle);
+  }
+  
+  // create the particle system
+  particleSystem = new THREE.Points(particles, pMaterial);
+  
+  // add it to the scene
+  // stencilMaskedScene.add(particleSystem);
+
+
+  // var gridHelper = new THREE.GridHelper( 100, 100 );
+  // stencilMaskedScene.add(gridHelper);
+
  
-  // LIGHTS //////////////////////////
+  // LIGHTS/FOG //////////////////////////
   scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.001 );
 
   // DOMES //////////////////////////
@@ -428,59 +529,55 @@ function initVisualElements()
 
     dome[j].color = topColor;
     
-    scene.add( dome[j] );
+    if (j == 2) {
+      // skyMat[j].colorWrite = false;
+      stencilMaskScene.add( dome[j] );
+    }
+    else {
+      scene.add( dome[j] );
+    }
   }
 
   // WAVES //////////////////////////
   var geometry = [];
   for (j = 0; j < NUMBER_OF_WAVES; j++) {
+
+    var newGeom = new THREE.PlaneGeometry( 100000, 100000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
+    newGeom.rotateX( - Math.PI / 2 );
+    newGeom.rotateY(Math.random() * 3.14 );
     
+    geometry.push(newGeom)
 
+    var domeColor = dome[j].color;
 
-    for (var k = 0; k < 1; k++) {
+    uniforms = {
+      topColor:    { value: new THREE.Color(domeColor) },
+      bottomColor: { value: new THREE.Color(domeColor) },
 
-      var newGeom = new THREE.PlaneGeometry( 100000, 100000, WORLD_WIDTH - 1, WORLD_DEPTH - 1 );
-      newGeom.rotateX( - Math.PI / 2 );
-      newGeom.rotateY(Math.random() * 3.14 );
-      
-      // newGeom.rotateZ( k );
-      // newGeom.rotateX( k );
-      
-      geometry.push(newGeom)
+      offset:      { value: 1 }, //0
+      exponent:    { value: 0.6 },//.6
+      time: {type: "f", value: 0.1 },
+      amp: {type: "f", value: 1.0 },  //500
+      bscalar: {type: "f", value: -15.0 }, //-5
+      positionscalar: {type: "f", value: 0.05 },
+      turbulencescalar: {type: "f", value: 0.5 },
+    };
 
-      var domeColor = dome[j].color;
+    var newMaterial = new THREE.ShaderMaterial({ 
+      vertexShader: ShaderLoader.get( "posNoise_vert_wavesplanes" ), 
+      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
+      uniforms: uniforms, 
+      side: THREE.DoubleSide,
+    });
+    material.push(newMaterial);
 
-      uniforms = {
-        topColor:    { value: new THREE.Color(domeColor) },
-        bottomColor: { value: new THREE.Color(domeColor) },
-
-        offset:      { value: 1 }, //0
-        exponent:    { value: 0.6 },//.6
-        time: {type: "f", value: 0.1 },
-        amp: {type: "f", value: 1.0 },  //500
-        bscalar: {type: "f", value: -15.0 }, //-5
-        positionscalar: {type: "f", value: 0.05 },
-        turbulencescalar: {type: "f", value: 0.5 },
-      };
-
-      var newMaterial = new THREE.ShaderMaterial({ 
-        vertexShader: ShaderLoader.get( "posNoise_vert_wavesplanes" ), 
-        fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
-        uniforms: uniforms, 
-        side: THREE.DoubleSide,
-      });
-      material.push(newMaterial);
-
-      var newMesh = new THREE.Mesh( newGeom, newMaterial );
-      newMesh.position.set(0, 3000 + centerY, 0);
-      
-      meshes.push( newMesh );
-      scene.add( newMesh );
-      // scene2.add( new THREE.Mesh( newGeom, newMaterial ) );
-    }
+    var newMesh = new THREE.Mesh( newGeom, newMaterial );
+    newMesh.position.set(0, 3000 + centerY, 0);
+    
+    meshes.push( newMesh );
+    scene.add( newMesh );
   }
 }
-
 
 function getDomeRadius(domeIdx) {
   if (domeIdx < 0) {
@@ -507,10 +604,6 @@ function renderVisuals() {
 
   prevTickTime = time;
 
-  // camera.position.copy( controls.lastPosition );
-
-
-
   // Update the ceiling visualizers
   for (var i = 0; i < material.length; i++)
   {
@@ -527,19 +620,82 @@ function renderVisuals() {
     material[i].uniforms[ 'amp' ].value = (waveMagnitudes[i] * 1 + 50) + (Math.random()*.0001);
   }
 
-
   for (var j = 0; j < skyMat.length; j++) {
     skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) * ( Date.now() - start ) + waveMagnitudes[j % waveMagnitudes.length] * 0.01;
   }
 
+  // update particles  ///////////////
+  var pCount = particles.vertices.length;
+  while (pCount--) {
 
-  // RENDER
+    // get the particle
+    var particle = particles.vertices[pCount];
+
+    // wrap around space
+    if (particle.y < -particleBounds) {
+      particle.y = particleBounds;
+    }
+    if (particle.x < -particleBounds) {
+      particle.x = particleBounds;
+    }
+    if (particle.z < -particleBounds) {
+      particle.z = particleBounds;
+    }
+    if (particle.y > particleBounds) {
+      particle.y = -particleBounds;
+    }
+    if (particle.x > particleBounds) {
+      particle.x = -particleBounds;
+    }
+    if (particle.z > particleBounds) {
+      particle.z = -particleBounds;
+    }
+    
+    // particle.velocity.x += (Math.random() * .02) - .01;
+    // particle.velocity.y += (Math.random() * .02) - .01;
+    // particle.velocity.z += (Math.random() * .02) - .01;
+
+    particle.add(particle.velocity);
+  }
+  particleSystem.geometry.verticesNeedUpdate = true;
+
+
+  // RENDER //////////////////////////////
   renderer.clear();
 
-  // renderer.render(scene, fixedCamera, renderTarget);
-  // renderer.render(scene2, camera);
-
+  // render base scene
+  camera.near = 1000;
+  camera.far = 140000;
+  camera.updateProjectionMatrix();
   renderer.render(scene, camera);
+
+  // enable stencil test
+  renderer.state.setStencilTest( true );
+
+  // config the stencil buffer to collect data for testing
+  renderer.state.setStencilFunc( gl.ALWAYS, 1, 0xff );
+  renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.REPLACE );
+
+  // draw mask scene
+  renderer.render(stencilMaskScene, camera);
+
+  // set stencil buffer for testing
+  renderer.state.setStencilFunc( gl.EQUAL, 1, 0xff );
+  renderer.state.setStencilOp( gl.KEEP, gl.KEEP, gl.KEEP );
+
+  // draw masked scene
+  renderer.clearDepth();
+  camera.near = 0.1;
+  camera.far = particleBounds;
+  camera.updateProjectionMatrix();
+  
+  renderer.render(stencilMaskedScene, camera);
+  
+  // renderer.toneMappingExposure = Math.pow( bloomParams.exposure, 4.0 );
+  // composer.render();
+
+  // disable stencil test
+  renderer.state.setStencilTest( false );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
