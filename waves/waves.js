@@ -362,6 +362,9 @@ function initVisualElements()
     stencil: true,
     gammaInput: true,
     gammaOutput: true,
+    extensions: {
+      derivatives: true,
+    },
     // logarithmicDepthBuffer: true,
   });
   renderer.setClearColor( getRandomPaletteColor() );
@@ -432,57 +435,6 @@ function initVisualElements()
   composer.addPass(copyShader);
   renderer.gammaInput = true;
 
-  // STARS //////////////////////////
-
-  particles = new THREE.Geometry();
-      
-  var textureLoader = new THREE.TextureLoader();
-  var particleColor = getRandomPaletteColor();
-  
-  var particleMap = textureLoader.load("images/lens.png");
-  particleMap.magFilter = THREE.Linear;
-  particleMap.minFilter = THREE.LinearMipMapLinearFilter;
-
-  particleBounds = 2000;
-
-  var pMaterial = new THREE.PointsMaterial({
-    color: particleColor,
-    size: 20,
-    map: particleMap,
-    transparent: true,
-    // opacity: 0.9,
-    blending: THREE.AdditiveBlending,
-    // transparent: true,
-    //depthWrite: false,
-  });
-  // pMaterial.alphaTest = 0.5;
-  
-  for (var p = 0; p < 5000; p++) {
-    var pX = (Math.random()*2-1) * particleBounds,
-        pY = (Math.random()*2-1) * particleBounds,
-        pZ = (Math.random()*2-1) * particleBounds;
-    
-    var particle = new THREE.Vector3(pX, pY, pZ);
-
-    particle.velocity = new THREE.Vector3(
-      (Math.random()*2-1) * 0,
-      (Math.random()*2-1) * 0,
-      (Math.random()*2-1) * 0
-      );
-
-    particles.vertices.push(particle);
-  }
-  
-  // create the particle system
-  particleSystem = new THREE.Points(particles, pMaterial);
-  
-  // add it to the scene
-  // stencilMaskedScene.add(particleSystem);
-
-
-  // var gridHelper = new THREE.GridHelper( 100, 100 );
-  // stencilMaskedScene.add(gridHelper);
-
  
   // LIGHTS/FOG //////////////////////////
   scene.fog = new THREE.FogExp2( getRandomPaletteColor(), 0.001 );
@@ -492,6 +444,11 @@ function initVisualElements()
   var dome = [];
   for (var j = 0; j <= NUMBER_OF_DOMES; j++)
   {
+    var detailLevel = j <= 1 ? 3 : 4;
+    skyGeo[j] = new THREE.IcosahedronBufferGeometry( getDomeRadius(j), detailLevel );
+    // skyGeo[j] = new THREE.CylinderGeometry( getDomeRadius(j), getDomeRadius(j), getDomeRadius(j)*2, 30 );
+    // skyGeo[j] = new THREE.TorusKnotGeometry( getDomeRadius(j), getDomeRadius(j)*0.5 );
+
     var topColor = getRandomThreePaletteColor();
     var uniforms = {
       // topColor:    { value: new THREE.Color(1, 1, 1) },
@@ -502,18 +459,16 @@ function initVisualElements()
       exponent:    { value: 0.6 },
       time: {type: "f", value: 0.0 },
       amp: {type: "f", value: 500.0 },
+      fragNoiseAmp: {type: "f", value: 500.0 },
       // bscalar: {type: "f", value: -25.0 },
       bscalar: {type: "f", value: -getDomeRadius(j) * 0.0018 },
       positionscalar: {type: "f", value: .05 },
       turbulencescalar: {type: "f", value: .5 }
     };
-    skyGeo[j] = new THREE.IcosahedronGeometry( getDomeRadius(j), 3 );
-    // skyGeo[j] = new THREE.CylinderGeometry( getDomeRadius(j), getDomeRadius(j), getDomeRadius(j)*2, 30 );
-    // skyGeo[j] = new THREE.TorusKnotGeometry( getDomeRadius(j), getDomeRadius(j)*0.5 );
 
     skyMat[j] = new THREE.ShaderMaterial({ 
       vertexShader: ShaderLoader.get( "posNoise_vert" ), 
-      fragmentShader: ShaderLoader.get( "posNoise_frag_discard" ), 
+      fragmentShader: ShaderLoader.get( "posNoise_frag" ), 
       uniforms: uniforms,
       side: THREE.DoubleSide,
       // side: THREE.BackSide, 
@@ -538,6 +493,59 @@ function initVisualElements()
     }
   }
 
+  // STARS //////////////////////////
+
+  particles = new THREE.Geometry();
+      
+  var textureLoader = new THREE.TextureLoader();
+  // var particleColor = getRandomPaletteColor();
+  var particleColor = dome[dome.length-1].color;
+  
+  var particleMap = textureLoader.load("images/lens.png");
+  particleMap.magFilter = THREE.Linear;
+  particleMap.minFilter = THREE.LinearMipMapLinearFilter;
+
+  particleBounds = 2000;
+
+  var pMaterial = new THREE.PointsMaterial({
+    color: particleColor,
+    size: 60,
+    map: particleMap,
+    transparent: true,
+    // opacity: 0.9,
+    // blending: THREE.AdditiveBlending,
+    // transparent: true,
+    //depthWrite: false,
+  });
+  pMaterial.alphaTest = 0.3;
+  
+  for (var p = 0; p < 5000; p++) {
+    var pX = 0, pY = 0, pZ = 0;
+
+    // while (pX*pX + pY*pY + pZ*pZ <= camera.near*camera.near - 1000) {
+      pX = (Math.random()*2-1) * particleBounds;
+      pY = (Math.random()*2-1) * particleBounds;
+      pZ = (Math.random()*2-1) * particleBounds;
+    // }
+    
+    var particle = new THREE.Vector3(pX, pY, pZ);
+
+    particle.velocity = new THREE.Vector3(
+      (Math.random()*2-1) * 0,
+      (Math.random()*2-1) * 0,
+      (Math.random()*2-1) * 0
+      );
+
+    particles.vertices.push(particle);
+  }
+  
+  // create the particle system
+  particleSystem = new THREE.Points(particles, pMaterial);
+  
+  // add it to the scene
+  stencilMaskedScene.add(particleSystem);
+
+
   // WAVES //////////////////////////
   var geometry = [];
   for (j = 0; j < NUMBER_OF_WAVES; j++) {
@@ -558,6 +566,7 @@ function initVisualElements()
       exponent:    { value: 0.6 },//.6
       time: {type: "f", value: 0.1 },
       amp: {type: "f", value: 1.0 },  //500
+      fragNoiseAmp: {type: "f", value: 500.0 },
       bscalar: {type: "f", value: -15.0 }, //-5
       positionscalar: {type: "f", value: 0.05 },
       turbulencescalar: {type: "f", value: 0.5 },
@@ -575,7 +584,15 @@ function initVisualElements()
     newMesh.position.set(0, 3000 + centerY, 0);
     
     meshes.push( newMesh );
-    scene.add( newMesh );
+
+
+    if (j == 2) {
+      // skyMat[j].colorWrite = false;
+      stencilMaskScene.add( newMesh );
+    }
+    else {
+      scene.add( newMesh );
+    }
   }
 }
 
@@ -616,12 +633,16 @@ function renderVisuals() {
       waveMagnitudes[i] = 1;
     }
 
-    material[i].uniforms[ 'time' ].value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
-    material[i].uniforms[ 'amp' ].value = (waveMagnitudes[i] * 1 + 50) + (Math.random()*.0001);
+    material[i].uniforms.time.value = (.000025 * (i + 1) *( waveMagnitudes[i] * 10 )) + (Math.random()*.00001);
+    // material[i].uniforms.time.value = .000025 * (i + 1) * ( Date.now() - start ) + waveMagnitudes[i % waveMagnitudes.length] * 0.01;
+    material[i].uniforms.amp.value = (waveMagnitudes[i] * 1 + 50) + (Math.random()*.0001);
+    material[i].uniforms.fragNoiseAmp.value = waveMagnitudes[i % waveMagnitudes.length];
   }
 
-  for (var j = 0; j < skyMat.length; j++) {
-    skyMat[j].uniforms[ 'time' ].value = .000025 * (j + 1) * ( Date.now() - start ) + waveMagnitudes[j % waveMagnitudes.length] * 0.01;
+  // dome uniforms
+  for (var i = 0; i < skyMat.length; i++) {
+    skyMat[i].uniforms.time.value = .000025 * (i + 1) * ( Date.now() - start ) + waveMagnitudes[i % waveMagnitudes.length] * 0.01;
+    skyMat[i].uniforms.fragNoiseAmp.value = waveMagnitudes[i % waveMagnitudes.length];
   }
 
   // update particles  ///////////////
@@ -686,7 +707,7 @@ function renderVisuals() {
   // draw masked scene
   renderer.clearDepth();
   camera.near = 0.1;
-  camera.far = particleBounds;
+  camera.far = particleBounds * 1.5;
   camera.updateProjectionMatrix();
   
   renderer.render(stencilMaskedScene, camera);
