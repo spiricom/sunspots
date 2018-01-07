@@ -244,6 +244,7 @@ function init() {
   // CLOTHS /////////////////////
 
   var clothTex = THREE.ImageUtils.loadTexture("textures/marble.png");
+  // var clothTex = THREE.ImageUtils.loadTexture("textures/rock.jpg");
   // var clothTex = THREE.ImageUtils.loadTexture("textures/marble_orig.png");
   clothTex.magFilter = THREE.LinearFilter;
   clothTex.minFilter = THREE.LinearFilter;

@@ -214,11 +214,11 @@ li {
   font-size: 2.6vmin;
   line-height: 1.6;
 }
-@media screen and (min-width: 1200px) {
+/*@media screen and (min-width: 1200px) {
   .content {
      font-size: 26px;
   }
-}
+}*/
 
 .content a {
 	color: inherit;
@@ -279,8 +279,9 @@ li {
 		<div style="position: relative;">
 			<!-- <img                        class="cover-image landscape" src="index-static/images/default.png"/> -->
 			<img id="cover-image-drape" class="cover-image fg landscape" src="index-static/images/drape.png"/>
-			<img id="cover-image-waves" class="cover-image fg landscape" src="index-static/images/waves-3.png"/>
+			<img id="cover-image-waves" class="cover-image fg landscape" src="index-static/images/waves-b.png"/>
       <img id="cover-image-locat" class="cover-image fg landscape" src="index-static/images/location.png"/>
+      <img id="cover-image-invrt" class="cover-image fg landscape" src="index-static/images/invert.png"/>
 		</div>
 
 		<div class="box">
@@ -297,8 +298,8 @@ li {
 				<a class="scene-link" id="link-waves" href="waves">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE B &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Waves</a>
         <br>
         <a class="scene-link" id="link-locat" href="location">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE C &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Location</a>
-				<!-- <br>
-				<a class="scene-link" id="link-locat" href="vis">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE D &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Test</a> -->
+				<br>
+				<a class="scene-link" id="link-invrt" href="invert">&nbsp;&nbsp;&nbsp;&nbsp;<span class="play">⏵</span> SIDE D &nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp;.&nbsp; Invert</a>
 			</div>
 
 
@@ -441,7 +442,8 @@ li {
 
 		var imgDrape = document.getElementById("cover-image-drape");
 		var imgWaves = document.getElementById("cover-image-waves");
-		var imgLocat = document.getElementById("cover-image-locat");
+    var imgLocat = document.getElementById("cover-image-locat");
+		var imgInvrt = document.getElementById("cover-image-invrt");
 		
 		var title = document.getElementById("title");
 		var cover = document.getElementById("cover");
@@ -452,7 +454,8 @@ li {
 			var imgToShow = 
 				elm.id == "link-drape" ? imgDrape :
 				elm.id == "link-waves" ? imgWaves :
-				elm.id == "link-locat" ? imgLocat :
+        elm.id == "link-locat" ? imgLocat :
+				elm.id == "link-invrt" ? imgInvrt :
 				null;
 
 			console.assert(imgToShow, "invalid link id: " + elm.id);
@@ -464,13 +467,15 @@ li {
 				elm.id == "link-waves" ? "rgb(247, 206, 101)" :
 				// elm.id == "link-waves" ? "rgb(198, 141, 51)" :
 				// elm.id == "link-waves" ? "rgb(25, 42, 79)" :
-				elm.id == "link-locat" ? "rgb(189, 106, 98)" :
+        elm.id == "link-locat" ? "rgb(189, 106, 98)" :
+				elm.id == "link-invrt" ? "white" :
 				"white";
 
 			cover.style.color = 
 				elm.id == "link-drape" ? "white" :
 				elm.id == "link-waves" ? "white" :
-				elm.id == "link-locat" ? "white" :
+        elm.id == "link-locat" ? "white" :
+				elm.id == "link-invrt" ? "white" :
 				"white";
 		}
 
@@ -480,7 +485,8 @@ li {
 			var imgToShow = 
 				elm.id == "link-drape" ? imgDrape :
 				elm.id == "link-waves" ? imgWaves :
-				elm.id == "link-locat" ? imgLocat :
+        elm.id == "link-locat" ? imgLocat :
+				elm.id == "link-invrt" ? imgInvrt :
 				null;
 		
 			console.assert(imgToShow, "invalid link id: " + elm.id);
