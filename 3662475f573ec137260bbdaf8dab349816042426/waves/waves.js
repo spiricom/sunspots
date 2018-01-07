@@ -495,55 +495,7 @@ function initVisualElements()
 
   // STARS //////////////////////////
 
-  particles = new THREE.Geometry();
-      
-  var textureLoader = new THREE.TextureLoader();
-  // var particleColor = getRandomPaletteColor();
-  var particleColor = dome[dome.length-1].color;
   
-  var particleMap = textureLoader.load("images/lens.png");
-  particleMap.magFilter = THREE.Linear;
-  particleMap.minFilter = THREE.LinearMipMapLinearFilter;
-
-  particleBounds = 2000;
-
-  var pMaterial = new THREE.PointsMaterial({
-    color: particleColor,
-    size: 60,
-    map: particleMap,
-    transparent: true,
-    // opacity: 0.9,
-    // blending: THREE.AdditiveBlending,
-    // transparent: true,
-    //depthWrite: false,
-  });
-  pMaterial.alphaTest = 0.3;
-  
-  for (var p = 0; p < 5000; p++) {
-    var pX = 0, pY = 0, pZ = 0;
-
-    // while (pX*pX + pY*pY + pZ*pZ <= camera.near*camera.near - 1000) {
-      pX = (Math.random()*2-1) * particleBounds;
-      pY = (Math.random()*2-1) * particleBounds;
-      pZ = (Math.random()*2-1) * particleBounds;
-    // }
-    
-    var particle = new THREE.Vector3(pX, pY, pZ);
-
-    particle.velocity = new THREE.Vector3(
-      (Math.random()*2-1) * 0,
-      (Math.random()*2-1) * 0,
-      (Math.random()*2-1) * 0
-      );
-
-    particles.vertices.push(particle);
-  }
-  
-  // create the particle system
-  particleSystem = new THREE.Points(particles, pMaterial);
-  
-  // add it to the scene
-  stencilMaskedScene.add(particleSystem);
 
 
   // WAVES //////////////////////////
@@ -645,40 +597,7 @@ function renderVisuals() {
     skyMat[i].uniforms.fragNoiseAmp.value = waveMagnitudes[i % waveMagnitudes.length];
   }
 
-  // update particles  ///////////////
-  var pCount = particles.vertices.length;
-  while (pCount--) {
-
-    // get the particle
-    var particle = particles.vertices[pCount];
-
-    // wrap around space
-    if (particle.y < -particleBounds) {
-      particle.y = particleBounds;
-    }
-    if (particle.x < -particleBounds) {
-      particle.x = particleBounds;
-    }
-    if (particle.z < -particleBounds) {
-      particle.z = particleBounds;
-    }
-    if (particle.y > particleBounds) {
-      particle.y = -particleBounds;
-    }
-    if (particle.x > particleBounds) {
-      particle.x = -particleBounds;
-    }
-    if (particle.z > particleBounds) {
-      particle.z = -particleBounds;
-    }
-    
-    // particle.velocity.x += (Math.random() * .02) - .01;
-    // particle.velocity.y += (Math.random() * .02) - .01;
-    // particle.velocity.z += (Math.random() * .02) - .01;
-
-    particle.add(particle.velocity);
-  }
-  particleSystem.geometry.verticesNeedUpdate = true;
+ 
 
 
   // RENDER //////////////////////////////
