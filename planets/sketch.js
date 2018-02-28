@@ -22,6 +22,8 @@ var reverbSoundFile = './reverbs/BX20E103.wav';
 var convolver;
 var myReverbGain = 0.10;
 
+var globalMIDI;
+
 var fps = 30;
 var centerX, centerY;
 var renderer;
@@ -178,8 +180,15 @@ function setup() {
       previousTickPos[i][j] = 0;
     }
   }
+
+WebMidi.enable();
+
       
 }
+
+
+
+
 
 function initSound(){
 
@@ -359,11 +368,16 @@ function ring(whichPlanet, planet, linecolor)
     //ramp down to almost zero (non-zero to avoid divide by zero in exponential function) over the decay time for the harmonic
     gains[whichPlanet][i].gain.setTargetAtTime(0.0000001, (context.currentTime+0.015),random(0.001, (planetScalar - .2) * 3.0));
   }
+
+
+
+
 }
 
 function collide(whichPlanet)
 {
   //print(whichPlanet);
+  WebMidi.outputs[0].playNote("C3");
   noises[whichPlanet].Q.value = map(mouseY, height, 0, 7.0, 40.0);
   noiseGains[whichPlanet].gain.cancelScheduledValues(0);
   noiseGains[whichPlanet].gain.setTargetAtTime(random(0.000001,0.1), context.currentTime, 0.005);
@@ -2003,4 +2017,39 @@ function getPlanetSystem() {
     ],
   };
   return planetSystem;
+}
+
+
+function success (midi) {
+    console.log('Got midi!', midi);
+    globalMIDI = midi;
+    listInputsAndOutputs( midi);
+}
+ 
+function failure () {
+    console.error('No access to your midi devices.')
+}
+
+function listInputsAndOutputs( midiAccess ) {
+  for (var input in midiAccess.inputs) {
+    console.log( "Input port [type:'" + input.type + "'] id:'" + input.id +
+      "' manufacturer:'" + input.manufacturer + "' name:'" + input.name +
+      "' version:'" + input.version + "'" );
+  }
+
+  for (var output in midiAccess.outputs) {
+    console.log( "Output port [type:'" + output.type + "'] id:'" + output.id +
+      "' manufacturer:'" + output.manufacturer + "' name:'" + output.name +
+      "' version:'" + output.version + "'" );
+  }
+}
+
+
+function sendMiddleC( midiAccess, portID ) {
+  var noteOnMessage = [0x90, 60, 0x7f];    // note on, middle C, full velocity
+  var output = midiAccess.outputs.get(portID);
+  console.log("note!");
+  output.send( noteOnMessage );  //omitting the timestamp means send immediately.
+  output.send( [0x80, 60, 0x40], window.performance.now() + 1000.0 ); // Inlined array creation- note off, middle C,  
+                                                                      // release velocity = 64, timestamp = now + 1000ms.
 }
