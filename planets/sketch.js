@@ -480,18 +480,22 @@ function keyPressed()
       {
         if (moonsOn[10] == 1)
         {
+          console.log("moonsOn[10] was 1");
           moonsOn[10] = 0;
           for (var i = 0; i < 9; i++)
           {
             moonsOn[i] = 0;
+            console.log("moons off" + i);
           }
         }
         else
         {
           moonsOn[10] = 1;
+          console.log("moonsOn[10] was 0");
           for (var i = 0; i < 9; i++)
           {
             moonsOn[i] = 1;
+            console.log("moons on" + i);
           }
         }
       }
@@ -500,10 +504,12 @@ function keyPressed()
         if (moonsOn[planetNum] == 1)
         {
           moonsOn[planetNum] = 0;
+          console.log("moons off" + planetNum);
         }
         else
         {
           moonsOn[planetNum] = 1;
+          console.log("moons on" + planetNum);
         }
       }
     }

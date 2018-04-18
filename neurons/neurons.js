@@ -136,7 +136,7 @@ function init() {
     if (logMessages) {
       switch ( event.keyCode ) {
         case 65: // a
-          console.log(JSON.stringify(messageLog));
+          //console.log(JSON.stringify(messageLog));
           break;
       }
     }
@@ -563,7 +563,7 @@ function receiveAmplitude(idx, amp) {
   amp = parseFloat(amp);
   // amps[idx] = Math.max(amps[idx], amp);
   var a = 0.3;
-  console.log(amp);
+  //console.log(amp);
   amps[idx] = amp * a + amps[idx] * (1-a);
 }
 
@@ -617,7 +617,7 @@ function breakConnections(idx) {
     attemptedConnections[conn.firstIdx] = -1;
     attemptedConnections[conn.secondIdx] = -1;    
 
-    console.log("CONN-BREAK: " + conn.firstIdx + ", " + conn.secondIdx)
+    //console.log("CONN-BREAK: " + conn.firstIdx + ", " + conn.secondIdx)
   }
 }
 
@@ -638,7 +638,7 @@ function connectParticles(idx0, idx1) {
   //   return;
   // }
 
-  console.log("CONN: " + idx0 + ", " + idx1);
+  //console.log("CONN: " + idx0 + ", " + idx1);
 
   if (idx0 === idx1) return;
 
@@ -653,7 +653,7 @@ function connectParticles(idx0, idx1) {
   if (attemptedConnections[idx1] !== idx0) return;
 
   // CONNECTION ESTABLISHED //
-  console.log("CONN-SUCCESS: " + idx0 + ", " + idx1);
+  //console.log("CONN-SUCCESS: " + idx0 + ", " + idx1);
 
   // make the pulse repeater
   var repeaterFunc = function() {
