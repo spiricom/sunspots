@@ -62,6 +62,7 @@ var pitchFilters = [];
 var noiseFilters = [];
 var tickFilters = [];
 var ticks = [];
+var tickType = [];
 var tickGains = [];
 var noises = [];
 var noiseGains = [];
@@ -175,6 +176,7 @@ function setup() {
     moonFadeDirs[i] = 0;
     ticksScalar[i] = 4;
     tickLength[i] = 1;
+    tickType[i] = 0;
     for (var j = 0; j < 64; j++)
     {
       previousTickPos[i][j] = 0;
@@ -480,12 +482,10 @@ function keyPressed()
       {
         if (moonsOn[10] == 1)
         {
-          console.log("moonsOn[10] was 1");
           moonsOn[10] = 0;
           for (var i = 0; i < 9; i++)
           {
             moonsOn[i] = 0;
-            console.log("moons off" + i);
           }
         }
         else
@@ -495,7 +495,6 @@ function keyPressed()
           for (var i = 0; i < 9; i++)
           {
             moonsOn[i] = 1;
-            console.log("moons on" + i);
           }
         }
       }
@@ -504,12 +503,10 @@ function keyPressed()
         if (moonsOn[planetNum] == 1)
         {
           moonsOn[planetNum] = 0;
-          console.log("moons off" + planetNum);
         }
         else
         {
           moonsOn[planetNum] = 1;
-          console.log("moons on" + planetNum);
         }
       }
     }
@@ -859,15 +856,33 @@ function keyPressed()
     planetNum = 10;
   }
 
-  if (keyCode === 220) // `
+  
+  if (keyCode === 8) // `
   {
-    if(differentPerc == true)
+    if (planetNum == 10)
     {
-      differentPerc = false;
+      for (var i = 0; i < 10; i++)
+      {
+          tickType[i] = 0;
+      }
     }
     else
     {
-      differentPerc = true;
+      tickType[planetNum] = 0;
+    }
+  }
+  if (keyCode === 220) // 
+  {
+    if (planetNum == 10)
+    {
+      for (var i = 0; i < 10; i++)
+      {
+          tickType[i] = 1;
+      }
+    }
+    else
+    {
+      tickType[planetNum] = 1;
     }
   }
 
@@ -1041,8 +1056,11 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
 
     if (p.moon == true)
     {
-        stroke(255,255,255,moonFades[p.name]);
-        ellipse(0, 0, p.orbitR);
+          if (ringsOn[p.name] == true)
+          {
+            stroke(255,255,255,moonFades[p.name]);
+            ellipse(0, 0, p.orbitR);
+          }
     }
 
 
@@ -1091,7 +1109,7 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
             stroke(255,255,255,p.tFade);
             line(v0.x, v0.y, v1.x, v1.y);
 
-            if (differentPerc == true)
+            if (tickType[p.name] == 1)
             {
               //print("hello");
               //var v2 = p5.Vector.mult(v.add(.1), p.orbitR - (p.tickInner * tickLength[p.name]));
@@ -1172,21 +1190,26 @@ function updateAndDrawPlanets(planet, drawRings, drawPlanets, updatePass) {
         if ((moonsOn[p.name] == 1) && (moonsOnPrev[p.name] == 0))
         {
           moonFadeDirs[p.name] = 1;
+
+          //console.log("moon fade dir 1 for " + p.name);
         }
         else if ((moonsOn[p.name] == 0) && (moonsOnPrev[p.name] == 1))
         {
           moonFadeDirs[p.name] = -1;
+          //console.log("moon fade dir -1 for " + p.name);
         }
         moonsOnPrev[p.name] = moonsOn[p.name];
 
         moonFades[p.name] = moonFades[p.name] + moonFadeDirs[p.name]* fadeSpeed;
+        //console.log("moon fades " + p.name + "    = " + moonFades[p.name]);
         if (moonFades[p.name] > 255)
         {
           moonFades[p.name] = 255;
           moonFadeDirs[p.name] = 0;
         }
-        else if (p.fade < 0)
+        else if (moonFades[p.name] < 0)
         {
+          //console.log("negative!! " + moonFades[p.name]);
           moonFades[p.name] = 0;
           moonFadeDirs[p.name] = 0;
         }
